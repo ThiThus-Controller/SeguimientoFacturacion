@@ -1,1 +1,55 @@
-.vs/*
+# Visual Studio
+.vs/
+**/.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Compilación .NET
+**/[Bb]in/
+**/[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# Resultados de pruebas y cobertura
+TestResults/
+**/TestResults/
+coverage/
+coverage.*
+*.coverage
+*.coveragexml
+
+# Paquetes
+packages/
+*.nupkg
+*.snupkg
+
+# Rider y ReSharper
+.idea/
+_ReSharper*/
+*.DotSettings.user
+
+# Archivos temporales del sistema
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Logs
+logs/
+*.log
+
+# Archivos sensibles
+**/usuarios.dat
+**/.env
+**/appsettings.Local.json
+*.pfx
+
+# Archivos locales de SQL Server y copias de seguridad
+*.bak
+*.bacpac
+*.mdf
+*.ldf
