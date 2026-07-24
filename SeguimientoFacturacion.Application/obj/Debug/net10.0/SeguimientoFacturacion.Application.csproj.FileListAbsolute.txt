@@ -1,0 +1,17 @@
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\bin\Debug\net10.0\SeguimientoFacturacion.Application.deps.json
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\bin\Debug\net10.0\SeguimientoFacturacion.Application.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\bin\Debug\net10.0\SeguimientoFacturacion.Application.pdb
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\bin\Debug\net10.0\SeguimientoFacturacion.Domain.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\bin\Debug\net10.0\SeguimientoFacturacion.Infrastructure.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\bin\Debug\net10.0\SeguimientoFacturacion.Domain.pdb
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\bin\Debug\net10.0\SeguimientoFacturacion.Infrastructure.pdb
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\obj\Debug\net10.0\SeguimientoFacturacion.Application.csproj.AssemblyReference.cache
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\obj\Debug\net10.0\SeguimientoFacturacion.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\obj\Debug\net10.0\SeguimientoFacturacion.Application.AssemblyInfoInputs.cache
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\obj\Debug\net10.0\SeguimientoFacturacion.Application.AssemblyInfo.cs
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\obj\Debug\net10.0\SeguimientoFacturacion.Application.csproj.CoreCompileInputs.cache
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\obj\Debug\net10.0\Seguimie.4D727F29.Up2Date
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\obj\Debug\net10.0\SeguimientoFacturacion.Application.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\obj\Debug\net10.0\refint\SeguimientoFacturacion.Application.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\obj\Debug\net10.0\SeguimientoFacturacion.Application.pdb
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Application\obj\Debug\net10.0\ref\SeguimientoFacturacion.Application.dll

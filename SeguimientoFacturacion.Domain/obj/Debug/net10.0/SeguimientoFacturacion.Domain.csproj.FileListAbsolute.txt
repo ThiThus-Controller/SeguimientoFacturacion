@@ -1,0 +1,11 @@
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\bin\Debug\net10.0\SeguimientoFacturacion.Domain.deps.json
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\bin\Debug\net10.0\SeguimientoFacturacion.Domain.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\bin\Debug\net10.0\SeguimientoFacturacion.Domain.pdb
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\SeguimientoFacturacion.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\SeguimientoFacturacion.Domain.AssemblyInfoInputs.cache
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\SeguimientoFacturacion.Domain.AssemblyInfo.cs
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\SeguimientoFacturacion.Domain.csproj.CoreCompileInputs.cache
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\SeguimientoFacturacion.Domain.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\refint\SeguimientoFacturacion.Domain.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\SeguimientoFacturacion.Domain.pdb
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\ref\SeguimientoFacturacion.Domain.dll
