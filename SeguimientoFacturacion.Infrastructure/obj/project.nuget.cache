@@ -1,8 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "w34rB10m83I=",
+  "dgSpecHash": "G4FaoatgOkE=",
   "success": true,
   "projectFilePath": "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Infrastructure\\SeguimientoFacturacion.Infrastructure.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\USUARIO\\.nuget\\packages\\fluentvalidation\\12.1.1\\fluentvalidation.12.1.1.nupkg.sha512",
+    "C:\\Users\\USUARIO\\.nuget\\packages\\fluentvalidation.dependencyinjectionextensions\\12.1.1\\fluentvalidation.dependencyinjectionextensions.12.1.1.nupkg.sha512",
+    "C:\\Users\\USUARIO\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.10\\microsoft.extensions.dependencyinjection.abstractions.10.0.10.nupkg.sha512"
+  ],
   "logs": []
 }

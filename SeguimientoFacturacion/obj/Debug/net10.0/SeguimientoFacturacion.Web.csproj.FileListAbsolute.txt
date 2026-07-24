@@ -105,3 +105,4 @@ C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion\obj\
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion\obj\Debug\net10.0\ref\SeguimientoFacturacion.Web.dll
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion\bin\Debug\net10.0\FluentValidation.dll
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion\bin\Debug\net10.0\FluentValidation.DependencyInjectionExtensions.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion\obj\Debug\net10.0\SeguimientoFacturacion.Web.sourcelink.json

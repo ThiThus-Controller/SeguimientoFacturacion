@@ -9,3 +9,4 @@ C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Doma
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\refint\SeguimientoFacturacion.Domain.dll
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\SeguimientoFacturacion.Domain.pdb
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\ref\SeguimientoFacturacion.Domain.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain\obj\Debug\net10.0\SeguimientoFacturacion.Domain.sourcelink.json

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SeguimientoFacturacion.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+49ac735b74e3ee60059b9eedf7a977fe556e4651")]
 [assembly: System.Reflection.AssemblyProductAttribute("SeguimientoFacturacion.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SeguimientoFacturacion.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

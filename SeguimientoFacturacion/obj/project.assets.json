@@ -36,8 +36,7 @@
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
           "FluentValidation.DependencyInjectionExtensions": "12.1.1",
-          "SeguimientoFacturacion.Domain": "1.0.0",
-          "SeguimientoFacturacion.Infrastructure": "1.0.0"
+          "SeguimientoFacturacion.Domain": "1.0.0"
         },
         "compile": {
           "bin/placeholder/SeguimientoFacturacion.Application.dll": {}
@@ -59,6 +58,10 @@
       "SeguimientoFacturacion.Infrastructure/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "SeguimientoFacturacion.Application": "1.0.0",
+          "SeguimientoFacturacion.Domain": "1.0.0"
+        },
         "compile": {
           "bin/placeholder/SeguimientoFacturacion.Infrastructure.dll": {}
         },
@@ -117,7 +120,8 @@
   },
   "projectFileDependencyGroups": {
     "net10.0": [
-      "SeguimientoFacturacion.Application >= 1.0.0"
+      "SeguimientoFacturacion.Application >= 1.0.0",
+      "SeguimientoFacturacion.Infrastructure >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -155,6 +159,9 @@
           "projectReferences": {
             "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Application\\SeguimientoFacturacion.Application.csproj": {
               "projectPath": "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Application\\SeguimientoFacturacion.Application.csproj"
+            },
+            "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Infrastructure\\SeguimientoFacturacion.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Infrastructure\\SeguimientoFacturacion.Infrastructure.csproj"
             }
           }
         }

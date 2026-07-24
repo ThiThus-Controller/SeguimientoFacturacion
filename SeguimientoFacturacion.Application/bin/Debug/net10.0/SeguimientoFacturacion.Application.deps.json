@@ -10,8 +10,7 @@
         "dependencies": {
           "FluentValidation.DependencyInjectionExtensions": "12.1.1",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.10",
-          "SeguimientoFacturacion.Domain": "1.0.0",
-          "SeguimientoFacturacion.Infrastructure": "1.0.0"
+          "SeguimientoFacturacion.Domain": "1.0.0"
         },
         "runtime": {
           "SeguimientoFacturacion.Application.dll": {}
@@ -52,14 +51,6 @@
             "fileVersion": "1.0.0.0"
           }
         }
-      },
-      "SeguimientoFacturacion.Infrastructure/1.0.0": {
-        "runtime": {
-          "SeguimientoFacturacion.Infrastructure.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
-          }
-        }
       }
     }
   },
@@ -91,11 +82,6 @@
       "hashPath": "microsoft.extensions.dependencyinjection.abstractions.10.0.10.nupkg.sha512"
     },
     "SeguimientoFacturacion.Domain/1.0.0": {
-      "type": "project",
-      "serviceable": false,
-      "sha512": ""
-    },
-    "SeguimientoFacturacion.Infrastructure/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

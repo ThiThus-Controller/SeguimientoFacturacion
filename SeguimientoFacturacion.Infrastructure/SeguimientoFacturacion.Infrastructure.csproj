@@ -18,4 +18,9 @@
     <Folder Include="Persistence\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SeguimientoFacturacion.Application\SeguimientoFacturacion.Application.csproj" />
+    <ProjectReference Include="..\SeguimientoFacturacion.Domain\SeguimientoFacturacion.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

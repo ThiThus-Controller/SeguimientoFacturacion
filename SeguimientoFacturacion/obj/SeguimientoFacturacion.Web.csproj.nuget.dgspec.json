@@ -35,9 +35,6 @@
             "projectReferences": {
               "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Domain\\SeguimientoFacturacion.Domain.csproj": {
                 "projectPath": "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Domain\\SeguimientoFacturacion.Domain.csproj"
-              },
-              "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Infrastructure\\SeguimientoFacturacion.Infrastructure.csproj": {
-                "projectPath": "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Infrastructure\\SeguimientoFacturacion.Infrastructure.csproj"
               }
             }
           }
@@ -731,7 +728,14 @@
           "net10.0": {
             "framework": "net10.0",
             "targetAlias": "net10.0",
-            "projectReferences": {}
+            "projectReferences": {
+              "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Application\\SeguimientoFacturacion.Application.csproj": {
+                "projectPath": "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Application\\SeguimientoFacturacion.Application.csproj"
+              },
+              "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Domain\\SeguimientoFacturacion.Domain.csproj": {
+                "projectPath": "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Domain\\SeguimientoFacturacion.Domain.csproj"
+              }
+            }
           }
         },
         "warningProperties": {
@@ -1075,6 +1079,9 @@
             "projectReferences": {
               "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Application\\SeguimientoFacturacion.Application.csproj": {
                 "projectPath": "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Application\\SeguimientoFacturacion.Application.csproj"
+              },
+              "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Infrastructure\\SeguimientoFacturacion.Infrastructure.csproj": {
+                "projectPath": "C:\\Users\\USUARIO\\source\\repos\\SeguimientoFacturacion\\SeguimientoFacturacion.Infrastructure\\SeguimientoFacturacion.Infrastructure.csproj"
               }
             }
           }

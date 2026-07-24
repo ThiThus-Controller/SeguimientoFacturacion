@@ -8,7 +8,8 @@
     ".NETCoreApp,Version=v10.0": {
       "SeguimientoFacturacion.Web/1.0.0": {
         "dependencies": {
-          "SeguimientoFacturacion.Application": "1.0.0"
+          "SeguimientoFacturacion.Application": "1.0.0",
+          "SeguimientoFacturacion.Infrastructure": "1.0.0"
         },
         "runtime": {
           "SeguimientoFacturacion.Web.dll": {}
@@ -36,8 +37,7 @@
       "SeguimientoFacturacion.Application/1.0.0": {
         "dependencies": {
           "FluentValidation.DependencyInjectionExtensions": "12.1.1",
-          "SeguimientoFacturacion.Domain": "1.0.0",
-          "SeguimientoFacturacion.Infrastructure": "1.0.0"
+          "SeguimientoFacturacion.Domain": "1.0.0"
         },
         "runtime": {
           "SeguimientoFacturacion.Application.dll": {
@@ -55,6 +55,10 @@
         }
       },
       "SeguimientoFacturacion.Infrastructure/1.0.0": {
+        "dependencies": {
+          "SeguimientoFacturacion.Application": "1.0.0",
+          "SeguimientoFacturacion.Domain": "1.0.0"
+        },
         "runtime": {
           "SeguimientoFacturacion.Infrastructure.dll": {
             "assemblyVersion": "1.0.0.0",

@@ -9,3 +9,10 @@ C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Infr
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Infrastructure\obj\Debug\net10.0\refint\SeguimientoFacturacion.Infrastructure.dll
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Infrastructure\obj\Debug\net10.0\SeguimientoFacturacion.Infrastructure.pdb
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Infrastructure\obj\Debug\net10.0\ref\SeguimientoFacturacion.Infrastructure.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Infrastructure\bin\Debug\net10.0\SeguimientoFacturacion.Application.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Infrastructure\bin\Debug\net10.0\SeguimientoFacturacion.Domain.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Infrastructure\bin\Debug\net10.0\SeguimientoFacturacion.Application.pdb
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Infrastructure\bin\Debug\net10.0\SeguimientoFacturacion.Domain.pdb
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Infrastructure\obj\Debug\net10.0\SeguimientoFacturacion.Infrastructure.csproj.AssemblyReference.cache
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Infrastructure\obj\Debug\net10.0\SeguimientoFacturacion.Infrastructure.sourcelink.json
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Infrastructure\obj\Debug\net10.0\Seguimie.3BFEFA14.Up2Date

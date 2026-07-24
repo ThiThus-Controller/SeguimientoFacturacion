@@ -98,3 +98,4 @@ C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Doma
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain.Tests\obj\Debug\net10.0\SeguimientoFacturacion.Domain.Tests.pdb
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain.Tests\obj\Debug\net10.0\SeguimientoFacturacion.Domain.Tests.genruntimeconfig.cache
 C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain.Tests\obj\Debug\net10.0\ref\SeguimientoFacturacion.Domain.Tests.dll
+C:\Users\USUARIO\source\repos\SeguimientoFacturacion\SeguimientoFacturacion.Domain.Tests\obj\Debug\net10.0\SeguimientoFacturacion.Domain.Tests.sourcelink.json

@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SeguimientoFacturacion.Domain\SeguimientoFacturacion.Domain.csproj" />
-    <ProjectReference Include="..\SeguimientoFacturacion.Infrastructure\SeguimientoFacturacion.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
