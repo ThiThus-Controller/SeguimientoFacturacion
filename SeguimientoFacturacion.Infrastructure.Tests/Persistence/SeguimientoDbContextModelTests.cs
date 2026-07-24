@@ -64,7 +64,7 @@ public sealed class SeguimientoDbContextModelTests
     }
 
     [Fact]
-    public void Movimiento_DebeTenerNumeroNotaCreditoOpcional()
+    public void Movimiento_DebePersistirAnioYPermitirFechaOpcional()
     {
         using var contexto = CrearContexto();
 
@@ -73,11 +73,25 @@ public sealed class SeguimientoDbContextModelTests
 
         Assert.NotNull(entidad);
 
-        Assert.Equal("Movimientos", entidad.GetTableName());
+        Assert.Equal(
+            "Movimientos",
+            entidad.GetTableName());
 
         Assert.Equal(
             EsquemasBaseDatos.Facturacion,
             entidad.GetSchema());
+
+        var anio =
+            entidad.FindProperty(nameof(Movimiento.Anio));
+
+        Assert.NotNull(anio);
+        Assert.False(anio.IsNullable);
+
+        var fecha =
+            entidad.FindProperty(nameof(Movimiento.Fecha));
+
+        Assert.NotNull(fecha);
+        Assert.True(fecha.IsNullable);
 
         var numeroNotaCredito =
             entidad.FindProperty(
@@ -85,9 +99,6 @@ public sealed class SeguimientoDbContextModelTests
 
         Assert.NotNull(numeroNotaCredito);
         Assert.True(numeroNotaCredito.IsNullable);
-
-        Assert.Null(
-            entidad.FindProperty(nameof(Movimiento.Anio)));
 
         var relacionFactura =
             entidad.GetForeignKeys()

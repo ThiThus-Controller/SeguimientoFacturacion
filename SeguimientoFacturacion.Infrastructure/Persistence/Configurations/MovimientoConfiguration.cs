@@ -23,6 +23,12 @@ internal sealed class MovimientoConfiguration :
             tableBuilder =>
             {
                 tableBuilder.HasCheckConstraint(
+                    "CK_Movimientos_Anio",
+                    $"[Anio] BETWEEN " +
+                    $"{Movimiento.AnioMinimo} AND " +
+                    $"{Movimiento.AnioMaximo}");
+
+                tableBuilder.HasCheckConstraint(
                     "CK_Movimientos_Valor",
                     "[Valor] >= 0");
 
@@ -49,23 +55,26 @@ internal sealed class MovimientoConfiguration :
             .HasConversion<int>()
             .IsRequired();
 
-        builder.Property(movimiento => movimiento.Fecha)
-            .HasColumnType("date")
+        builder.Property(movimiento => movimiento.Anio)
             .IsRequired();
 
-        builder.Ignore(movimiento => movimiento.Anio);
+        builder.Property(movimiento => movimiento.Fecha)
+            .HasColumnType("date")
+            .IsRequired(false);
 
         builder.Property(movimiento => movimiento.Valor)
             .HasPrecision(18, 2)
             .IsRequired();
 
-        builder.Property(movimiento => movimiento.NumeroNotaCredito);
+        builder.Property(movimiento =>
+                movimiento.NumeroNotaCredito);
 
         builder.Property(movimiento => movimiento.Observacion)
             .HasMaxLength(Movimiento.ObservacionLongitudMaxima)
             .IsUnicode();
 
-        builder.Property(movimiento => movimiento.FechaCreacionUtc)
+        builder.Property(movimiento =>
+                movimiento.FechaCreacionUtc)
             .HasPrecision(0)
             .IsRequired();
 
@@ -74,28 +83,33 @@ internal sealed class MovimientoConfiguration :
             .IsUnicode(false)
             .IsRequired();
 
-        builder.Property(movimiento => movimiento.FechaModificacionUtc)
+        builder.Property(movimiento =>
+                movimiento.FechaModificacionUtc)
             .HasPrecision(0);
 
         builder.Property(movimiento => movimiento.ModificadoPor)
             .HasMaxLength(UsuarioAuditoriaLongitudMaxima)
             .IsUnicode(false);
 
-        builder.HasOne(movimiento => movimiento.TipoMovimiento)
+        builder.HasOne(movimiento =>
+                movimiento.TipoMovimiento)
             .WithMany()
-            .HasForeignKey(movimiento => movimiento.TipoMovimientoId)
+            .HasForeignKey(movimiento =>
+                movimiento.TipoMovimientoId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(
                 movimiento => new
                 {
                     movimiento.FacturaId,
+                    movimiento.Anio,
                     movimiento.Fecha
                 })
             .HasDatabaseName(
-                "IX_Movimientos_FacturaId_Fecha");
+                "IX_Movimientos_FacturaId_Anio_Fecha");
 
-        builder.HasIndex(movimiento => movimiento.TipoMovimientoId)
+        builder.HasIndex(movimiento =>
+                movimiento.TipoMovimientoId)
             .HasDatabaseName(
                 "IX_Movimientos_TipoMovimientoId");
     }
