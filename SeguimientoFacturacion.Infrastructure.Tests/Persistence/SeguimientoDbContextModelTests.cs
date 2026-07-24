@@ -1,0 +1,143 @@
+﻿using Microsoft.EntityFrameworkCore;
+using SeguimientoFacturacion.Domain.Entities;
+using SeguimientoFacturacion.Domain.Entities.Catalogos;
+using SeguimientoFacturacion.Infrastructure.Configuration;
+using SeguimientoFacturacion.Infrastructure.Persistence;
+
+namespace SeguimientoFacturacion.Infrastructure.Tests.Persistence;
+
+/// <summary>
+/// Pruebas de la configuración del modelo de Entity Framework Core.
+/// </summary>
+public sealed class SeguimientoDbContextModelTests
+{
+    [Fact]
+    public void Modelo_DebeIncluirTodasLasEntidadesSql()
+    {
+        using var contexto = CrearContexto();
+
+        Type[] tiposEsperados =
+        [
+            typeof(Factura),
+            typeof(Movimiento),
+            typeof(Aseguradora),
+            typeof(Atencion),
+            typeof(Costo),
+            typeof(Estado),
+            typeof(Facturador),
+            typeof(TipoDocumento),
+            typeof(TipoMovimiento)
+        ];
+
+        foreach (var tipoEsperado in tiposEsperados)
+        {
+            Assert.NotNull(
+                contexto.Model.FindEntityType(tipoEsperado));
+        }
+    }
+
+    [Fact]
+    public void Factura_DebeUsarTablaNormalizadaYDecimal()
+    {
+        using var contexto = CrearContexto();
+
+        var entidad =
+            contexto.Model.FindEntityType(typeof(Factura));
+
+        Assert.NotNull(entidad);
+
+        Assert.Equal("Facturas", entidad.GetTableName());
+
+        Assert.Equal(
+            EsquemasBaseDatos.Facturacion,
+            entidad.GetSchema());
+
+        var valor =
+            entidad.FindProperty(nameof(Factura.Valor));
+
+        Assert.NotNull(valor);
+        Assert.Equal(18, valor.GetPrecision());
+        Assert.Equal(2, valor.GetScale());
+
+        Assert.Null(
+            entidad.FindProperty(nameof(Factura.Saldo)));
+    }
+
+    [Fact]
+    public void Movimiento_DebeTenerNumeroNotaCreditoOpcional()
+    {
+        using var contexto = CrearContexto();
+
+        var entidad =
+            contexto.Model.FindEntityType(typeof(Movimiento));
+
+        Assert.NotNull(entidad);
+
+        Assert.Equal("Movimientos", entidad.GetTableName());
+
+        Assert.Equal(
+            EsquemasBaseDatos.Facturacion,
+            entidad.GetSchema());
+
+        var numeroNotaCredito =
+            entidad.FindProperty(
+                nameof(Movimiento.NumeroNotaCredito));
+
+        Assert.NotNull(numeroNotaCredito);
+        Assert.True(numeroNotaCredito.IsNullable);
+
+        Assert.Null(
+            entidad.FindProperty(nameof(Movimiento.Anio)));
+
+        var relacionFactura =
+            entidad.GetForeignKeys()
+                .Single(foreignKey =>
+                    foreignKey.PrincipalEntityType.ClrType ==
+                    typeof(Factura));
+
+        Assert.Equal(
+            DeleteBehavior.Restrict,
+            relacionFactura.DeleteBehavior);
+    }
+
+    [Fact]
+    public void TipoDocumento_DebeTenerSiglaUnica()
+    {
+        using var contexto = CrearContexto();
+
+        var entidad =
+            contexto.Model.FindEntityType(
+                typeof(TipoDocumento));
+
+        Assert.NotNull(entidad);
+
+        var sigla =
+            entidad.FindProperty(
+                nameof(TipoDocumento.Sigla));
+
+        Assert.NotNull(sigla);
+        Assert.Equal(20, sigla.GetMaxLength());
+
+        Assert.Contains(
+            entidad.GetIndexes(),
+            indice =>
+                indice.IsUnique &&
+                indice.Properties.Count == 1 &&
+                indice.Properties[0].Name ==
+                nameof(TipoDocumento.Sigla));
+    }
+
+    private static SeguimientoDbContext CrearContexto()
+    {
+        var options =
+            new DbContextOptionsBuilder<SeguimientoDbContext>()
+                .UseSqlServer(
+                    @"Server=(localdb)\MSSQLLocalDB;" +
+                    "Database=SeguimientoModeloPruebas;" +
+                    "Trusted_Connection=True;" +
+                    "TrustServerCertificate=True;")
+                .Options;
+
+        return new SeguimientoDbContext(options);
+    }
+}

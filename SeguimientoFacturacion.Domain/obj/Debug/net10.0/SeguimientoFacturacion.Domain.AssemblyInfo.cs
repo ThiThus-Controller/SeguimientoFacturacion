@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SeguimientoFacturacion.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+85cd3d2b6263283288dcfafd45cc8726a8c1bdfe")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eb02005cf5d3806846034e2bce61b6e9736beba1")]
 [assembly: System.Reflection.AssemblyProductAttribute("SeguimientoFacturacion.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SeguimientoFacturacion.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

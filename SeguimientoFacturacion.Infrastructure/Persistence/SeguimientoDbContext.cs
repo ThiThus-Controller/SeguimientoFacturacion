@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Domain.Entities;
+using SeguimientoFacturacion.Domain.Entities.Catalogos;
 
 namespace SeguimientoFacturacion.Infrastructure.Persistence;
 
@@ -14,14 +16,31 @@ public sealed class SeguimientoDbContext :
     /// <summary>
     /// Inicializa una nueva instancia del contexto.
     /// </summary>
-    /// <param name="options">
-    /// Opciones configuradas para el contexto.
-    /// </param>
     public SeguimientoDbContext(
         DbContextOptions<SeguimientoDbContext> options)
         : base(options)
     {
     }
+
+    public DbSet<Factura> Facturas => Set<Factura>();
+
+    public DbSet<Movimiento> Movimientos => Set<Movimiento>();
+
+    public DbSet<Aseguradora> Aseguradoras => Set<Aseguradora>();
+
+    public DbSet<Atencion> Atenciones => Set<Atencion>();
+
+    public DbSet<Costo> Costos => Set<Costo>();
+
+    public DbSet<Estado> Estados => Set<Estado>();
+
+    public DbSet<Facturador> Facturadores => Set<Facturador>();
+
+    public DbSet<TipoDocumento> TiposDocumento =>
+        Set<TipoDocumento>();
+
+    public DbSet<TipoMovimiento> TiposMovimiento =>
+        Set<TipoMovimiento>();
 
     /// <inheritdoc />
     public Task<int> GuardarCambiosAsync(
@@ -30,12 +49,7 @@ public sealed class SeguimientoDbContext :
         return SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>
-    /// Configura el modelo de persistencia.
-    /// </summary>
-    /// <param name="modelBuilder">
-    /// Constructor del modelo de Entity Framework Core.
-    /// </param>
+    /// <inheritdoc />
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)
     {
