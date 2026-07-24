@@ -1,26 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>9d237969-134b-4f8a-b2df-28d8ff3d85e2</UserSecretsId>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>9d237969-134b-4f8a-b2df-28d8ff3d85e2</UserSecretsId>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Extensions\" />
-    <Folder Include="Middleware\" />
-    <Folder Include="Filters\" />
-    <Folder Include="Configurations\" />
-    <Folder Include="Services\" />
-    <Folder Include="ViewModels\" />
-    <Folder Include="wwwroot\images\" />
-    <Folder Include="wwwroot\icons\" />
-  </ItemGroup>
+	<ItemGroup>
+		<Folder Include="Extensions\" />
+		<Folder Include="Middleware\" />
+		<Folder Include="Filters\" />
+		<Folder Include="Configurations\" />
+		<Folder Include="Services\" />
+		<Folder Include="ViewModels\" />
+		<Folder Include="wwwroot\images\" />
+		<Folder Include="wwwroot\icons\" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\SeguimientoFacturacion.Application\SeguimientoFacturacion.Application.csproj" />
-    <ProjectReference Include="..\SeguimientoFacturacion.Infrastructure\SeguimientoFacturacion.Infrastructure.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\SeguimientoFacturacion.Application\SeguimientoFacturacion.Application.csproj" />
+		<ProjectReference Include="..\SeguimientoFacturacion.Infrastructure\SeguimientoFacturacion.Infrastructure.csproj" />
+	</ItemGroup>
 
 </Project>
