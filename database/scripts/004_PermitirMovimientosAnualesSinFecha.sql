@@ -34,9 +34,7 @@ IF NOT EXISTS (
     WHERE [MigrationId] = N'20260724195327_PermitirMovimientosAnualesSinFecha'
 )
 BEGIN
-    UPDATE [facturacion].[Movimientos]
-    SET [Anio] = YEAR([Fecha])
-    WHERE [Anio] IS NULL;
+    EXEC(N'UPDATE [facturacion].[Movimientos] SET [Anio] = YEAR([Fecha]) WHERE [Anio] IS NULL;');
 END;
 
 IF NOT EXISTS (

@@ -27,13 +27,6 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                 oldClrType: typeof(DateOnly),
                 oldType: "date");
 
-            /*
-                Primero se agrega Anio como nullable.
-
-                Esto permite trasladar de forma segura el año de
-                cualquier movimiento que pudiera existir antes de
-                convertir la columna en obligatoria.
-            */
             migrationBuilder.AddColumn<int>(
                 name: "Anio",
                 schema: "facturacion",
@@ -42,16 +35,16 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                 nullable: true);
 
             /*
-                En el modelo anterior Fecha era obligatoria.
-                Por eso es posible recuperar el año de los registros
-                existentes sin inventar información.
+                La actualización se ejecuta mediante SQL dinámico.
+
+                Esto obliga a SQL Server a compilar la instrucción
+                después de que la columna Anio haya sido creada.
             */
             migrationBuilder.Sql(
-                """
-                UPDATE [facturacion].[Movimientos]
-                SET [Anio] = YEAR([Fecha])
-                WHERE [Anio] IS NULL;
-                """);
+                "EXEC(N'UPDATE " +
+                "[facturacion].[Movimientos] " +
+                "SET [Anio] = YEAR([Fecha]) " +
+                "WHERE [Anio] IS NULL;');");
 
             migrationBuilder.AlterColumn<int>(
                 name: "Anio",
@@ -87,11 +80,6 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
         protected override void Down(
             MigrationBuilder migrationBuilder)
         {
-            /*
-                No se permite regresar al modelo anterior si existen
-                movimientos sin fecha, porque hacerlo obligaría a
-                inventar una fecha.
-            */
             migrationBuilder.Sql(
                 """
                 IF EXISTS
