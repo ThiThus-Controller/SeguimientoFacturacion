@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Services;
 using SeguimientoFacturacion.Application.Services;
 
@@ -19,7 +20,8 @@ public static class DependencyInjection
     /// Colección de servicios de la aplicación.
     /// </param>
     /// <returns>
-    /// La misma colección de servicios para permitir llamadas encadenadas.
+    /// La misma colección de servicios para permitir
+    /// llamadas encadenadas.
     /// </returns>
     public static IServiceCollection AddApplication(
         this IServiceCollection services)
@@ -33,6 +35,10 @@ public static class DependencyInjection
         services.AddTransient<
             IServicioConsultaFacturas,
             ServicioConsultaFacturas>();
+
+        services.AddTransient<
+            IServicioAnalisisImportacion,
+            ServicioAnalisisImportacion>();
 
         return services;
     }
