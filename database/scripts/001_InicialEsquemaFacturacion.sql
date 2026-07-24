@@ -1,16 +1,16 @@
-﻿IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+﻿IF OBJECT_ID(N'[__SeguimientoFacturacionMigrationsHistory]') IS NULL
 BEGIN
-    CREATE TABLE [__EFMigrationsHistory] (
+    CREATE TABLE [__SeguimientoFacturacionMigrationsHistory] (
         [MigrationId] nvarchar(150) NOT NULL,
         [ProductVersion] nvarchar(32) NOT NULL,
-        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+        CONSTRAINT [PK___SeguimientoFacturacionMigrationsHistory] PRIMARY KEY ([MigrationId])
     );
 END;
 GO
 
 BEGIN TRANSACTION;
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -18,7 +18,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -30,7 +30,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -42,7 +42,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -54,7 +54,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -66,7 +66,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -78,7 +78,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -91,7 +91,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -103,7 +103,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -139,7 +139,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -164,7 +164,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -180,7 +180,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -188,7 +188,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -196,7 +196,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -204,7 +204,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -212,7 +212,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -220,7 +220,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -228,7 +228,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -236,7 +236,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -244,7 +244,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -252,7 +252,7 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
@@ -260,11 +260,11 @@ BEGIN
 END;
 
 IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
+    SELECT * FROM [__SeguimientoFacturacionMigrationsHistory]
     WHERE [MigrationId] = N'20260724161026_InicialEsquemaFacturacion'
 )
 BEGIN
-    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    INSERT INTO [__SeguimientoFacturacionMigrationsHistory] ([MigrationId], [ProductVersion])
     VALUES (N'20260724161026_InicialEsquemaFacturacion', N'10.0.10');
 END;
 

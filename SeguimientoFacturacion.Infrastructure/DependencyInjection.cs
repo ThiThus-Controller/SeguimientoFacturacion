@@ -17,15 +17,6 @@ public static class DependencyInjection
     /// Registra el acceso a datos y las implementaciones
     /// de infraestructura.
     /// </summary>
-    /// <param name="services">
-    /// Colección de servicios de la aplicación.
-    /// </param>
-    /// <param name="configuration">
-    /// Configuración general de la aplicación.
-    /// </param>
-    /// <returns>
-    /// La misma colección para permitir llamadas encadenadas.
-    /// </returns>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -49,10 +40,16 @@ public static class DependencyInjection
                 options.UseSqlServer(
                     connectionString,
                     sqlServerOptions =>
+                    {
+                        sqlServerOptions.MigrationsHistoryTable(
+                            NombresObjetosBaseDatos
+                                .HistorialMigraciones);
+
                         sqlServerOptions.EnableRetryOnFailure(
                             maxRetryCount: 5,
                             maxRetryDelay: TimeSpan.FromSeconds(10),
-                            errorNumbersToAdd: null)));
+                            errorNumbersToAdd: null);
+                    }));
 
         services.AddScoped<IUnidadTrabajo>(
             serviceProvider =>

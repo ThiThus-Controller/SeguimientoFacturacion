@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using SeguimientoFacturacion.Infrastructure.Configuration;
 
 namespace SeguimientoFacturacion.Infrastructure.Persistence;
 
@@ -21,7 +22,11 @@ public sealed class SeguimientoDbContextFactory :
             @"Server=(localdb)\MSSQLLocalDB;" +
             "Database=SeguimientoDiseno;" +
             "Trusted_Connection=True;" +
-            "TrustServerCertificate=True;");
+            "TrustServerCertificate=True;",
+            sqlServerOptions =>
+                sqlServerOptions.MigrationsHistoryTable(
+                    NombresObjetosBaseDatos
+                        .HistorialMigraciones));
 
         return new SeguimientoDbContext(
             optionsBuilder.Options);
