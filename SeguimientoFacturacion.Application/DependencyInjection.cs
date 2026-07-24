@@ -1,5 +1,7 @@
 ﻿using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using SeguimientoFacturacion.Application.Interfaces.Services;
+using SeguimientoFacturacion.Application.Services;
 
 namespace SeguimientoFacturacion.Application;
 
@@ -27,6 +29,10 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(
             typeof(DependencyInjection).Assembly,
             ServiceLifetime.Transient);
+
+        services.AddTransient<
+            IServicioConsultaFacturas,
+            ServicioConsultaFacturas>();
 
         return services;
     }

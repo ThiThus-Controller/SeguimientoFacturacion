@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="SeguimientoFacturacion.Application.Tests/SeguimientoFacturacion.Application.Tests.csproj" />
   <Project Path="SeguimientoFacturacion.Application/SeguimientoFacturacion.Application.csproj" />
   <Project Path="SeguimientoFacturacion.Domain.Tests/SeguimientoFacturacion.Domain.Tests.csproj" />
   <Project Path="SeguimientoFacturacion.Domain/SeguimientoFacturacion.Domain.csproj" />
