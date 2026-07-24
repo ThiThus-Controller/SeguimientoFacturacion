@@ -8,14 +8,24 @@
 
   <ItemGroup>
     <Folder Include="Authentication\" />
-    <Folder Include="Configuration\" />
     <Folder Include="Data\" />
     <Folder Include="Encryption\" />
     <Folder Include="Logging\" />
     <Folder Include="Services\" />
     <Folder Include="Security\" />
     <Folder Include="Repositories\" />
-    <Folder Include="Persistence\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
   </ItemGroup>
 
   <ItemGroup>

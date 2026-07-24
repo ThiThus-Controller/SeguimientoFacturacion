@@ -11,10 +11,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("9d237969-134b-4f8a-b2df-28d8ff3d85e2")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("SeguimientoFacturacion.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e4ffd53a4bfef762d659c5e004d1226eed96aca7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+85cd3d2b6263283288dcfafd45cc8726a8c1bdfe")]
 [assembly: System.Reflection.AssemblyProductAttribute("SeguimientoFacturacion.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SeguimientoFacturacion.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

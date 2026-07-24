@@ -3,6 +3,7 @@
   <Project Path="SeguimientoFacturacion.Application/SeguimientoFacturacion.Application.csproj" />
   <Project Path="SeguimientoFacturacion.Domain.Tests/SeguimientoFacturacion.Domain.Tests.csproj" />
   <Project Path="SeguimientoFacturacion.Domain/SeguimientoFacturacion.Domain.csproj" />
+  <Project Path="SeguimientoFacturacion.Infrastructure.Tests/SeguimientoFacturacion.Infrastructure.Tests.csproj" />
   <Project Path="SeguimientoFacturacion.Infrastructure/SeguimientoFacturacion.Infrastructure.csproj" />
   <Project Path="SeguimientoFacturacion/SeguimientoFacturacion.Web.csproj" />
 </Solution>
