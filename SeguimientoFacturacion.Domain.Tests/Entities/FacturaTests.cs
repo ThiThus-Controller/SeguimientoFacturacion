@@ -25,7 +25,7 @@ public sealed class FacturaTests
             TipoMovimientoCodigo.NotaCredito,
             new DateOnly(2026, 1, 10),
             150000m,
-            numeroNotaCredito: 5001);
+            numeroNotaCredito: "NC-5001");
 
         var abono = new Movimiento(
             factura.Id,

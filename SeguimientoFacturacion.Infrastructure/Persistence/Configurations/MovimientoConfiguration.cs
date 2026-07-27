@@ -35,8 +35,8 @@ internal sealed class MovimientoConfiguration :
                 tableBuilder.HasCheckConstraint(
                     "CK_Movimientos_NumeroNotaCredito",
                     "([TipoMovimientoId] = 1 " +
-                    "AND [NumeroNotaCredito] IS NOT NULL " +
-                    "AND [NumeroNotaCredito] > 0) " +
+                    "AND NULLIF(LTRIM(RTRIM([NumeroNotaCredito])), '') " +
+                    "IS NOT NULL) " +
                     "OR ([TipoMovimientoId] <> 1 " +
                     "AND [NumeroNotaCredito] IS NULL)");
             });
@@ -67,7 +67,11 @@ internal sealed class MovimientoConfiguration :
             .IsRequired();
 
         builder.Property(movimiento =>
-                movimiento.NumeroNotaCredito);
+                movimiento.NumeroNotaCredito)
+            .HasMaxLength(
+                Movimiento.NumeroNotaCreditoLongitudMaxima)
+            .IsUnicode(false)
+            .IsRequired(false);
 
         builder.Property(movimiento => movimiento.Observacion)
             .HasMaxLength(Movimiento.ObservacionLongitudMaxima)

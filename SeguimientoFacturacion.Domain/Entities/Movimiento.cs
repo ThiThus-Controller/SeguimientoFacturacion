@@ -1,6 +1,7 @@
 ﻿using SeguimientoFacturacion.Domain.Common;
 using SeguimientoFacturacion.Domain.Entities.Catalogos;
 using SeguimientoFacturacion.Domain.Enums;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SeguimientoFacturacion.Domain.Entities;
 
@@ -23,6 +24,11 @@ public sealed class Movimiento : EntidadAuditableBase<long>
     /// Longitud máxima permitida para el identificador de la factura.
     /// </summary>
     public const int FacturaIdLongitudMaxima = 50;
+
+    /// <summary>
+    /// Longitud máxima permitida para el número de nota crédito.
+    /// </summary>
+    public const int NumeroNotaCreditoLongitudMaxima = 50;
 
     /// <summary>
     /// Longitud máxima permitida para una observación.
@@ -60,7 +66,7 @@ public sealed class Movimiento : EntidadAuditableBase<long>
         TipoMovimientoCodigo tipoMovimientoId,
         DateOnly fecha,
         decimal valor,
-        int? numeroNotaCredito = null,
+        string? numeroNotaCredito = null,
         string? observacion = null)
         : this(
             facturaId,
@@ -105,7 +111,7 @@ public sealed class Movimiento : EntidadAuditableBase<long>
         int anio,
         DateOnly? fecha,
         decimal valor,
-        int? numeroNotaCredito = null,
+        string? numeroNotaCredito = null,
         string? observacion = null)
     {
         FacturaId = ValidarFacturaId(facturaId);
@@ -149,7 +155,7 @@ public sealed class Movimiento : EntidadAuditableBase<long>
     /// Obtiene el número de nota crédito.
     /// Será nulo para abonos, glosas, devoluciones y conciliaciones.
     /// </summary>
-    public int? NumeroNotaCredito { get; private set; }
+    public string? NumeroNotaCredito { get; private set; }
 
     /// <summary>
     /// Obtiene una observación opcional del movimiento.
@@ -174,7 +180,7 @@ public sealed class Movimiento : EntidadAuditableBase<long>
         TipoMovimientoCodigo tipoMovimientoId,
         DateOnly fecha,
         decimal valor,
-        int? numeroNotaCredito = null,
+        string? numeroNotaCredito = null,
         string? observacion = null)
     {
         Actualizar(
@@ -213,7 +219,7 @@ public sealed class Movimiento : EntidadAuditableBase<long>
         int anio,
         DateOnly? fecha,
         decimal valor,
-        int? numeroNotaCredito = null,
+        string? numeroNotaCredito = null,
         string? observacion = null)
     {
         var tipoValidado =
@@ -348,22 +354,33 @@ public sealed class Movimiento : EntidadAuditableBase<long>
         return valor;
     }
 
-    private static int? ValidarNumeroNotaCredito(
+    private static string? ValidarNumeroNotaCredito(
         TipoMovimientoCodigo tipoMovimientoId,
-        int? numeroNotaCredito)
+        string? numeroNotaCredito)
     {
         if (tipoMovimientoId ==
             TipoMovimientoCodigo.NotaCredito)
         {
-            if (numeroNotaCredito is null or <= 0)
+            if (string.IsNullOrWhiteSpace(numeroNotaCredito))
             {
                 throw new ArgumentException(
-                    "El número de nota crédito es obligatorio " +
-                    "y debe ser mayor que cero.",
+                    "El número de nota crédito es obligatorio.",
                     nameof(numeroNotaCredito));
             }
 
-            return numeroNotaCredito;
+            var numeroNormalizado =
+                numeroNotaCredito.Trim().ToUpperInvariant();
+
+            if (numeroNormalizado.Length >
+                NumeroNotaCreditoLongitudMaxima)
+            {
+                throw new ArgumentException(
+                    $"El número de nota crédito no puede superar " +
+                    $"los {NumeroNotaCreditoLongitudMaxima} caracteres.",
+                    nameof(numeroNotaCredito));
+            }
+
+            return numeroNormalizado;
         }
 
         if (numeroNotaCredito is not null)

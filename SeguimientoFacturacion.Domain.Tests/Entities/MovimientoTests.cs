@@ -33,7 +33,7 @@ public sealed class MovimientoTests
                 TipoMovimientoCodigo.Abono,
             fecha: new DateOnly(2026, 7, 23),
             valor: 200000m,
-            numeroNotaCredito: 1234);
+            numeroNotaCredito: "NC-1234");
 
         var excepcion =
             Assert.Throws<ArgumentException>(accion);
@@ -153,13 +153,13 @@ public sealed class MovimientoTests
             anio: 2024,
             fecha: new DateOnly(2024, 8, 15),
             valor: 150000m,
-            numeroNotaCredito: 60195);
+            numeroNotaCredito: "NC-60195");
 
         Assert.Equal(
             TipoMovimientoCodigo.NotaCredito,
             movimiento.TipoMovimientoId);
 
         Assert.Equal(2024, movimiento.Anio);
-        Assert.Equal(60195, movimiento.NumeroNotaCredito);
+        Assert.Equal("NC-60195", movimiento.NumeroNotaCredito);
     }
 }
