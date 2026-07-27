@@ -1,22 +1,33 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
 using SeguimientoFacturacion.Infrastructure.Configuration;
 using SeguimientoFacturacion.Infrastructure.Persistence;
+using SeguimientoFacturacion.Infrastructure.Services.Importacion;
 
 namespace SeguimientoFacturacion.Infrastructure;
 
 /// <summary>
-/// Contiene el registro de servicios pertenecientes
-/// a la capa Infrastructure.
+/// Configura los servicios proporcionados por la capa
+/// de infraestructura.
 /// </summary>
 public static class DependencyInjection
 {
     /// <summary>
-    /// Registra el acceso a datos y las implementaciones
-    /// de infraestructura.
+    /// Registra persistencia, acceso a archivos y demás
+    /// implementaciones de infraestructura.
     /// </summary>
+    /// <param name="services">
+    /// Colección de servicios de la aplicación.
+    /// </param>
+    /// <param name="configuration">
+    /// Configuración general de la aplicación.
+    /// </param>
+    /// <returns>
+    /// La misma colección de servicios configurada.
+    /// </returns>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -47,7 +58,8 @@ public static class DependencyInjection
 
                         sqlServerOptions.EnableRetryOnFailure(
                             maxRetryCount: 5,
-                            maxRetryDelay: TimeSpan.FromSeconds(10),
+                            maxRetryDelay:
+                                TimeSpan.FromSeconds(10),
                             errorNumbersToAdd: null);
                     }));
 
@@ -55,6 +67,10 @@ public static class DependencyInjection
             serviceProvider =>
                 serviceProvider.GetRequiredService<
                     SeguimientoDbContext>());
+
+        services.AddTransient<
+            ILectorArchivoFacturacion,
+            LectorArchivoFacturacionClosedXml>();
 
         return services;
     }
