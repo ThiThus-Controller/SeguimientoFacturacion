@@ -65,9 +65,21 @@ public static class DependencyInjection
             IConsultaFacturas,
             ConsultaFacturasEfCore>();
 
+        services.AddScoped<
+            IConsultaCatalogosImportacion,
+            ConsultaCatalogosImportacionEfCore>();
+
+        /*
+         * El lector estructural se registra por su tipo
+         * concreto para que pueda ser utilizado por el
+         * lector con validación detallada.
+         */
+        services.AddTransient<
+            LectorArchivoFacturacionClosedXml>();
+
         services.AddTransient<
             ILectorArchivoFacturacion,
-            LectorArchivoFacturacionClosedXml>();
+            LectorArchivoFacturacionValidado>();
 
         return services;
     }
