@@ -2,6 +2,7 @@
 using SeguimientoFacturacion.Application.DTOs.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Infrastructure.Services.Importacion;
+using SeguimientoFacturacion.Domain.Enums;
 
 namespace SeguimientoFacturacion.Infrastructure.Tests.Services.Importacion;
 
@@ -35,7 +36,7 @@ var factura =
     Assert.Single(resultado.Facturas);
 
 Assert.Equal(1, resultado.TotalFacturas);
-        Assert.Equal(0, resultado.TotalMovimientos);
+        Assert.Equal(4, resultado.TotalMovimientos);
 
         Assert.Equal("Datos", factura.HojaOrigen);
         Assert.Equal(3, factura.FilaOrigen);
@@ -63,7 +64,59 @@ Assert.Equal(1, resultado.TotalFacturas);
 
         Assert.Equal(5, factura.EstadoId);
         Assert.Equal(1, factura.FacturadorId);
-        Assert.Empty(factura.Movimientos);
+        Assert.Equal(4, factura.Movimientos.Count);
+
+        var notaCredito =
+            Assert.Single(
+                factura.Movimientos,
+                movimiento =>
+                    movimiento.TipoMovimientoId ==
+                    TipoMovimientoCodigo.NotaCredito);
+
+        Assert.Equal(2024, notaCredito.Anio);
+        Assert.Equal("NC-5001", notaCredito.NumeroNotaCredito);
+        Assert.Equal(100000m, notaCredito.Valor);
+
+        var abono =
+            Assert.Single(
+                factura.Movimientos,
+                movimiento =>
+                    movimiento.TipoMovimientoId ==
+                    TipoMovimientoCodigo.Abono);
+
+        Assert.Equal(2025, abono.Anio);
+        Assert.Null(abono.Fecha);
+        Assert.Null(abono.NumeroNotaCredito);
+        Assert.Equal(200000m, abono.Valor);
+
+        var glosa =
+            Assert.Single(
+                factura.Movimientos,
+                movimiento =>
+                    movimiento.TipoMovimientoId ==
+                    TipoMovimientoCodigo.GlosaODevolucion);
+
+        Assert.Equal(
+            new DateOnly(2024, 9, 1),
+            glosa.Fecha);
+
+        Assert.Equal(50000m, glosa.Valor);
+        Assert.Null(glosa.NumeroNotaCredito);
+
+        var conciliacion =
+            Assert.Single(
+                factura.Movimientos,
+                movimiento =>
+                    movimiento.TipoMovimientoId ==
+                    TipoMovimientoCodigo.Conciliacion);
+
+        Assert.Equal(
+            new DateOnly(2024, 10, 1),
+            conciliacion.Fecha);
+
+        Assert.Equal(25000m, conciliacion.Valor);
+        Assert.Null(conciliacion.NumeroNotaCredito);
+        
     }
 
     [Fact]
@@ -132,6 +185,24 @@ Assert.Contains(
 
         hoja.Cell(1, 16).Value = "FACTURADOR";
 
+        hoja.Cell(1, 17).Value = "AÑO 2024";
+        hoja.Cell(2, 17).Value = "No de NOTA CREDITO";
+        hoja.Cell(2, 18).Value = "FECHA DE NOTA CREDITO";
+        hoja.Cell(2, 19).Value = "VALOR NOTA CREDITO";
+
+        hoja.Cell(1, 20).Value = "AÑO 2025";
+        hoja.Cell(2, 20).Value = "ABONOS";
+        hoja.Cell(2, 21).Value = "FECHA DE ABONO";
+
+        hoja.Cell(1, 22).Value =
+            "FECHA DE GLOSA Y/O DEVOLUCIÓN";
+
+        hoja.Cell(1, 23).Value =
+            "VALOR DE LA GLOSA Y/O DEVOLUCIÓN";
+
+        hoja.Cell(1, 24).Value = "VALOR CONCILIADO";
+        hoja.Cell(1, 25).Value = "FECHA CONCILIACIÓN";
+
         hoja.Cell(3, 1).Value = "FE4250";
         hoja.Cell(3, 2).Value = "FE";
         hoja.Cell(3, 3).Value = "4250";
@@ -172,7 +243,31 @@ Assert.Contains(
         hoja.Cell(3, 16).Value =
             "Facturador prueba";
 
-        libro.SaveAs(contenido);
+            hoja.Cell(3, 17).Value = "nc-5001";
+
+            hoja.Cell(3, 18).Value =
+                new DateTime(2024, 8, 15);
+
+            hoja.Cell(3, 19).Value = 100000m;
+
+            hoja.Cell(3, 20).Value = 200000m;
+
+            /*
+             * El abono no tiene fecha exacta,
+             * pero pertenece al año 2025.
+             */
+            hoja.Cell(3, 21).Value = string.Empty;
+
+            hoja.Cell(3, 22).Value =
+                new DateTime(2024, 9, 1);
+
+            hoja.Cell(3, 23).Value = 50000m;
+            hoja.Cell(3, 24).Value = 25000m;
+
+            hoja.Cell(3, 25).Value =
+                new DateTime(2024, 10, 1);
+
+            libro.SaveAs(contenido);
     }
 
     contenido.Position = 0;

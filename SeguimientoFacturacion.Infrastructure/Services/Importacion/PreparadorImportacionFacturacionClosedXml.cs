@@ -148,6 +148,12 @@ public sealed class PreparadorImportacionFacturacionClosedXml :
                     encabezados,
                     ultimaColumna);
 
+            var esquemaMovimientos =
+                ExtractorMovimientosFacturacionClosedXml
+                    .Detectar(
+                        hoja,
+                        ultimaColumna);
+
             var ultimaFila =
                 hoja.LastRowUsed()?.RowNumber()
                 ?? 0;
@@ -175,7 +181,8 @@ public sealed class PreparadorImportacionFacturacionClosedXml :
                         hoja,
                         fila,
                         columnas,
-                        indicesCatalogos));
+                        indicesCatalogos,
+                        esquemaMovimientos));
             }
         }
 
@@ -187,7 +194,9 @@ public sealed class PreparadorImportacionFacturacionClosedXml :
             IXLWorksheet hoja,
             int fila,
             ColumnasFactura columnas,
-            IndicesCatalogos catalogos)
+            IndicesCatalogos catalogos,
+            ExtractorMovimientosFacturacionClosedXml
+                .EsquemaMovimientos esquemaMovimientos)
     {
         var estadoTexto =
             ObtenerTextoRequerido(
@@ -339,8 +348,11 @@ public sealed class PreparadorImportacionFacturacionClosedXml :
                     "facturador"),
 
             Movimientos =
-                Array.Empty<
-                    MovimientoPreparadoImportacionDto>()
+                ExtractorMovimientosFacturacionClosedXml
+             .Extraer(
+                hoja,
+                fila,
+                esquemaMovimientos)
         };
     }
 
