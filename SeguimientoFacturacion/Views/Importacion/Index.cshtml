@@ -1,0 +1,319 @@
+﻿@using SeguimientoFacturacion.Application.DTOs.Importacion
+@model SeguimientoFacturacion.ViewModels.Importacion.AnalisisImportacionViewModel
+
+@{
+    ViewData["Title"] = "Análisis de importación";
+    var resultado = Model.Resultado;
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        <div class="mb-4">
+            <h1 class="h2 mb-2">
+                Análisis previo de facturación
+            </h1>
+
+            <p class="text-secondary mb-0">
+                Verifique la estructura del archivo antes de
+                iniciar cualquier importación.
+            </p>
+        </div>
+
+        <div class="alert alert-info" role="alert">
+            <strong>Modo seguro:</strong>
+            esta operación analiza el archivo en memoria.
+            No modifica el Excel ni guarda información en
+            SQL Server.
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h2 class="h5 mb-0">
+                    Seleccionar archivo
+                </h2>
+            </div>
+
+            <div class="card-body">
+                <form asp-controller="Importacion"
+                      asp-action="Analizar"
+                      method="post"
+                      enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert alert-danger"
+                         role="alert">
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Archivo"
+                               class="form-label">
+                        </label>
+
+                        <input asp-for="Archivo"
+                               type="file"
+                               class="form-control"
+                               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+
+                        <span asp-validation-for="Archivo"
+                              class="text-danger">
+                        </span>
+
+                        <div class="form-text">
+                            Únicamente archivos XLSX.
+                            Tamaño máximo:
+                            @Model.TamanoMaximoMegabytes MB.
+                        </div>
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Analizar archivo
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        @if (resultado is not null)
+        {
+            var claseResultado = resultado.EsValido
+                ? "alert-success"
+                : "alert-danger";
+
+            var textoResultado = resultado.EsValido
+                ? "El archivo superó el análisis estructural."
+                : "El archivo contiene errores que impiden continuar.";
+
+            <div class="alert @claseResultado"
+                 role="alert">
+                <strong>Resultado:</strong>
+                @textoResultado
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="text-secondary small">
+                                Filas analizadas
+                            </div>
+
+                            <div class="fs-3 fw-semibold">
+                                @resultado.TotalFilasAnalizadas.ToString("N0")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="text-secondary small">
+                                Facturas detectadas
+                            </div>
+
+                            <div class="fs-3 fw-semibold">
+                                @resultado.FacturasDetectadas.ToString("N0")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="text-secondary small">
+                                Movimientos
+                            </div>
+
+                            <div class="fs-3 fw-semibold">
+                                @resultado.MovimientosDetectados.ToString("N0")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="text-secondary small">
+                                Catálogos sin mapear
+                            </div>
+
+                            <div class="fs-3 fw-semibold">
+                                @resultado.CatalogosNoMapeados.ToString("N0")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h2 class="h5 mb-0">
+                        Información detectada
+                    </h2>
+                </div>
+
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">
+                            Archivo
+                        </dt>
+
+                        <dd class="col-sm-8">
+                            @resultado.NombreArchivo
+                        </dd>
+
+                        <dt class="col-sm-4">
+                            Hojas
+                        </dt>
+
+                        <dd class="col-sm-8">
+                            @if (resultado.HojasDetectadas.Count > 0)
+                            {
+                                @string.Join(
+                                    ", ",
+                                    resultado.HojasDetectadas)
+                            }
+                            else
+                            {
+                                <span>No detectadas</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">
+                            Años
+                        </dt>
+
+                        <dd class="col-sm-8">
+                            @if (resultado.AniosDetectados.Count > 0)
+                            {
+                                @string.Join(
+                                    ", ",
+                                    resultado.AniosDetectados)
+                            }
+                            else
+                            {
+                                <span>No detectados</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">
+                            Errores
+                        </dt>
+
+                        <dd class="col-sm-8">
+                            @resultado.TotalErrores
+                        </dd>
+
+                        <dt class="col-sm-4">
+                            Advertencias
+                        </dt>
+
+                        <dd class="col-sm-8">
+                            @resultado.TotalAdvertencias
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h2 class="h5 mb-0">
+                        Inconsistencias encontradas
+                    </h2>
+                </div>
+
+                <div class="card-body p-0">
+                    @if (resultado.Inconsistencias.Count == 0)
+                    {
+                        <div class="p-4 text-center text-success">
+                            No se encontraron inconsistencias
+                            estructurales.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">
+                                            Severidad
+                                        </th>
+                                        <th scope="col">
+                                            Código
+                                        </th>
+                                        <th scope="col">
+                                            Fila
+                                        </th>
+                                        <th scope="col">
+                                            Columna
+                                        </th>
+                                        <th scope="col">
+                                            Mensaje
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (var inconsistencia
+                                        in resultado.Inconsistencias
+                                            .OrderByDescending(
+                                                elemento =>
+                                                    elemento.Severidad)
+                                            .ThenBy(
+                                                elemento =>
+                                                    elemento.Fila))
+                                    {
+                                        var esError =
+                                            inconsistencia.Severidad ==
+                                            SeveridadInconsistenciaImportacion
+                                                .Error;
+
+                                        var claseSeveridad = esError
+                                            ? "text-bg-danger"
+                                            : "text-bg-warning";
+
+                                        var textoSeveridad = esError
+                                            ? "Error"
+                                            : "Advertencia";
+
+                                        <tr>
+                                            <td>
+                                                <span class="badge @claseSeveridad">
+                                                    @textoSeveridad
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                <code>
+                                                    @inconsistencia.Codigo
+                                                </code>
+                                            </td>
+
+                                            <td>
+                                                @(inconsistencia.Fila
+                                                    ?.ToString() ?? "—")
+                                            </td>
+
+                                            <td>
+                                                @(inconsistencia.Columna
+                                                    ?? "—")
+                                            </td>
+
+                                            <td>
+                                                @inconsistencia.Mensaje
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

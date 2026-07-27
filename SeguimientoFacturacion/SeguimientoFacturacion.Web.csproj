@@ -11,9 +11,7 @@
 		<Folder Include="Extensions\" />
 		<Folder Include="Middleware\" />
 		<Folder Include="Filters\" />
-		<Folder Include="Configurations\" />
 		<Folder Include="Services\" />
-		<Folder Include="ViewModels\" />
 		<Folder Include="wwwroot\images\" />
 		<Folder Include="wwwroot\icons\" />
 	</ItemGroup>

@@ -5,6 +5,7 @@ using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
 using SeguimientoFacturacion.Infrastructure.Configuration;
 using SeguimientoFacturacion.Infrastructure.Persistence;
+using SeguimientoFacturacion.Infrastructure.Repositories;
 using SeguimientoFacturacion.Infrastructure.Services.Importacion;
 
 namespace SeguimientoFacturacion.Infrastructure;
@@ -19,15 +20,6 @@ public static class DependencyInjection
     /// Registra persistencia, acceso a archivos y demás
     /// implementaciones de infraestructura.
     /// </summary>
-    /// <param name="services">
-    /// Colección de servicios de la aplicación.
-    /// </param>
-    /// <param name="configuration">
-    /// Configuración general de la aplicación.
-    /// </param>
-    /// <returns>
-    /// La misma colección de servicios configurada.
-    /// </returns>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -52,9 +44,10 @@ public static class DependencyInjection
                     connectionString,
                     sqlServerOptions =>
                     {
-                        sqlServerOptions.MigrationsHistoryTable(
-                            NombresObjetosBaseDatos
-                                .HistorialMigraciones);
+                        sqlServerOptions
+                            .MigrationsHistoryTable(
+                                NombresObjetosBaseDatos
+                                    .HistorialMigraciones);
 
                         sqlServerOptions.EnableRetryOnFailure(
                             maxRetryCount: 5,
@@ -67,6 +60,10 @@ public static class DependencyInjection
             serviceProvider =>
                 serviceProvider.GetRequiredService<
                     SeguimientoDbContext>());
+
+        services.AddScoped<
+            IConsultaFacturas,
+            ConsultaFacturasEfCore>();
 
         services.AddTransient<
             ILectorArchivoFacturacion,

@@ -11,9 +11,7 @@
     <Folder Include="Data\" />
     <Folder Include="Encryption\" />
     <Folder Include="Logging\" />
-    <Folder Include="Services\" />
     <Folder Include="Security\" />
-    <Folder Include="Repositories\" />
   </ItemGroup>
 
   <ItemGroup>
