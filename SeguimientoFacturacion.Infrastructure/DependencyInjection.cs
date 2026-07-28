@@ -74,6 +74,10 @@ public static class DependencyInjection
             ConsultaCatalogosImportacionEfCore>();
 
         services.AddTransient<
+            ICalculadorHashArchivo,
+            CalculadorHashArchivoSha256>();
+
+        services.AddTransient<
             LectorArchivoFacturacionClosedXml>();
 
         services.AddTransient<
