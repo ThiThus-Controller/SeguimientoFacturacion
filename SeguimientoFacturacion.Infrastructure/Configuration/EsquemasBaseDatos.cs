@@ -22,4 +22,10 @@ public static class EsquemasBaseDatos
     /// de las importaciones masivas.
     /// </summary>
     public const string Importacion = "importacion";
+
+    /// <summary>
+    /// Esquema reservado para pagos, aplicaciones
+    /// y operaciones de cartera.
+    /// </summary>
+    public const string Cartera = "cartera";
 }
