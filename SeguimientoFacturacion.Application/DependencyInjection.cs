@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Services;
 using SeguimientoFacturacion.Application.Services;
@@ -32,6 +33,9 @@ public static class DependencyInjection
             typeof(DependencyInjection).Assembly,
             ServiceLifetime.Transient);
 
+        services.TryAddSingleton<TimeProvider>(
+            TimeProvider.System);
+
         services.AddTransient<
             IServicioConsultaFacturas,
             ServicioConsultaFacturas>();
@@ -39,6 +43,10 @@ public static class DependencyInjection
         services.AddTransient<
             IServicioAnalisisImportacion,
             ServicioAnalisisImportacion>();
+
+        services.AddTransient<
+            IServicioRegistroLoteImportacion,
+            ServicioRegistroLoteImportacion>();
 
         return services;
     }
