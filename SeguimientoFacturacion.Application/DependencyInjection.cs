@@ -17,13 +17,6 @@ public static class DependencyInjection
     /// Registra los servicios, validadores y casos de uso
     /// pertenecientes a la capa Application.
     /// </summary>
-    /// <param name="services">
-    /// Colección de servicios de la aplicación.
-    /// </param>
-    /// <returns>
-    /// La misma colección de servicios para permitir
-    /// llamadas encadenadas.
-    /// </returns>
     public static IServiceCollection AddApplication(
         this IServiceCollection services)
     {
@@ -47,6 +40,10 @@ public static class DependencyInjection
         services.AddTransient<
             IServicioRegistroLoteImportacion,
             ServicioRegistroLoteImportacion>();
+
+        services.AddTransient<
+            IServicioRegistroAnalisisLote,
+            ServicioRegistroAnalisisLote>();
 
         return services;
     }
