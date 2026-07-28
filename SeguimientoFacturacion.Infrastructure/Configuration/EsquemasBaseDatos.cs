@@ -16,4 +16,10 @@ public static class EsquemasBaseDatos
     /// e inmutables de auditoría.
     /// </summary>
     public const string Auditoria = "auditoria";
+
+    /// <summary>
+    /// Esquema reservado para el análisis y control
+    /// de las importaciones masivas.
+    /// </summary>
+    public const string Importacion = "importacion";
 }
