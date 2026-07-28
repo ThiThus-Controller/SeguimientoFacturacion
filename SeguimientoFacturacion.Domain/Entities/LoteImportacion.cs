@@ -92,6 +92,13 @@ public sealed class LoteImportacion :
     public int TotalFilasConError { get; private set; }
 
     /// <summary>
+    /// Obtiene la cantidad total de errores bloqueantes.
+    /// Puede ser mayor que las filas con error porque una fila
+    /// puede presentar varias inconsistencias.
+    /// </summary>
+    public int TotalErrores { get; private set; }
+
+    /// <summary>
     /// Obtiene el total de advertencias.
     /// </summary>
     public int TotalAdvertencias { get; private set; }
@@ -148,17 +155,39 @@ public sealed class LoteImportacion :
     /// </summary>
     public bool PuedeConfirmarse =>
         Estado == EstadoImportacion.Analizada &&
-        TotalFilasConError == 0;
+        TotalFilasConError == 0 &&
+        TotalErrores == 0;
 
     /// <summary>
     /// Registra el resultado del análisis.
     /// </summary>
+    /// <param name="totalFilas">
+    /// Cantidad total de filas analizadas.
+    /// </param>
+    /// <param name="totalFilasValidas">
+    /// Cantidad de filas sin errores bloqueantes.
+    /// </param>
+    /// <param name="totalFilasConError">
+    /// Cantidad de filas que presentan al menos un error.
+    /// </param>
+    /// <param name="totalAdvertencias">
+    /// Cantidad de advertencias encontradas.
+    /// </param>
+    /// <param name="fechaAnalisis">
+    /// Fecha en la que finalizó el análisis.
+    /// </param>
+    /// <param name="totalErrores">
+    /// Cantidad total de errores bloqueantes. Cuando se omite,
+    /// se utiliza el total de filas con error para conservar
+    /// compatibilidad con el proceso anterior.
+    /// </param>
     public void RegistrarAnalisis(
         int totalFilas,
         int totalFilasValidas,
         int totalFilasConError,
         int totalAdvertencias,
-        DateTimeOffset fechaAnalisis)
+        DateTimeOffset fechaAnalisis,
+        int? totalErrores = null)
     {
         if (Estado != EstadoImportacion.Pendiente)
         {
@@ -167,15 +196,20 @@ public sealed class LoteImportacion :
                 "un análisis.");
         }
 
+        var totalErroresValidado =
+            totalErrores ?? totalFilasConError;
+
         ValidarTotales(
             totalFilas,
             totalFilasValidas,
             totalFilasConError,
+            totalErroresValidado,
             totalAdvertencias);
 
         TotalFilas = totalFilas;
         TotalFilasValidas = totalFilasValidas;
         TotalFilasConError = totalFilasConError;
+        TotalErrores = totalErroresValidado;
         TotalAdvertencias = totalAdvertencias;
 
         FechaAnalisisUtc = ValidarFecha(
@@ -196,7 +230,7 @@ public sealed class LoteImportacion :
         {
             throw new InvalidOperationException(
                 "El lote no puede confirmarse porque no está " +
-                "analizado o contiene filas con errores.");
+                "analizado o contiene errores.");
         }
 
         var fechaConfirmacionUtc = ValidarFecha(
@@ -408,11 +442,13 @@ public sealed class LoteImportacion :
         int totalFilas,
         int totalFilasValidas,
         int totalFilasConError,
+        int totalErrores,
         int totalAdvertencias)
     {
         if (totalFilas < 0 ||
             totalFilasValidas < 0 ||
             totalFilasConError < 0 ||
+            totalErrores < 0 ||
             totalAdvertencias < 0)
         {
             throw new ArgumentOutOfRangeException(
@@ -426,6 +462,13 @@ public sealed class LoteImportacion :
             throw new ArgumentException(
                 "La suma de filas válidas y filas con errores " +
                 "debe coincidir con el total de filas.");
+        }
+
+        if (totalErrores < totalFilasConError)
+        {
+            throw new ArgumentException(
+                "El total de errores no puede ser inferior " +
+                "a la cantidad de filas con error.");
         }
     }
 

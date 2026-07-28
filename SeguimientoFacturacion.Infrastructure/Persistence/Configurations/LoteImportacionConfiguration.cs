@@ -28,9 +28,11 @@ internal sealed class LoteImportacionConfiguration :
                     "[TotalFilas] >= 0 AND " +
                     "[TotalFilasValidas] >= 0 AND " +
                     "[TotalFilasConError] >= 0 AND " +
+                    "[TotalErrores] >= 0 AND " +
                     "[TotalAdvertencias] >= 0 AND " +
                     "[TotalFilasValidas] + " +
-                    "[TotalFilasConError] = [TotalFilas]");
+                    "[TotalFilasConError] = [TotalFilas] AND " +
+                    "[TotalErrores] >= [TotalFilasConError]");
             });
 
         builder.HasKey(lote => lote.Id);
@@ -67,6 +69,9 @@ internal sealed class LoteImportacionConfiguration :
             .IsRequired();
 
         builder.Property(lote => lote.TotalFilasConError)
+            .IsRequired();
+
+        builder.Property(lote => lote.TotalErrores)
             .IsRequired();
 
         builder.Property(lote => lote.TotalAdvertencias)
