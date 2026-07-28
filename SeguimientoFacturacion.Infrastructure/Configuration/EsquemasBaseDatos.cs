@@ -10,4 +10,10 @@ public static class EsquemasBaseDatos
     /// del sistema de seguimiento de facturación.
     /// </summary>
     public const string Facturacion = "facturacion";
+
+    /// <summary>
+    /// Esquema reservado para los registros históricos
+    /// e inmutables de auditoría.
+    /// </summary>
+    public const string Auditoria = "auditoria";
 }
