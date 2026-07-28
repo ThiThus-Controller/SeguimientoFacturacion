@@ -22,23 +22,110 @@ public sealed class SeguimientoDbContext :
     {
     }
 
-    public DbSet<Factura> Facturas => Set<Factura>();
+    /// <summary>
+    /// Obtiene el conjunto de facturas.
+    /// </summary>
+    public DbSet<Factura> Facturas =>
+        Set<Factura>();
 
-    public DbSet<Movimiento> Movimientos => Set<Movimiento>();
+    /// <summary>
+    /// Obtiene el conjunto normalizado de pacientes.
+    /// </summary>
+    public DbSet<Paciente> Pacientes =>
+        Set<Paciente>();
 
-    public DbSet<Aseguradora> Aseguradoras => Set<Aseguradora>();
+    /// <summary>
+    /// Obtiene las notas crédito y débito.
+    /// </summary>
+    public DbSet<NotaFactura> NotasFactura =>
+        Set<NotaFactura>();
 
-    public DbSet<Atencion> Atenciones => Set<Atencion>();
+    /// <summary>
+    /// Obtiene las glosas asociadas a facturas.
+    /// </summary>
+    public DbSet<Glosa> Glosas =>
+        Set<Glosa>();
 
-    public DbSet<Costo> Costos => Set<Costo>();
+    /// <summary>
+    /// Obtiene los pagos recibidos.
+    /// </summary>
+    public DbSet<Pago> Pagos =>
+        Set<Pago>();
 
-    public DbSet<Estado> Estados => Set<Estado>();
+    /// <summary>
+    /// Obtiene las aplicaciones de pagos a facturas.
+    /// </summary>
+    public DbSet<AplicacionPago> AplicacionesPago =>
+        Set<AplicacionPago>();
 
-    public DbSet<Facturador> Facturadores => Set<Facturador>();
+    /// <summary>
+    /// Obtiene los lotes de importación masiva.
+    /// </summary>
+    public DbSet<LoteImportacion> LotesImportacion =>
+        Set<LoteImportacion>();
 
+    /// <summary>
+    /// Obtiene las inconsistencias detectadas
+    /// durante las importaciones.
+    /// </summary>
+    public DbSet<InconsistenciaImportacion>
+        InconsistenciasImportacion =>
+            Set<InconsistenciaImportacion>();
+
+    /// <summary>
+    /// Obtiene los registros históricos de auditoría.
+    /// </summary>
+    public DbSet<RegistroAuditoria> RegistrosAuditoria =>
+        Set<RegistroAuditoria>();
+
+    /// <summary>
+    /// Obtiene los movimientos del modelo anterior.
+    /// Esta colección será retirada al finalizar
+    /// la transición al modelo modular.
+    /// </summary>
+    public DbSet<Movimiento> Movimientos =>
+        Set<Movimiento>();
+
+    /// <summary>
+    /// Obtiene el catálogo de aseguradoras.
+    /// </summary>
+    public DbSet<Aseguradora> Aseguradoras =>
+        Set<Aseguradora>();
+
+    /// <summary>
+    /// Obtiene el catálogo de atenciones.
+    /// </summary>
+    public DbSet<Atencion> Atenciones =>
+        Set<Atencion>();
+
+    /// <summary>
+    /// Obtiene el catálogo de costos.
+    /// </summary>
+    public DbSet<Costo> Costos =>
+        Set<Costo>();
+
+    /// <summary>
+    /// Obtiene el catálogo de estados.
+    /// </summary>
+    public DbSet<Estado> Estados =>
+        Set<Estado>();
+
+    /// <summary>
+    /// Obtiene el catálogo de facturadores.
+    /// </summary>
+    public DbSet<Facturador> Facturadores =>
+        Set<Facturador>();
+
+    /// <summary>
+    /// Obtiene el catálogo de tipos de documento.
+    /// </summary>
     public DbSet<TipoDocumento> TiposDocumento =>
         Set<TipoDocumento>();
 
+    /// <summary>
+    /// Obtiene el catálogo de movimientos anterior.
+    /// Será retirado junto con la entidad Movimiento.
+    /// </summary>
     public DbSet<TipoMovimiento> TiposMovimiento =>
         Set<TipoMovimiento>();
 
