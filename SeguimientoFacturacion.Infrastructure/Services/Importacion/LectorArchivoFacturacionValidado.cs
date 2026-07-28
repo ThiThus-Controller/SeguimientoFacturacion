@@ -97,6 +97,12 @@ public sealed class LectorArchivoFacturacionValidado :
                 catalogos,
                 cancellationToken);
 
+        var inconsistenciasMovimientos =
+        ValidadorMovimientosArchivoFacturacionClosedXml
+        .Validar(
+            libro,
+            cancellationToken);
+
         return resultadoEstructural with
         {
             CatalogosNoMapeados =
@@ -105,10 +111,12 @@ public sealed class LectorArchivoFacturacionValidado :
 
             Inconsistencias =
                 resultadoEstructural.Inconsistencias
-                    .Concat(
-                        resultadoDetallado
-                            .Inconsistencias)
-                    .ToArray()
+               .Concat(
+                    resultadoDetallado
+                .Inconsistencias)
+                .Concat(
+                    inconsistenciasMovimientos)
+                .ToArray()
         };
     }
 
