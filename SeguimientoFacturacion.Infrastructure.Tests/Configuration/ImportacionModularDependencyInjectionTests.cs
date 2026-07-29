@@ -2,7 +2,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using SeguimientoFacturacion.Application;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
+using SeguimientoFacturacion.Application.Interfaces.Persistence;
 using SeguimientoFacturacion.Infrastructure.Configuration;
+using SeguimientoFacturacion.Infrastructure.Repositories;
 using SeguimientoFacturacion.Infrastructure.Services.Importacion;
 
 namespace SeguimientoFacturacion.Infrastructure.Tests
@@ -37,6 +39,44 @@ public sealed class
 
         Assert.IsType<
             PreparadorFacturasModularClosedXml>(
+                preparador);
+    }
+
+    [Fact]
+    public void
+        Registrar_DebeResolverFlujoModularDeNotas()
+    {
+        using var proveedor =
+            CrearProveedor();
+
+        using var alcance =
+            proveedor.CreateScope();
+
+        var consultaFacturas =
+            alcance.ServiceProvider
+                .GetRequiredService<
+                    IConsultaReferenciasFacturasImportacion>();
+
+        var validador =
+            alcance.ServiceProvider
+                .GetRequiredService<
+                    IValidadorNotasFacturaModular>();
+
+        var preparador =
+            alcance.ServiceProvider
+                .GetRequiredService<
+                    IPreparadorNotasFacturaModular>();
+
+        Assert.IsType<
+            ConsultaReferenciasFacturasImportacionEfCore>(
+                consultaFacturas);
+
+        Assert.IsType<
+            ValidadorNotasFacturaModularClosedXml>(
+                validador);
+
+        Assert.IsType<
+            PreparadorNotasFacturaModularClosedXml>(
                 preparador);
     }
 

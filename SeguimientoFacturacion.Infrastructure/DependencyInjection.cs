@@ -81,6 +81,10 @@ public static class DependencyInjection
             IConsultaCatalogosImportacion,
             ConsultaCatalogosImportacionEfCore>();
 
+        services.AddScoped<
+            IConsultaReferenciasFacturasImportacion,
+            ConsultaReferenciasFacturasImportacionEfCore>();
+
         services.AddTransient<
             ICalculadorHashArchivo,
             CalculadorHashArchivoSha256>();
@@ -106,8 +110,21 @@ public static class DependencyInjection
             PreparadorFacturasModularClosedXml>();
 
         /*
+         * Flujo modular de notas crédito y débito.
+         * En esta etapa queda disponible para validación
+         * y preparación en memoria.
+         */
+        services.AddTransient<
+            IValidadorNotasFacturaModular,
+            ValidadorNotasFacturaModularClosedXml>();
+
+        services.AddTransient<
+            IPreparadorNotasFacturaModular,
+            PreparadorNotasFacturaModularClosedXml>();
+
+        /*
          * El análisis y el staging utilizarán desde este
-         * punto las implementaciones modulares.
+         * punto las implementaciones modulares de facturas.
          */
         services.AddTransient<
             ILectorArchivoFacturacion>(

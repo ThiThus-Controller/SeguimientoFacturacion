@@ -141,10 +141,10 @@ public sealed class
         Assert.Equal(1, resultado.CatalogosNoMapeados);
 
         Assert.Single(
-            resultado.Inconsistencias.Where(
-                inconsistencia =>
-                    inconsistencia.Codigo ==
-                    "CATALOGO_ASEGURADORA_NO_MAPEADO"));
+            resultado.Inconsistencias,
+            inconsistencia =>
+                inconsistencia.Codigo ==
+                "CATALOGO_ASEGURADORA_NO_MAPEADO");
     }
 
     [Fact]
