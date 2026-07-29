@@ -37,6 +37,28 @@ public sealed class
             SolicitudAnalisisImportacionDto solicitud,
             CancellationToken cancellationToken = default)
     {
+        var lectura =
+            await InspeccionarYAnalizarAsync(
+                solicitud,
+                cancellationToken);
+
+        return lectura.Analisis;
+    }
+
+    /// <summary>
+    /// Inspecciona la plantilla y conserva tanto la inspección
+    /// como el resultado del análisis estructural.
+    /// </summary>
+    /// <remarks>
+    /// Este método permite que el lector integrado reutilice
+    /// la inspección sin abrir y analizar dos veces la estructura.
+    /// </remarks>
+    internal async Task<
+        ResultadoLecturaEstructuralFacturasModular>
+        InspeccionarYAnalizarAsync(
+            SolicitudAnalisisImportacionDto solicitud,
+            CancellationToken cancellationToken = default)
+    {
         ArgumentNullException.ThrowIfNull(solicitud);
         ArgumentNullException.ThrowIfNull(
             solicitud.Contenido);
@@ -58,9 +80,12 @@ public sealed class
 
         if (!inspeccion.EsValida)
         {
-            return CrearResultadoInvalido(
-                solicitud.NombreArchivo,
-                inspeccion);
+            return new
+                ResultadoLecturaEstructuralFacturasModular(
+                    inspeccion,
+                    CrearResultadoInvalido(
+                        solicitud.NombreArchivo,
+                        inspeccion));
         }
 
         contenidoLocal.Position = 0;
@@ -108,37 +133,42 @@ public sealed class
                 });
         }
 
-        return new ResultadoAnalisisImportacionDto
-        {
-            NombreArchivo =
-                solicitud.NombreArchivo.Trim(),
+        var analisis =
+            new ResultadoAnalisisImportacionDto
+            {
+                NombreArchivo =
+                    solicitud.NombreArchivo.Trim(),
 
-            HojasDetectadas =
-                inspeccion.HojasDetectadas,
+                HojasDetectadas =
+                    inspeccion.HojasDetectadas,
 
-            AniosDetectados =
-                resultadoFilas.AniosDetectados,
+                AniosDetectados =
+                    resultadoFilas.AniosDetectados,
 
-            TotalFilasAnalizadas =
-                resultadoFilas.TotalFilas,
+                TotalFilasAnalizadas =
+                    resultadoFilas.TotalFilas,
 
-            FacturasDetectadas =
-                resultadoFilas.FacturasDetectadas,
+                FacturasDetectadas =
+                    resultadoFilas.FacturasDetectadas,
 
-            MovimientosDetectados = 0,
-            CatalogosNoMapeados = 0,
+                MovimientosDetectados = 0,
+                CatalogosNoMapeados = 0,
 
-            Inconsistencias =
-                inconsistencias.ToArray()
-        };
+                Inconsistencias =
+                    inconsistencias.ToArray()
+            };
+
+        return new
+            ResultadoLecturaEstructuralFacturasModular(
+                inspeccion,
+                analisis);
     }
 
-    private static ResultadoFilas
-        AnalizarFilas(
-            IXLWorksheet hoja,
-            IReadOnlyDictionary<string, int> columnas,
-            int ultimaFila,
-            CancellationToken cancellationToken)
+    private static ResultadoFilas AnalizarFilas(
+        IXLWorksheet hoja,
+        IReadOnlyDictionary<string, int> columnas,
+        int ultimaFila,
+        CancellationToken cancellationToken)
     {
         var totalFilas = 0;
         var facturasDetectadas = 0;
@@ -350,7 +380,8 @@ public sealed class
     {
         return new ResultadoAnalisisImportacionDto
         {
-            NombreArchivo = nombreArchivo.Trim(),
+            NombreArchivo =
+                nombreArchivo.Trim(),
 
             HojasDetectadas =
                 inspeccion.HojasDetectadas,
@@ -373,3 +404,12 @@ public sealed class
         int FacturasDetectadas,
         IReadOnlyCollection<int> AniosDetectados);
 }
+
+/// <summary>
+/// Conserva el resultado de la inspección y del análisis
+/// estructural realizado sobre el mismo archivo.
+/// </summary>
+internal sealed record
+    ResultadoLecturaEstructuralFacturasModular(
+        ResultadoInspeccionPlantillaDto Inspeccion,
+        ResultadoAnalisisImportacionDto Analisis);

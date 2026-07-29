@@ -89,6 +89,29 @@ public static class DependencyInjection
             IInspectorEstructuraPlantilla,
             InspectorEstructuraPlantillaClosedXml>();
 
+        /*
+         * Flujo modular de facturas.
+         *
+         * Se registra para pruebas e integración progresiva,
+         * pero todavía no sustituye al lector heredado
+         * asociado a ILectorArchivoFacturacion.
+         */
+        services.AddTransient<
+            LectorEstructuralFacturasModularClosedXml>();
+
+        services.AddTransient<
+            IValidadorFilasFacturasModular,
+            ValidadorFilasFacturasModularClosedXml>();
+
+        services.AddTransient<
+            LectorFacturasModularValidadoClosedXml>();
+
+        /*
+         * Flujo heredado temporalmente activo.
+         *
+         * Será sustituido después de construir el preparador
+         * modular y completar las pruebas de transición.
+         */
         services.AddTransient<
             LectorArchivoFacturacionClosedXml>();
 
