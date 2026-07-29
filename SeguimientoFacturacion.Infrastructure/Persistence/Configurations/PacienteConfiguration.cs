@@ -62,15 +62,14 @@ internal sealed class PacienteConfiguration :
             .HasForeignKey(paciente => paciente.TipoDocumentoId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(
+        builder.HasAlternateKey(
                 paciente => new
                 {
                     paciente.TipoDocumentoId,
                     paciente.NumeroDocumento
                 })
-            .IsUnique()
-            .HasDatabaseName(
-                "UX_Pacientes_TipoDocumento_NumeroDocumento");
+            .HasName(
+                "AK_Pacientes_TipoDocumento_NumeroDocumento");
 
         builder.HasIndex(paciente => paciente.NombreCompleto)
             .HasDatabaseName(

@@ -61,7 +61,7 @@ public sealed class PacienteConfigurationTests
     }
 
     [Fact]
-    public void Paciente_DebeTenerIdentificacionNaturalUnica()
+    public void Paciente_DebeTenerIdentificacionNaturalComoClaveAlterna()
     {
         using var contexto = CrearContexto();
 
@@ -76,19 +76,18 @@ public sealed class PacienteConfigurationTests
             nameof(Paciente.NumeroDocumento)
         };
 
-        var indice =
-            entidad.GetIndexes()
-                .Single(indice =>
-                    indice.Properties
+        var claveNatural =
+            entidad.GetKeys()
+                .Single(clave =>
+                    !clave.IsPrimaryKey() &&
+                    clave.Properties
                         .Select(propiedad => propiedad.Name)
                         .SequenceEqual(
                             nombresPropiedadesEsperadas));
 
-        Assert.True(indice.IsUnique);
-
         Assert.Equal(
-            "UX_Pacientes_TipoDocumento_NumeroDocumento",
-            indice.GetDatabaseName());
+            "AK_Pacientes_TipoDocumento_NumeroDocumento",
+            claveNatural.GetName());
     }
 
     [Fact]

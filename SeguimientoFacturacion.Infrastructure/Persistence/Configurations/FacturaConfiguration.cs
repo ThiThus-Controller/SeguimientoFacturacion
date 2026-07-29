@@ -85,7 +85,8 @@ internal sealed class FacturaConfiguration :
         builder.Ignore(factura => factura.DiasHastaRadicacion);
         builder.Ignore(factura => factura.TotalNotasCredito);
         builder.Ignore(factura => factura.TotalAbonos);
-        builder.Ignore(factura => factura.TotalGlosasODevoluciones);
+        builder.Ignore(
+            factura => factura.TotalGlosasODevoluciones);
         builder.Ignore(factura => factura.TotalConciliaciones);
         builder.Ignore(factura => factura.Saldo);
 
@@ -98,6 +99,24 @@ internal sealed class FacturaConfiguration :
             .WithMany()
             .HasForeignKey(factura => factura.TipoDocumentoId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<Paciente>()
+            .WithMany()
+            .HasForeignKey(
+                factura => new
+                {
+                    factura.TipoDocumentoId,
+                    factura.NumeroDocumento
+                })
+            .HasPrincipalKey(
+                paciente => new
+                {
+                    paciente.TipoDocumentoId,
+                    paciente.NumeroDocumento
+                })
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName(
+                "FK_Facturas_Pacientes_Identificacion");
 
         builder.HasOne(factura => factura.Atencion)
             .WithMany()

@@ -19,6 +19,15 @@ public sealed class SeguimientoDbContextModelTests
         Type[] tiposEsperados =
         [
             typeof(Factura),
+            typeof(Paciente),
+            typeof(NotaFactura),
+            typeof(Glosa),
+            typeof(Pago),
+            typeof(AplicacionPago),
+            typeof(LoteImportacion),
+            typeof(InconsistenciaImportacion),
+            typeof(FacturaImportacionTemporal),
+            typeof(RegistroAuditoria),
             typeof(Movimiento),
             typeof(Aseguradora),
             typeof(Atencion),
@@ -61,6 +70,55 @@ public sealed class SeguimientoDbContextModelTests
 
         Assert.Null(
             entidad.FindProperty(nameof(Factura.Saldo)));
+    }
+
+    [Fact]
+    public void Factura_DebeRelacionarseConPacientePorIdentificacion()
+    {
+        using var contexto = CrearContexto();
+
+        var entidadFactura =
+            contexto.Model.FindEntityType(typeof(Factura));
+
+        Assert.NotNull(entidadFactura);
+
+        var relacionPaciente =
+            entidadFactura.GetForeignKeys()
+                .Single(foreignKey =>
+                    foreignKey.PrincipalEntityType.ClrType ==
+                    typeof(Paciente));
+
+        var propiedadesFactura =
+            relacionPaciente.Properties
+                .Select(propiedad => propiedad.Name)
+                .ToArray();
+
+        var propiedadesPaciente =
+            relacionPaciente.PrincipalKey.Properties
+                .Select(propiedad => propiedad.Name)
+                .ToArray();
+
+        string[] propiedadesEsperadas =
+        [
+            nameof(Factura.TipoDocumentoId),
+            nameof(Factura.NumeroDocumento)
+        ];
+
+        Assert.Equal(
+            propiedadesEsperadas,
+            propiedadesFactura);
+
+        Assert.Equal(
+            new[]
+            {
+                nameof(Paciente.TipoDocumentoId),
+                nameof(Paciente.NumeroDocumento)
+            },
+            propiedadesPaciente);
+
+        Assert.Equal(
+            DeleteBehavior.Restrict,
+            relacionPaciente.DeleteBehavior);
     }
 
     [Fact]
