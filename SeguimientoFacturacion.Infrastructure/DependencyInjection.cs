@@ -86,6 +86,10 @@ public static class DependencyInjection
             CalculadorHashArchivoSha256>();
 
         services.AddTransient<
+            IInspectorEstructuraPlantilla,
+            InspectorEstructuraPlantillaClosedXml>();
+
+        services.AddTransient<
             LectorArchivoFacturacionClosedXml>();
 
         services.AddTransient<
