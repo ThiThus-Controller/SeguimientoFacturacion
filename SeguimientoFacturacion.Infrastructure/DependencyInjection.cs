@@ -90,11 +90,7 @@ public static class DependencyInjection
             InspectorEstructuraPlantillaClosedXml>();
 
         /*
-         * Flujo modular de facturas.
-         *
-         * Se registra para pruebas e integración progresiva,
-         * pero todavía no sustituye al lector heredado
-         * asociado a ILectorArchivoFacturacion.
+         * Flujo modular activo para facturas.
          */
         services.AddTransient<
             LectorEstructuralFacturasModularClosedXml>();
@@ -110,21 +106,48 @@ public static class DependencyInjection
             PreparadorFacturasModularClosedXml>();
 
         /*
-         * Flujo heredado temporalmente activo.
-         *
-         * Será sustituido después de construir el preparador
-         * modular y completar las pruebas de transición.
+         * El análisis y el staging utilizarán desde este
+         * punto las implementaciones modulares.
+         */
+        services.AddTransient<
+            ILectorArchivoFacturacion>(
+                serviceProvider =>
+                    serviceProvider.GetRequiredService<
+                        LectorFacturasModularValidadoClosedXml>());
+
+        services.AddTransient<
+            IPreparadorImportacionFacturacion>(
+                serviceProvider =>
+                    serviceProvider.GetRequiredService<
+                        PreparadorFacturasModularClosedXml>());
+
+        /*
+         * Componentes heredados conservados temporalmente
+         * como tipos concretos para diagnóstico y comparación.
+         * Ya no son las implementaciones activas.
          */
         services.AddTransient<
             LectorArchivoFacturacionClosedXml>();
 
         services.AddTransient<
-            ILectorArchivoFacturacion,
-            LectorArchivoFacturacionValidado>();
+            LectorArchivoFacturacionValidado>(
+                serviceProvider =>
+                    new LectorArchivoFacturacionValidado(
+                        serviceProvider.GetRequiredService<
+                            LectorArchivoFacturacionClosedXml>(),
+
+                        serviceProvider.GetRequiredService<
+                            IConsultaCatalogosImportacion>()));
 
         services.AddTransient<
-            IPreparadorImportacionFacturacion,
-            PreparadorImportacionFacturacionClosedXml>();
+            PreparadorImportacionFacturacionClosedXml>(
+                serviceProvider =>
+                    new PreparadorImportacionFacturacionClosedXml(
+                        serviceProvider.GetRequiredService<
+                            LectorArchivoFacturacionValidado>(),
+
+                        serviceProvider.GetRequiredService<
+                            IConsultaCatalogosImportacion>()));
 
         return services;
     }
