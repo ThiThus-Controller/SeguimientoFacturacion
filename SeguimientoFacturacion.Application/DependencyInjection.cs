@@ -46,6 +46,10 @@ public static class DependencyInjection
             ServicioRegistroAnalisisLote>();
 
         services.AddTransient<
+            IServicioAnalisisStagingFacturas,
+            ServicioAnalisisStagingFacturas>();
+
+        services.AddTransient<
             IServicioConfirmacionLoteImportacion,
             ServicioConfirmacionLoteImportacion>();
 
