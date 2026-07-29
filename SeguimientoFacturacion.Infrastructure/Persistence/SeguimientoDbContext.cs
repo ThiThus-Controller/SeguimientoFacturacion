@@ -38,6 +38,14 @@ public sealed class SeguimientoDbContext :
             Set<FacturaImportacionTemporal>();
 
     /// <summary>
+    /// Obtiene las notas crédito y débito almacenadas
+    /// temporalmente durante una importación.
+    /// </summary>
+    public DbSet<NotaFacturaImportacionTemporal>
+        NotasFacturaTemporalesImportacion =>
+            Set<NotaFacturaImportacionTemporal>();
+
+    /// <summary>
     /// Obtiene el conjunto normalizado de pacientes.
     /// </summary>
     public DbSet<Paciente> Pacientes =>
