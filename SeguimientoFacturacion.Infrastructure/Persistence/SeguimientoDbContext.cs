@@ -29,6 +29,14 @@ public sealed class SeguimientoDbContext :
         Set<Factura>();
 
     /// <summary>
+    /// Obtiene las filas temporales de facturación
+    /// preparadas durante el análisis.
+    /// </summary>
+    public DbSet<FacturaImportacionTemporal>
+        FacturasTemporalesImportacion =>
+            Set<FacturaImportacionTemporal>();
+
+    /// <summary>
     /// Obtiene el conjunto normalizado de pacientes.
     /// </summary>
     public DbSet<Paciente> Pacientes =>
