@@ -74,6 +74,10 @@ public static class DependencyInjection
             RepositorioFacturasTemporalesImportacionEfCore>();
 
         services.AddScoped<
+            IRepositorioNotasFacturaTemporalesImportacion,
+            RepositorioNotasFacturaTemporalesImportacionEfCore>();
+
+        services.AddScoped<
             IRepositorioPersistenciaFacturasImportacion,
             RepositorioPersistenciaFacturasImportacionEfCore>();
 
@@ -111,8 +115,6 @@ public static class DependencyInjection
 
         /*
          * Flujo modular de notas crédito y débito.
-         * En esta etapa queda disponible para validación
-         * y preparación en memoria.
          */
         services.AddTransient<
             IValidadorNotasFacturaModular,
@@ -123,8 +125,8 @@ public static class DependencyInjection
             PreparadorNotasFacturaModularClosedXml>();
 
         /*
-         * El análisis y el staging utilizarán desde este
-         * punto las implementaciones modulares de facturas.
+         * El análisis y el staging utilizarán las
+         * implementaciones modulares de facturas.
          */
         services.AddTransient<
             ILectorArchivoFacturacion>(
@@ -140,8 +142,7 @@ public static class DependencyInjection
 
         /*
          * Componentes heredados conservados temporalmente
-         * como tipos concretos para diagnóstico y comparación.
-         * Ya no son las implementaciones activas.
+         * como tipos concretos para diagnóstico.
          */
         services.AddTransient<
             LectorArchivoFacturacionClosedXml>();
