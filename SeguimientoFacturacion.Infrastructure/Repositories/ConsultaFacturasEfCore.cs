@@ -2,6 +2,7 @@
 using SeguimientoFacturacion.Application.Common.Models;
 using SeguimientoFacturacion.Application.DTOs.Facturas;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Enums;
 using SeguimientoFacturacion.Infrastructure.Persistence;
 
@@ -36,208 +37,221 @@ public sealed class ConsultaFacturasEfCore :
     {
         ArgumentNullException.ThrowIfNull(filtro);
 
-        var consulta = _contexto.Facturas
-            .AsNoTracking()
-            .AsQueryable();
+        var consultaFacturas =
+            _contexto.Facturas
+                .AsNoTracking()
+                .AsQueryable();
 
-        consulta = AplicarFiltros(
-            consulta,
+        consultaFacturas = AplicarFiltros(
+            consultaFacturas,
             filtro);
 
+        var consultaFinanciera =
+            ConstruirConsultaFinanciera(
+                consultaFacturas);
+
+        if (filtro.SoloConSaldo)
+        {
+            consultaFinanciera =
+                consultaFinanciera.Where(
+                    registro =>
+                        registro.Factura.Valor
+                        +
+                        registro.TotalNotasDebito
+                        -
+                        registro.TotalNotasCredito
+                        -
+                        registro.TotalPagosAplicados
+                        >
+                        decimal.Zero);
+        }
+
         var totalRegistros =
-            await consulta.CountAsync(
+            await consultaFinanciera.CountAsync(
                 cancellationToken);
 
         var registrosAOmitir =
             (filtro.Pagina - 1) *
             filtro.TamanoPagina;
 
-        var elementos = await consulta
-            .OrderByDescending(
-                factura => factura.FechaFactura)
-            .ThenBy(
-                factura => factura.Id)
-            .Skip(registrosAOmitir)
-            .Take(filtro.TamanoPagina)
-            .Select(
-                factura =>
-                    new FacturaResumenDto
-                    {
-                        Id = factura.Id,
-                        Prefijo = factura.Prefijo,
-                        Numero = factura.Numero,
-                        FechaFactura =
-                            factura.FechaFactura,
+        var elementos =
+            await consultaFinanciera
+                .OrderByDescending(
+                    registro =>
+                        registro.Factura.FechaFactura)
+                .ThenBy(
+                    registro =>
+                        registro.Factura.Id)
+                .Skip(registrosAOmitir)
+                .Take(filtro.TamanoPagina)
+                .Select(
+                    registro =>
+                        new FacturaResumenDto
+                        {
+                            Id =
+                                registro.Factura.Id,
 
-                        AseguradoraId =
-                            factura.AseguradoraId,
+                            Prefijo =
+                                registro.Factura.Prefijo,
 
-                        Aseguradora =
-                            factura.Aseguradora == null
-                                ? string.Empty
-                                : factura.Aseguradora
-                                    .Descripcion,
+                            Numero =
+                                registro.Factura.Numero,
 
-                        Valor = factura.Valor,
+                            FechaFactura =
+                                registro.Factura
+                                    .FechaFactura,
 
-                        FechaRadicacion =
-                            factura.FechaRadicacion,
+                            AseguradoraId =
+                                registro.Factura
+                                    .AseguradoraId,
 
-                        DiasHastaRadicacion =
-                            factura.FechaRadicacion.HasValue
-                                ? EF.Functions.DateDiffDay(
-                                    factura.FechaFactura,
-                                    factura.FechaRadicacion
-                                        .Value)
-                                : null,
+                            Aseguradora =
+                                registro.Factura
+                                        .Aseguradora ==
+                                    null
+                                    ? string.Empty
+                                    : registro.Factura
+                                        .Aseguradora
+                                        .Descripcion,
 
-                        TipoDocumentoId =
-                            factura.TipoDocumentoId,
+                            Valor =
+                                registro.Factura.Valor,
 
-                        TipoDocumentoSigla =
-                            factura.TipoDocumento == null
-                                ? string.Empty
-                                : factura.TipoDocumento
-                                    .Sigla,
+                            FechaRadicacion =
+                                registro.Factura
+                                    .FechaRadicacion,
 
-                        NumeroDocumento =
-                            factura.NumeroDocumento,
+                            DiasHastaRadicacion =
+                                registro.Factura
+                                    .FechaRadicacion
+                                    .HasValue
+                                    ? EF.Functions
+                                        .DateDiffDay(
+                                            registro.Factura
+                                                .FechaFactura,
+                                            registro.Factura
+                                                .FechaRadicacion
+                                                .Value)
+                                    : null,
 
-                        NombreCompleto =
-                            factura.NombreCompleto,
+                            TipoDocumentoId =
+                                registro.Factura
+                                    .TipoDocumentoId,
 
-                        AtencionId =
-                            factura.AtencionId,
+                            TipoDocumentoSigla =
+                                registro.Factura
+                                        .TipoDocumento ==
+                                    null
+                                    ? string.Empty
+                                    : registro.Factura
+                                        .TipoDocumento
+                                        .Sigla,
 
-                        Atencion =
-                            factura.Atencion == null
-                                ? string.Empty
-                                : factura.Atencion
-                                    .Descripcion,
+                            NumeroDocumento =
+                                registro.Factura
+                                    .NumeroDocumento,
 
-                        CostoId =
-                            factura.CostoId,
+                            NombreCompleto =
+                                registro.Factura
+                                    .NombreCompleto,
 
-                        Costo =
-                            factura.Costo == null
-                                ? string.Empty
-                                : factura.Costo
-                                    .Descripcion,
+                            AtencionId =
+                                registro.Factura
+                                    .AtencionId,
 
-                        NumeroAdmision =
-                            factura.NumeroAdmision,
+                            Atencion =
+                                registro.Factura
+                                        .Atencion ==
+                                    null
+                                    ? string.Empty
+                                    : registro.Factura
+                                        .Atencion
+                                        .Descripcion,
 
-                        FechaAdmision =
-                            factura.FechaAdmision,
+                            CostoId =
+                                registro.Factura
+                                    .CostoId,
 
-                        EstadoId =
-                            factura.EstadoId,
+                            Costo =
+                                registro.Factura
+                                        .Costo ==
+                                    null
+                                    ? string.Empty
+                                    : registro.Factura
+                                        .Costo
+                                        .Descripcion,
 
-                        Estado =
-                            factura.Estado == null
-                                ? string.Empty
-                                : factura.Estado
-                                    .Descripcion,
+                            NumeroAdmision =
+                                registro.Factura
+                                    .NumeroAdmision,
 
-                        FacturadorId =
-                            factura.FacturadorId,
+                            FechaAdmision =
+                                registro.Factura
+                                    .FechaAdmision,
 
-                        Facturador =
-                            factura.Facturador == null
-                                ? string.Empty
-                                : factura.Facturador
-                                    .Nombre,
+                            EstadoId =
+                                registro.Factura
+                                    .EstadoId,
 
-                        TotalNotasCredito =
-                            factura.Movimientos
-                                .Where(
-                                    movimiento =>
-                                        movimiento
-                                            .TipoMovimientoId ==
-                                        TipoMovimientoCodigo
-                                            .NotaCredito)
-                                .Sum(
-                                    movimiento =>
-                                        (decimal?)
-                                        movimiento.Valor)
-                            ?? decimal.Zero,
+                            Estado =
+                                registro.Factura
+                                        .Estado ==
+                                    null
+                                    ? string.Empty
+                                    : registro.Factura
+                                        .Estado
+                                        .Descripcion,
 
-                        TotalAbonos =
-                            factura.Movimientos
-                                .Where(
-                                    movimiento =>
-                                        movimiento
-                                            .TipoMovimientoId ==
-                                        TipoMovimientoCodigo
-                                            .Abono)
-                                .Sum(
-                                    movimiento =>
-                                        (decimal?)
-                                        movimiento.Valor)
-                            ?? decimal.Zero,
+                            FacturadorId =
+                                registro.Factura
+                                    .FacturadorId,
 
-                        TotalGlosasODevoluciones =
-                            factura.Movimientos
-                                .Where(
-                                    movimiento =>
-                                        movimiento
-                                            .TipoMovimientoId ==
-                                        TipoMovimientoCodigo
-                                            .GlosaODevolucion)
-                                .Sum(
-                                    movimiento =>
-                                        (decimal?)
-                                        movimiento.Valor)
-                            ?? decimal.Zero,
+                            Facturador =
+                                registro.Factura
+                                        .Facturador ==
+                                    null
+                                    ? string.Empty
+                                    : registro.Factura
+                                        .Facturador
+                                        .Nombre,
 
-                        TotalConciliaciones =
-                            factura.Movimientos
-                                .Where(
-                                    movimiento =>
-                                        movimiento
-                                            .TipoMovimientoId ==
-                                        TipoMovimientoCodigo
-                                            .Conciliacion)
-                                .Sum(
-                                    movimiento =>
-                                        (decimal?)
-                                        movimiento.Valor)
-                            ?? decimal.Zero,
+                            TotalNotasCredito =
+                                registro
+                                    .TotalNotasCredito,
 
-                        Saldo =
-                            factura.Valor
-                            -
-                            (
-                                factura.Movimientos
-                                    .Where(
-                                        movimiento =>
-                                            movimiento
-                                                .TipoMovimientoId ==
-                                            TipoMovimientoCodigo
-                                                .NotaCredito)
-                                    .Sum(
-                                        movimiento =>
-                                            (decimal?)
-                                            movimiento.Valor)
-                                ?? decimal.Zero
-                            )
-                            -
-                            (
-                                factura.Movimientos
-                                    .Where(
-                                        movimiento =>
-                                            movimiento
-                                                .TipoMovimientoId ==
-                                            TipoMovimientoCodigo
-                                                .Abono)
-                                    .Sum(
-                                        movimiento =>
-                                            (decimal?)
-                                            movimiento.Valor)
-                                ?? decimal.Zero
-                            )
-                    })
-            .ToListAsync(cancellationToken);
+                            TotalNotasDebito =
+                                registro
+                                    .TotalNotasDebito,
+
+                            TotalPagosAplicados =
+                                registro
+                                    .TotalPagosAplicados,
+
+                            ValorGlosaPendiente =
+                                registro
+                                    .ValorGlosaPendiente,
+
+                            SaldoCartera =
+                                registro.Factura.Valor
+                                +
+                                registro.TotalNotasDebito
+                                -
+                                registro.TotalNotasCredito
+                                -
+                                registro.TotalPagosAplicados,
+
+                            SaldoDisponibleGestion =
+                                registro.Factura.Valor
+                                +
+                                registro.TotalNotasDebito
+                                -
+                                registro.TotalNotasCredito
+                                -
+                                registro.TotalPagosAplicados
+                                -
+                                registro.ValorGlosaPendiente
+                        })
+                .ToListAsync(cancellationToken);
 
         return new ResultadoPaginado<FacturaResumenDto>(
             elementos,
@@ -246,9 +260,89 @@ public sealed class ConsultaFacturasEfCore :
             filtro.TamanoPagina);
     }
 
-    private static IQueryable<
-        Domain.Entities.Factura> AplicarFiltros(
-            IQueryable<Domain.Entities.Factura> consulta,
+    private IQueryable<FacturaFinanciera>
+        ConstruirConsultaFinanciera(
+            IQueryable<Factura> consultaFacturas)
+    {
+        return consultaFacturas.Select(
+            factura =>
+                new FacturaFinanciera
+                {
+                    Factura = factura,
+
+                    TotalNotasCredito =
+                        _contexto.NotasFactura
+                            .Where(
+                                nota =>
+                                    nota.FacturaId ==
+                                    factura.Id
+                                    &&
+                                    !nota.Anulada
+                                    &&
+                                    nota.Tipo ==
+                                    TipoNotaFactura.Credito)
+                            .Sum(
+                                nota =>
+                                    (decimal?)nota.Valor)
+                        ??
+                        decimal.Zero,
+
+                    TotalNotasDebito =
+                        _contexto.NotasFactura
+                            .Where(
+                                nota =>
+                                    nota.FacturaId ==
+                                    factura.Id
+                                    &&
+                                    !nota.Anulada
+                                    &&
+                                    nota.Tipo ==
+                                    TipoNotaFactura.Debito)
+                            .Sum(
+                                nota =>
+                                    (decimal?)nota.Valor)
+                        ??
+                        decimal.Zero,
+
+                    TotalPagosAplicados =
+                        _contexto.AplicacionesPago
+                            .Where(
+                                aplicacion =>
+                                    aplicacion.FacturaId ==
+                                    factura.Id)
+                            .Sum(
+                                aplicacion =>
+                                    (decimal?)
+                                    aplicacion.ValorAplicado)
+                        ??
+                        decimal.Zero,
+
+                    ValorGlosaPendiente =
+                        _contexto.Glosas
+                            .Where(
+                                glosa =>
+                                    glosa.FacturaId ==
+                                    factura.Id
+                                    &&
+                                    (
+                                        glosa.Estado ==
+                                        EstadoGlosa.Abierta
+                                        ||
+                                        glosa.Estado ==
+                                        EstadoGlosa.Respondida
+                                    ))
+                            .Sum(
+                                glosa =>
+                                    (decimal?)
+                                    glosa.ValorGlosa)
+                        ??
+                        decimal.Zero
+                });
+    }
+
+    private static IQueryable<Factura>
+        AplicarFiltros(
+            IQueryable<Factura> consulta,
             FiltroFacturasDto filtro)
     {
         if (!string.IsNullOrWhiteSpace(
@@ -259,18 +353,26 @@ public sealed class ConsultaFacturasEfCore :
 
             consulta = consulta.Where(
                 factura =>
-                    factura.Id.Contains(textoBusqueda) ||
+                    factura.Id.Contains(
+                        textoBusqueda)
+                    ||
                     factura.Prefijo.Contains(
-                        textoBusqueda) ||
+                        textoBusqueda)
+                    ||
                     factura.Numero.Contains(
-                        textoBusqueda) ||
+                        textoBusqueda)
+                    ||
                     factura.NumeroDocumento.Contains(
-                        textoBusqueda) ||
+                        textoBusqueda)
+                    ||
                     factura.NombreCompleto.Contains(
-                        textoBusqueda) ||
+                        textoBusqueda)
+                    ||
                     (
-                        factura.Aseguradora != null &&
-                        factura.Aseguradora.Descripcion
+                        factura.Aseguradora != null
+                        &&
+                        factura.Aseguradora
+                            .Descripcion
                             .Contains(textoBusqueda)
                     ));
         }
@@ -315,44 +417,19 @@ public sealed class ConsultaFacturasEfCore :
                     filtro.FechaHasta.Value);
         }
 
-        if (filtro.SoloConSaldo)
-        {
-            consulta = consulta.Where(
-                factura =>
-                    factura.Valor
-                    -
-                    (
-                        factura.Movimientos
-                            .Where(
-                                movimiento =>
-                                    movimiento
-                                        .TipoMovimientoId ==
-                                    TipoMovimientoCodigo
-                                        .NotaCredito)
-                            .Sum(
-                                movimiento =>
-                                    (decimal?)
-                                    movimiento.Valor)
-                        ?? decimal.Zero
-                    )
-                    -
-                    (
-                        factura.Movimientos
-                            .Where(
-                                movimiento =>
-                                    movimiento
-                                        .TipoMovimientoId ==
-                                    TipoMovimientoCodigo
-                                        .Abono)
-                            .Sum(
-                                movimiento =>
-                                    (decimal?)
-                                    movimiento.Valor)
-                        ?? decimal.Zero
-                    )
-                    > decimal.Zero);
-        }
-
         return consulta;
+    }
+
+    private sealed class FacturaFinanciera
+    {
+        public required Factura Factura { get; init; }
+
+        public decimal TotalNotasCredito { get; init; }
+
+        public decimal TotalNotasDebito { get; init; }
+
+        public decimal TotalPagosAplicados { get; init; }
+
+        public decimal ValorGlosaPendiente { get; init; }
     }
 }
