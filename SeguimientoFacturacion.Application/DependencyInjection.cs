@@ -49,6 +49,10 @@ public static class DependencyInjection
             IServicioConfirmacionLoteImportacion,
             ServicioConfirmacionLoteImportacion>();
 
+        services.AddTransient<
+            IServicioCancelacionLoteImportacion,
+            ServicioCancelacionLoteImportacion>();
+
         return services;
     }
 }
