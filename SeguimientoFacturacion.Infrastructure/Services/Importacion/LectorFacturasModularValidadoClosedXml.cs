@@ -55,6 +55,24 @@ public sealed class
             SolicitudAnalisisImportacionDto solicitud,
             CancellationToken cancellationToken = default)
     {
+        var contexto =
+            await AnalizarConContextoAsync(
+                solicitud,
+                cancellationToken);
+
+        return contexto.Analisis;
+    }
+
+    /// <summary>
+    /// Analiza el archivo y conserva la inspección y los
+    /// catálogos requeridos para preparar sus filas.
+    /// </summary>
+    internal async Task<
+        ResultadoLecturaValidadaFacturasModular>
+        AnalizarConContextoAsync(
+            SolicitudAnalisisImportacionDto solicitud,
+            CancellationToken cancellationToken = default)
+    {
         ArgumentNullException.ThrowIfNull(solicitud);
         ArgumentNullException.ThrowIfNull(
             solicitud.Contenido);
@@ -69,7 +87,11 @@ public sealed class
 
         if (!lecturaEstructural.Analisis.EsValido)
         {
-            return lecturaEstructural.Analisis;
+            return new
+                ResultadoLecturaValidadaFacturasModular(
+                    lecturaEstructural.Inspeccion,
+                    lecturaEstructural.Analisis,
+                    Catalogos: null);
         }
 
         var catalogos =
@@ -93,24 +115,41 @@ public sealed class
                     validacionFilas.Inconsistencias)
                 .ToArray();
 
-        return lecturaEstructural.Analisis with
-        {
-            TotalFilasAnalizadas =
-                validacionFilas.TotalFilasAnalizadas,
+        var analisisConsolidado =
+            lecturaEstructural.Analisis with
+            {
+                TotalFilasAnalizadas =
+                    validacionFilas.TotalFilasAnalizadas,
 
-            FacturasDetectadas =
-                validacionFilas.FacturasDetectadas,
+                FacturasDetectadas =
+                    validacionFilas.FacturasDetectadas,
 
-            AniosDetectados =
-                validacionFilas.AniosDetectados,
+                AniosDetectados =
+                    validacionFilas.AniosDetectados,
 
-            MovimientosDetectados = 0,
+                MovimientosDetectados = 0,
 
-            CatalogosNoMapeados =
-                validacionFilas.CatalogosNoMapeados,
+                CatalogosNoMapeados =
+                    validacionFilas.CatalogosNoMapeados,
 
-            Inconsistencias =
-                inconsistencias
-        };
+                Inconsistencias =
+                    inconsistencias
+            };
+
+        return new
+            ResultadoLecturaValidadaFacturasModular(
+                lecturaEstructural.Inspeccion,
+                analisisConsolidado,
+                catalogos);
     }
 }
+
+/// <summary>
+/// Conserva el resultado validado y la información necesaria
+/// para preparar las filas sin repetir consultas.
+/// </summary>
+internal sealed record
+    ResultadoLecturaValidadaFacturasModular(
+        ResultadoInspeccionPlantillaDto Inspeccion,
+        ResultadoAnalisisImportacionDto Analisis,
+        CatalogosImportacionDto? Catalogos);

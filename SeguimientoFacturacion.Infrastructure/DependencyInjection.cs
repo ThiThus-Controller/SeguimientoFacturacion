@@ -106,6 +106,9 @@ public static class DependencyInjection
         services.AddTransient<
             LectorFacturasModularValidadoClosedXml>();
 
+        services.AddTransient<
+            PreparadorFacturasModularClosedXml>();
+
         /*
          * Flujo heredado temporalmente activo.
          *
