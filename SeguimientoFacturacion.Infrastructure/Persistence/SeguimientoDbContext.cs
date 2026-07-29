@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SeguimientoFacturacion.Application.Common.Exceptions;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Entities.Catalogos;
@@ -138,10 +139,31 @@ public sealed class SeguimientoDbContext :
         Set<TipoMovimiento>();
 
     /// <inheritdoc />
-    public Task<int> GuardarCambiosAsync(
+    public async Task<int> GuardarCambiosAsync(
         CancellationToken cancellationToken = default)
     {
-        return SaveChangesAsync(cancellationToken);
+        try
+        {
+            return await SaveChangesAsync(
+                cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            var entidades =
+                exception.Entries
+                    .Select(
+                        entrada =>
+                            entrada.Metadata.ClrType.Name)
+                    .Distinct(StringComparer.Ordinal)
+                    .OrderBy(
+                        entidad => entidad,
+                        StringComparer.Ordinal)
+                    .ToArray();
+
+            throw new ExcepcionConcurrenciaPersistencia(
+                entidades,
+                exception);
+        }
     }
 
     /// <inheritdoc />

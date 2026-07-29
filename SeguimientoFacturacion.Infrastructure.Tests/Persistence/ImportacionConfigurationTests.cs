@@ -61,6 +61,34 @@ public sealed class ImportacionConfigurationTests
     }
 
     [Fact]
+    public void LoteImportacion_DebeTenerVersionDeConcurrencia()
+    {
+        using var contexto = CrearContexto();
+
+        var entidad =
+            contexto.Model.FindEntityType(
+                typeof(LoteImportacion));
+
+        Assert.NotNull(entidad);
+
+        var versionFila =
+            entidad.FindProperty("VersionFila");
+
+        Assert.NotNull(versionFila);
+
+        Assert.True(
+            versionFila.IsConcurrencyToken);
+
+        Assert.Equal(
+            ValueGenerated.OnAddOrUpdate,
+            versionFila.ValueGenerated);
+
+        Assert.Equal(
+            "rowversion",
+            versionFila.GetColumnType());
+    }
+
+    [Fact]
     public void LoteImportacion_DebeTenerIndicesDeControl()
     {
         using var contexto = CrearContexto();

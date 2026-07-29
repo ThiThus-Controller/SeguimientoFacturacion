@@ -116,6 +116,17 @@ internal sealed class LoteImportacionConfiguration :
             .HasMaxLength(UsuarioAuditoriaLongitudMaxima)
             .IsUnicode(false);
 
+        /*
+         * Propiedad sombra: no contamina el dominio con
+         * conceptos específicos de Entity Framework.
+         *
+         * SQL Server actualizará automáticamente este valor
+         * en cada INSERT o UPDATE.
+         */
+        builder.Property<byte[]>("VersionFila")
+            .HasColumnType("rowversion")
+            .IsRowVersion();
+
         builder.Ignore(lote => lote.PuedeConfirmarse);
 
         builder.HasIndex(
