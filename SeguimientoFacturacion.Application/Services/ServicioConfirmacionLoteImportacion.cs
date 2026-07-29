@@ -3,6 +3,7 @@ using SeguimientoFacturacion.Application.Common.Exceptions;
 using SeguimientoFacturacion.Application.DTOs.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Domain.Enums;
 
 namespace SeguimientoFacturacion.Application.Services;
 
@@ -16,6 +17,10 @@ public sealed class ServicioConfirmacionLoteImportacion :
     private readonly IRepositorioImportaciones
         _repositorioImportaciones;
 
+    private readonly
+        IRepositorioFacturasTemporalesImportacion
+        _repositorioFacturasTemporales;
+
     private readonly IUnidadTrabajo _unidadTrabajo;
 
     private readonly IValidator<
@@ -28,6 +33,8 @@ public sealed class ServicioConfirmacionLoteImportacion :
     /// </summary>
     public ServicioConfirmacionLoteImportacion(
         IRepositorioImportaciones repositorioImportaciones,
+        IRepositorioFacturasTemporalesImportacion
+            repositorioFacturasTemporales,
         IUnidadTrabajo unidadTrabajo,
         IValidator<SolicitudConfirmacionLoteImportacionDto>
             validator,
@@ -36,12 +43,18 @@ public sealed class ServicioConfirmacionLoteImportacion :
         ArgumentNullException.ThrowIfNull(
             repositorioImportaciones);
 
+        ArgumentNullException.ThrowIfNull(
+            repositorioFacturasTemporales);
+
         ArgumentNullException.ThrowIfNull(unidadTrabajo);
         ArgumentNullException.ThrowIfNull(validator);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         _repositorioImportaciones =
             repositorioImportaciones;
+
+        _repositorioFacturasTemporales =
+            repositorioFacturasTemporales;
 
         _unidadTrabajo = unidadTrabajo;
         _validator = validator;
@@ -91,6 +104,11 @@ public sealed class ServicioConfirmacionLoteImportacion :
                     lote.TotalErrores);
         }
 
+        await ValidarStagingAsync(
+            lote.Id,
+            lote.Tipo,
+            cancellationToken);
+
         var fechaConfirmacionUtc =
             _timeProvider.GetUtcNow();
 
@@ -116,5 +134,35 @@ public sealed class ServicioConfirmacionLoteImportacion :
             FechaConfirmacionUtc =
                 lote.FechaConfirmacionUtc!.Value
         };
+    }
+
+    private async Task ValidarStagingAsync(
+        Guid loteId,
+        TipoImportacion tipo,
+        CancellationToken cancellationToken)
+    {
+        /*
+         * Por ahora solamente existe staging implementado
+         * para el módulo de facturas. Los demás tipos se
+         * incorporarán con sus respectivos repositorios.
+         */
+        if (tipo != TipoImportacion.Facturas)
+        {
+            return;
+        }
+
+        var facturasTemporales =
+            await _repositorioFacturasTemporales
+                .ListarAsync(
+                    loteId,
+                    cancellationToken);
+
+        if (facturasTemporales.Count == 0)
+        {
+            throw new
+                ExcepcionLoteImportacionSinStaging(
+                    loteId,
+                    tipo);
+        }
     }
 }
