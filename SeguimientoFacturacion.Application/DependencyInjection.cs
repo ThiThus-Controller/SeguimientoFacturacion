@@ -57,6 +57,10 @@ public static class DependencyInjection
             IServicioCancelacionLoteImportacion,
             ServicioCancelacionLoteImportacion>();
 
+        services.AddTransient<
+            IServicioProcesamientoLoteFacturas,
+            ServicioProcesamientoLoteFacturas>();
+
         return services;
     }
 }
