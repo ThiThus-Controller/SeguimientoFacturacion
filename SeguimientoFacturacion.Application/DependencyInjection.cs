@@ -65,6 +65,10 @@ public static class DependencyInjection
             IServicioProcesamientoLoteFacturas,
             ServicioProcesamientoLoteFacturas>();
 
+        services.AddTransient<
+            IServicioProcesamientoLoteNotasFactura,
+            ServicioProcesamientoLoteNotasFactura>();
+
         return services;
     }
 }
