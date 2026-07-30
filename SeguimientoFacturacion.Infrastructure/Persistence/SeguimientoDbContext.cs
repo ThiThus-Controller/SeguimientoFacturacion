@@ -46,6 +46,14 @@ public sealed class SeguimientoDbContext :
             Set<NotaFacturaImportacionTemporal>();
 
     /// <summary>
+    /// Obtiene las glosas almacenadas temporalmente
+    /// durante una importación.
+    /// </summary>
+    public DbSet<GlosaImportacionTemporal>
+        GlosasTemporalesImportacion =>
+            Set<GlosaImportacionTemporal>();
+
+    /// <summary>
     /// Obtiene el conjunto normalizado de pacientes.
     /// </summary>
     public DbSet<Paciente> Pacientes =>
