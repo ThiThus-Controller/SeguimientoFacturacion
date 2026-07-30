@@ -129,6 +129,13 @@ public static class DependencyInjection
             PreparadorNotasFacturaModularClosedXml>();
 
         /*
+         * Flujo modular de glosas.
+         */
+        services.AddTransient<
+            IValidadorGlosasModular,
+            ValidadorGlosasModularClosedXml>();
+
+        /*
          * El análisis y el staging utilizarán las
          * implementaciones modulares de facturas.
          */
