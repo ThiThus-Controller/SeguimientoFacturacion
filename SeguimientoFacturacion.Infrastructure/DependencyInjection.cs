@@ -1,12 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SeguimientoFacturacion.Application.Interfaces.Importacion;
-using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Application
+    .Interfaces.Importacion;
+using SeguimientoFacturacion.Application
+    .Interfaces.Persistence;
 using SeguimientoFacturacion.Infrastructure.Configuration;
 using SeguimientoFacturacion.Infrastructure.Persistence;
 using SeguimientoFacturacion.Infrastructure.Repositories;
-using SeguimientoFacturacion.Infrastructure.Services.Importacion;
+using SeguimientoFacturacion.Infrastructure
+    .Services.Importacion;
 
 namespace SeguimientoFacturacion.Infrastructure;
 
@@ -88,6 +91,10 @@ public static class DependencyInjection
         services.AddScoped<
             IRepositorioPersistenciaNotasFacturaImportacion,
             RepositorioPersistenciaNotasFacturaImportacionEfCore>();
+
+        services.AddScoped<
+            IRepositorioPersistenciaGlosasImportacion,
+            RepositorioPersistenciaGlosasImportacionEfCore>();
 
         services.AddScoped<
             IConsultaCatalogosImportacion,

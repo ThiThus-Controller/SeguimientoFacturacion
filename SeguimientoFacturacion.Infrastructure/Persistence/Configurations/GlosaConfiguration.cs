@@ -3,7 +3,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Infrastructure.Configuration;
 
-namespace SeguimientoFacturacion.Infrastructure.Persistence.Configurations;
+namespace SeguimientoFacturacion.Infrastructure
+    .Persistence.Configurations;
 
 /// <summary>
 /// Configura la persistencia de las glosas
@@ -12,7 +13,8 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Configurations;
 internal sealed class GlosaConfiguration :
     IEntityTypeConfiguration<Glosa>
 {
-    private const int UsuarioAuditoriaLongitudMaxima = 100;
+    private const int UsuarioAuditoriaLongitudMaxima =
+        100;
 
     /// <inheritdoc />
     public void Configure(
@@ -38,58 +40,86 @@ internal sealed class GlosaConfiguration :
                     "[FechaRespuesta] >= [FechaGlosa]");
             });
 
-        builder.HasKey(glosa => glosa.Id);
+        builder.HasKey(
+            glosa => glosa.Id);
 
-        builder.Property(glosa => glosa.Id)
+        builder.Property(
+                glosa => glosa.Id)
             .ValueGeneratedNever();
 
-        builder.Property(glosa => glosa.FacturaId)
+        builder.Property(
+                glosa => glosa.FacturaId)
             .HasMaxLength(
                 Glosa.FacturaIdLongitudMaxima)
             .IsUnicode(false)
             .IsRequired();
 
-        builder.Property(glosa => glosa.FechaGlosa)
+        builder.Property(
+                glosa => glosa.FechaGlosa)
             .HasColumnType("date")
             .IsRequired();
 
-        builder.Property(glosa => glosa.ValorGlosa)
+        builder.Property(
+                glosa => glosa.ValorGlosa)
             .HasPrecision(18, 2)
             .IsRequired();
 
-        builder.Property(glosa => glosa.FechaRespuesta)
+        builder.Property(
+                glosa => glosa.FechaRespuesta)
             .HasColumnType("date");
 
-        builder.Property(glosa => glosa.Estado)
+        builder.Property(
+                glosa => glosa.Estado)
             .HasConversion<int>()
             .IsRequired();
 
-        builder.Property(glosa => glosa.ValorAceptado)
+        builder.Property(
+                glosa => glosa.ValorAceptado)
             .HasPrecision(18, 2)
             .IsRequired();
 
-        builder.Property(glosa => glosa.FechaCreacionUtc)
+        builder.Property(
+                glosa => glosa.FechaCreacionUtc)
             .HasPrecision(0)
             .IsRequired();
 
-        builder.Property(glosa => glosa.CreadoPor)
-            .HasMaxLength(UsuarioAuditoriaLongitudMaxima)
+        builder.Property(
+                glosa => glosa.CreadoPor)
+            .HasMaxLength(
+                UsuarioAuditoriaLongitudMaxima)
             .IsUnicode(false)
             .IsRequired();
 
-        builder.Property(glosa => glosa.FechaModificacionUtc)
+        builder.Property(
+                glosa => glosa.FechaModificacionUtc)
             .HasPrecision(0);
 
-        builder.Property(glosa => glosa.ModificadoPor)
-            .HasMaxLength(UsuarioAuditoriaLongitudMaxima)
+        builder.Property(
+                glosa => glosa.ModificadoPor)
+            .HasMaxLength(
+                UsuarioAuditoriaLongitudMaxima)
             .IsUnicode(false);
 
-        builder.Ignore(glosa => glosa.ValorPendiente);
+        builder.Ignore(
+            glosa => glosa.ValorPendiente);
 
-        builder.HasOne(glosa => glosa.Factura)
+        builder.HasOne(
+                glosa => glosa.Factura)
             .WithMany()
-            .HasForeignKey(glosa => glosa.FacturaId)
+            .HasForeignKey(
+                glosa => glosa.FacturaId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+                glosa => new
+                {
+                    glosa.FacturaId,
+                    glosa.FechaGlosa,
+                    glosa.ValorGlosa
+                })
+            .IsUnique()
+            .HasDatabaseName(
+                "UX_Glosas_Factura_Fecha_Valor");
 
         builder.HasIndex(
                 glosa => new
@@ -101,7 +131,8 @@ internal sealed class GlosaConfiguration :
             .HasDatabaseName(
                 "IX_Glosas_Factura_Estado_Fecha");
 
-        builder.HasIndex(glosa => glosa.FechaGlosa)
+        builder.HasIndex(
+                glosa => glosa.FechaGlosa)
             .HasDatabaseName(
                 "IX_Glosas_FechaGlosa");
     }
