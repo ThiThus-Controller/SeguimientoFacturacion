@@ -61,9 +61,7 @@ public sealed class
                 "ASEGURADORA",
                 "FECHA GLOSA",
                 "VALOR GLOSA",
-                "FECHA RTA GLOSA ",
-                "ESTADO GLOSA",
-                "VALOR ACEPTADO"
+                "FECHA RTA GLOSA "
             }
         ];
 
@@ -103,6 +101,39 @@ public sealed class
 
         Assert.NotNull(resultado);
         Assert.Equal(tipoEsperado, resultado.Tipo);
+    }
+
+    [Fact]
+    public void Glosas_DebeTenerSieteColumnas()
+    {
+        var encabezados =
+            ContratosPlantillasImportacion
+                .Glosas
+                .EncabezadosRequeridos;
+
+        Assert.Equal(7, encabezados.Count);
+
+        Assert.DoesNotContain(
+            "ESTADO GLOSA",
+            encabezados);
+
+        Assert.DoesNotContain(
+            "VALOR ACEPTADO",
+            encabezados);
+    }
+
+    [Fact]
+    public void Glosas_FechaRespuesta_DebeResolverAlias()
+    {
+        var resultado =
+            ContratosPlantillasImportacion
+                .Glosas
+                .ResolverEncabezado(
+                    " FECHA RESPUESTA GLOSA ");
+
+        Assert.Equal(
+            "FECHA RTA GLOSA",
+            resultado);
     }
 
     [Fact]
@@ -151,11 +182,7 @@ public sealed class
             ContratosPlantillasImportacion
                 .Facturas
                 .EncabezadosRequeridos
-                .Concat(
-                    new[]
-                    {
-                        "AÑO 2026"
-                    })
+                .Concat(["AÑO 2026"])
                 .ToArray();
 
         var noReconocidos =
@@ -176,11 +203,13 @@ public sealed class
     [Fact]
     public void Obtener_Catalogos_DebeLanzarExcepcion()
     {
-        var accion = () =>
-            ContratosPlantillasImportacion.Obtener(
+        ContratoPlantillaImportacion Accion()
+        {
+            return ContratosPlantillasImportacion.Obtener(
                 TipoImportacion.Catalogos);
+        }
 
-        Assert.Throws<
-            ArgumentOutOfRangeException>(accion);
+        Assert.Throws<ArgumentOutOfRangeException>(
+            Accion);
     }
 }

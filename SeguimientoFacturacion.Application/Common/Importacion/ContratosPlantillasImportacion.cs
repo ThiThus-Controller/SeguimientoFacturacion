@@ -69,6 +69,8 @@ public static class ContratosPlantillasImportacion
 
     /// <summary>
     /// Obtiene el contrato de glosas.
+    /// La fecha de respuesta pertenece a la estructura,
+    /// pero su valor puede estar vacío.
     /// </summary>
     public static ContratoPlantillaImportacion Glosas
     {
@@ -83,9 +85,7 @@ public static class ContratosPlantillasImportacion
             "ASEGURADORA",
             "FECHA GLOSA",
             "VALOR GLOSA",
-            "FECHA RTA GLOSA",
-            "ESTADO GLOSA",
-            "VALOR ACEPTADO"
+            "FECHA RTA GLOSA"
         ],
         new Dictionary<string, string>(
             StringComparer.OrdinalIgnoreCase)
@@ -168,10 +168,6 @@ public static class ContratosPlantillasImportacion
     /// Detecta el contrato correspondiente a un conjunto
     /// de encabezados.
     /// </summary>
-    /// <returns>
-    /// Contrato detectado o null cuando la estructura
-    /// no corresponde a ninguna plantilla modular.
-    /// </returns>
     public static ContratoPlantillaImportacion? Detectar(
         IEnumerable<string?> encabezados)
     {
@@ -192,6 +188,7 @@ public static class ContratosPlantillasImportacion
         {
             0 => null,
             1 => coincidencias[0],
+
             _ => throw new InvalidOperationException(
                 "Los encabezados coinciden con más de un " +
                 "contrato de importación.")
