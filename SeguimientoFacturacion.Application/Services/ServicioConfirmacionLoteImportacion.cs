@@ -21,10 +21,15 @@ public sealed class ServicioConfirmacionLoteImportacion :
         IRepositorioFacturasTemporalesImportacion
         _repositorioFacturasTemporales;
 
+    private readonly
+        IRepositorioNotasFacturaTemporalesImportacion
+        _repositorioNotasTemporales;
+
     private readonly IUnidadTrabajo _unidadTrabajo;
 
     private readonly IValidator<
-        SolicitudConfirmacionLoteImportacionDto> _validator;
+        SolicitudConfirmacionLoteImportacionDto>
+        _validator;
 
     private readonly TimeProvider _timeProvider;
 
@@ -35,6 +40,8 @@ public sealed class ServicioConfirmacionLoteImportacion :
         IRepositorioImportaciones repositorioImportaciones,
         IRepositorioFacturasTemporalesImportacion
             repositorioFacturasTemporales,
+        IRepositorioNotasFacturaTemporalesImportacion
+            repositorioNotasTemporales,
         IUnidadTrabajo unidadTrabajo,
         IValidator<SolicitudConfirmacionLoteImportacionDto>
             validator,
@@ -46,6 +53,9 @@ public sealed class ServicioConfirmacionLoteImportacion :
         ArgumentNullException.ThrowIfNull(
             repositorioFacturasTemporales);
 
+        ArgumentNullException.ThrowIfNull(
+            repositorioNotasTemporales);
+
         ArgumentNullException.ThrowIfNull(unidadTrabajo);
         ArgumentNullException.ThrowIfNull(validator);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -55,6 +65,9 @@ public sealed class ServicioConfirmacionLoteImportacion :
 
         _repositorioFacturasTemporales =
             repositorioFacturasTemporales;
+
+        _repositorioNotasTemporales =
+            repositorioNotasTemporales;
 
         _unidadTrabajo = unidadTrabajo;
         _validator = validator;
@@ -131,6 +144,7 @@ public sealed class ServicioConfirmacionLoteImportacion :
             LoteId = lote.Id,
             Estado = lote.Estado,
             ConfirmadoPor = lote.ConfirmadoPor!,
+
             FechaConfirmacionUtc =
                 lote.FechaConfirmacionUtc!.Value
         };
@@ -141,16 +155,35 @@ public sealed class ServicioConfirmacionLoteImportacion :
         TipoImportacion tipo,
         CancellationToken cancellationToken)
     {
-        /*
-         * Por ahora solamente existe staging implementado
-         * para el módulo de facturas. Los demás tipos se
-         * incorporarán con sus respectivos repositorios.
-         */
-        if (tipo != TipoImportacion.Facturas)
+        switch (tipo)
         {
-            return;
-        }
+            case TipoImportacion.Facturas:
+                await ValidarStagingFacturasAsync(
+                    loteId,
+                    cancellationToken);
 
+                break;
+
+            case TipoImportacion.NotasFactura:
+                await ValidarStagingNotasAsync(
+                    loteId,
+                    cancellationToken);
+
+                break;
+
+            /*
+             * Los demás módulos se incorporarán cuando
+             * sus repositorios de staging estén disponibles.
+             */
+            default:
+                break;
+        }
+    }
+
+    private async Task ValidarStagingFacturasAsync(
+        Guid loteId,
+        CancellationToken cancellationToken)
+    {
         var facturasTemporales =
             await _repositorioFacturasTemporales
                 .ListarAsync(
@@ -162,7 +195,26 @@ public sealed class ServicioConfirmacionLoteImportacion :
             throw new
                 ExcepcionLoteImportacionSinStaging(
                     loteId,
-                    tipo);
+                    TipoImportacion.Facturas);
+        }
+    }
+
+    private async Task ValidarStagingNotasAsync(
+        Guid loteId,
+        CancellationToken cancellationToken)
+    {
+        var notasTemporales =
+            await _repositorioNotasTemporales
+                .ListarAsync(
+                    loteId,
+                    cancellationToken);
+
+        if (notasTemporales.Count == 0)
+        {
+            throw new
+                ExcepcionLoteImportacionSinStaging(
+                    loteId,
+                    TipoImportacion.NotasFactura);
         }
     }
 }
