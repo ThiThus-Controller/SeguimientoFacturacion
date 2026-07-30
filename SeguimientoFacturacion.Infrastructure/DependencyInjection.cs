@@ -135,6 +135,10 @@ public static class DependencyInjection
             IValidadorGlosasModular,
             ValidadorGlosasModularClosedXml>();
 
+        services.AddTransient<
+            IPreparadorGlosasModular,
+            PreparadorGlosasModularClosedXml>();
+
         /*
          * El análisis y el staging utilizarán las
          * implementaciones modulares de facturas.
