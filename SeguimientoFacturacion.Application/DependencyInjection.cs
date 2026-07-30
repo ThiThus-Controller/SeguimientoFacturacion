@@ -1,15 +1,17 @@
 ﻿using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using SeguimientoFacturacion.Application.Interfaces.Importacion;
-using SeguimientoFacturacion.Application.Interfaces.Services;
+using SeguimientoFacturacion.Application
+    .Interfaces.Importacion;
+using SeguimientoFacturacion.Application
+    .Interfaces.Services;
 using SeguimientoFacturacion.Application.Services;
 
 namespace SeguimientoFacturacion.Application;
 
 /// <summary>
-/// Contiene los métodos de extensión utilizados para registrar
-/// los servicios pertenecientes a la capa Application.
+/// Contiene los métodos de extensión utilizados para
+/// registrar los servicios pertenecientes a Application.
 /// </summary>
 public static class DependencyInjection
 {
@@ -52,6 +54,10 @@ public static class DependencyInjection
         services.AddTransient<
             IServicioAnalisisStagingNotasFactura,
             ServicioAnalisisStagingNotasFactura>();
+
+        services.AddTransient<
+            IServicioAnalisisStagingGlosas,
+            ServicioAnalisisStagingGlosas>();
 
         services.AddTransient<
             IServicioConfirmacionLoteImportacion,
