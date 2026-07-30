@@ -137,16 +137,39 @@ public sealed class
     }
 
     [Fact]
-    public void Pagos_SaldoRetencion_DebeResolverAlias()
+    public void Pagos_DebeTenerQuinceColumnas()
+    {
+        var encabezados =
+            ContratosPlantillasImportacion
+                .Pagos
+                .EncabezadosRequeridos;
+
+        Assert.Equal(15, encabezados.Count);
+
+        Assert.Contains(
+            "SALDO RETENCION",
+            encabezados);
+
+        Assert.Contains(
+            "VR PAGADO",
+            encabezados);
+
+        Assert.Contains(
+            "VR CRUZADO",
+            encabezados);
+    }
+
+    [Fact]
+    public void Pagos_SaldoCruzadoPendiente_DebeResolverAlias()
     {
         var resultado =
             ContratosPlantillasImportacion
                 .Pagos
                 .ResolverEncabezado(
-                    " SALDO RETENCION ");
+                    " SALDO CRUZADO PENDIENTE ");
 
         Assert.Equal(
-            "SALDO CRUZADO PENDIENTE",
+            "SALDO RETENCION",
             resultado);
     }
 

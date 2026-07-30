@@ -90,7 +90,7 @@ public sealed class
         Assert.Equal(
             10,
             resultado.Columnas[
-                "SALDO CRUZADO PENDIENTE"]);
+                "SALDO RETENCION"]);
     }
 
     [Fact]

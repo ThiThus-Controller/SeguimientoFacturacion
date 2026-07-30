@@ -96,6 +96,8 @@ public static class ContratosPlantillasImportacion
 
     /// <summary>
     /// Obtiene el contrato de pagos y aplicaciones.
+    /// La columna SALDO RETENCION se conserva por
+    /// compatibilidad con la plantilla oficial.
     /// </summary>
     public static ContratoPlantillaImportacion Pagos
     {
@@ -113,7 +115,7 @@ public static class ContratosPlantillasImportacion
             "RETENCION",
             "RETE ICA",
             "SALDO FAVOR",
-            "SALDO CRUZADO PENDIENTE",
+            "SALDO RETENCION",
             "VR PAGADO",
             "VR CRUZADO",
             "FECHA DE PAGO",
@@ -123,8 +125,8 @@ public static class ContratosPlantillasImportacion
         new Dictionary<string, string>(
             StringComparer.OrdinalIgnoreCase)
         {
-            ["SALDO RETENCION"] =
-                "SALDO CRUZADO PENDIENTE"
+            ["SALDO CRUZADO PENDIENTE"] =
+                "SALDO RETENCION"
         });
 
     private static readonly
