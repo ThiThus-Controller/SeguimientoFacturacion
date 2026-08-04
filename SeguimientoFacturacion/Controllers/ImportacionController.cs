@@ -1,45 +1,88 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using SeguimientoFacturacion.Application.Common.Exceptions;
-using SeguimientoFacturacion.Application.DTOs.Importacion;
-using SeguimientoFacturacion.Application.Interfaces.Importacion;
+﻿using System.Globalization;
+using Microsoft.AspNetCore.Mvc;
+using SeguimientoFacturacion.Application
+    .Common.Exceptions;
+using SeguimientoFacturacion.Application
+    .DTOs.Importacion;
+using SeguimientoFacturacion.Application
+    .Interfaces.Importacion;
 using SeguimientoFacturacion.Configurations;
+using SeguimientoFacturacion.Domain.Enums;
 using SeguimientoFacturacion.ViewModels.Importacion;
 
 namespace SeguimientoFacturacion.Controllers;
 
 /// <summary>
 /// Proporciona las operaciones web relacionadas con
-/// el análisis e importación de archivos de facturación.
+/// el análisis e importación modular de archivos.
 /// </summary>
 [Route("importacion")]
 public sealed class ImportacionController : Controller
 {
-    private readonly IServicioAnalisisImportacion
-        _servicioAnalisisImportacion;
+    private readonly IServicioRegistroLoteImportacion
+        _servicioRegistroLote;
+
+    private readonly IServicioAnalisisStagingFacturas
+        _servicioFacturas;
+
+    private readonly
+        IServicioAnalisisStagingNotasFactura
+        _servicioNotas;
+
+    private readonly IServicioAnalisisStagingGlosas
+        _servicioGlosas;
+
+    private readonly IServicioAnalisisStagingPagos
+        _servicioPagos;
 
     private readonly ILogger<ImportacionController>
         _logger;
 
     /// <summary>
-    /// Inicializa una nueva instancia del controlador.
+    /// Inicializa el controlador de importaciones.
     /// </summary>
     public ImportacionController(
-        IServicioAnalisisImportacion servicioAnalisisImportacion,
+        IServicioRegistroLoteImportacion
+            servicioRegistroLote,
+        IServicioAnalisisStagingFacturas
+            servicioFacturas,
+        IServicioAnalisisStagingNotasFactura
+            servicioNotas,
+        IServicioAnalisisStagingGlosas
+            servicioGlosas,
+        IServicioAnalisisStagingPagos
+            servicioPagos,
         ILogger<ImportacionController> logger)
     {
         ArgumentNullException.ThrowIfNull(
-            servicioAnalisisImportacion);
+            servicioRegistroLote);
+
+        ArgumentNullException.ThrowIfNull(
+            servicioFacturas);
+
+        ArgumentNullException.ThrowIfNull(
+            servicioNotas);
+
+        ArgumentNullException.ThrowIfNull(
+            servicioGlosas);
+
+        ArgumentNullException.ThrowIfNull(
+            servicioPagos);
 
         ArgumentNullException.ThrowIfNull(logger);
 
-        _servicioAnalisisImportacion =
-            servicioAnalisisImportacion;
+        _servicioRegistroLote =
+            servicioRegistroLote;
 
+        _servicioFacturas = servicioFacturas;
+        _servicioNotas = servicioNotas;
+        _servicioGlosas = servicioGlosas;
+        _servicioPagos = servicioPagos;
         _logger = logger;
     }
 
     /// <summary>
-    /// Muestra la pantalla de análisis previo.
+    /// Muestra la pantalla principal de importación.
     /// </summary>
     [HttpGet("")]
     public IActionResult Index()
@@ -49,8 +92,8 @@ public sealed class ImportacionController : Controller
     }
 
     /// <summary>
-    /// Analiza el archivo seleccionado sin modificar
-    /// la base de datos.
+    /// Registra, analiza y almacena en staging
+    /// el archivo modular seleccionado.
     /// </summary>
     [HttpPost("analizar")]
     [ValidateAntiForgeryToken]
@@ -64,6 +107,7 @@ public sealed class ImportacionController : Controller
         AnalisisImportacionViewModel modelo,
         CancellationToken cancellationToken)
     {
+        ValidarTipoImportacion(modelo.Tipo);
         ValidarArchivoWeb(modelo.Archivo);
 
         if (!ModelState.IsValid)
@@ -71,21 +115,38 @@ public sealed class ImportacionController : Controller
             return View("Index", modelo);
         }
 
+        var tipo = modelo.Tipo!.Value;
         var archivo = modelo.Archivo!;
 
-        /*
-         * Path.GetFileName evita utilizar rutas enviadas
-         * por el navegador como nombre del archivo.
-         */
-        var nombreSeguro = Path.GetFileName(
-            archivo.FileName);
+        var nombreSeguro =
+            Path.GetFileName(archivo.FileName);
 
-        await using var contenido =
-            archivo.OpenReadStream();
+        var usuario =
+            ObtenerUsuarioActual();
 
         try
         {
-            var solicitud =
+            await using var contenido =
+                await CopiarArchivoAsync(
+                    archivo,
+                    cancellationToken);
+
+            var resultadoRegistro =
+                await _servicioRegistroLote
+                    .RegistrarAsync(
+                        new
+                            SolicitudRegistroLoteImportacionDto
+                        {
+                            Tipo = tipo,
+                            NombreArchivo = nombreSeguro,
+                            Contenido = contenido,
+                            Usuario = usuario
+                        },
+                        cancellationToken);
+
+            contenido.Position = 0;
+
+            var solicitudAnalisis =
                 new SolicitudAnalisisImportacionDto
                 {
                     NombreArchivo = nombreSeguro,
@@ -93,24 +154,41 @@ public sealed class ImportacionController : Controller
                 };
 
             var resultado =
-                await _servicioAnalisisImportacion
-                    .AnalizarAsync(
-                        solicitud,
-                        cancellationToken);
+                await AnalizarSegunTipoAsync(
+                    tipo,
+                    resultadoRegistro.LoteId,
+                    solicitudAnalisis,
+                    usuario,
+                    cancellationToken);
 
-            var resultadoVista =
-                new AnalisisImportacionViewModel
-                {
-                    Resultado = resultado
-                };
+            _logger.LogInformation(
+                "Lote {LoteId} de tipo {Tipo} analizado. " +
+                "Válido: {EsValido}. Usuario: {Usuario}.",
+                resultado.LoteId,
+                resultado.Tipo,
+                resultado.EsValido,
+                usuario);
 
             return View(
                 "Index",
-                resultadoVista);
+                new AnalisisImportacionViewModel
+                {
+                    Tipo = tipo,
+                    Resultado = resultado
+                });
         }
         catch (ExcepcionValidacionAplicacion excepcion)
         {
             AgregarErroresValidacion(excepcion);
+
+            return View("Index", modelo);
+        }
+        catch (ExcepcionArchivoImportacionDuplicado)
+        {
+            ModelState.AddModelError(
+                nameof(modelo.Archivo),
+                "Este archivo ya fue registrado para el " +
+                "mismo tipo de importación.");
 
             return View("Index", modelo);
         }
@@ -122,23 +200,409 @@ public sealed class ImportacionController : Controller
         }
         catch (Exception excepcion)
         {
-            /*
-             * El detalle técnico se registra en el log,
-             * pero nunca se muestra al usuario.
-             */
             _logger.LogError(
                 excepcion,
-                "No fue posible analizar un archivo de " +
-                "facturación. Identificador: {TraceIdentifier}",
+                "No fue posible analizar una importación " +
+                "modular. Tipo: {Tipo}. Identificador: " +
+                "{TraceIdentifier}.",
+                tipo,
                 HttpContext.TraceIdentifier);
 
             ModelState.AddModelError(
                 nameof(modelo.Archivo),
-                "No fue posible leer el archivo. Verifique " +
-                "que sea un documento XLSX válido y que no " +
-                "esté dañado.");
+                "No fue posible procesar el archivo. " +
+                "Verifique que corresponda a la plantilla " +
+                "seleccionada, que sea XLSX y que no esté " +
+                "dañado.");
 
             return View("Index", modelo);
+        }
+    }
+
+    private async Task<
+        ResultadoImportacionModularViewModel>
+        AnalizarSegunTipoAsync(
+            TipoImportacion tipo,
+            Guid loteId,
+            SolicitudAnalisisImportacionDto solicitud,
+            string usuario,
+            CancellationToken cancellationToken)
+    {
+        switch (tipo)
+        {
+            case TipoImportacion.Facturas:
+                {
+                    var resultado =
+                        await _servicioFacturas
+                            .AnalizarYPrepararAsync(
+                                loteId,
+                                solicitud,
+                                usuario,
+                                cancellationToken);
+
+                    return MapearFacturas(
+                        tipo,
+                        resultado);
+                }
+
+            case TipoImportacion.NotasFactura:
+                {
+                    var resultado =
+                        await _servicioNotas
+                            .AnalizarYPrepararAsync(
+                                loteId,
+                                solicitud,
+                                usuario,
+                                cancellationToken);
+
+                    return MapearNotas(
+                        tipo,
+                        resultado);
+                }
+
+            case TipoImportacion.Glosas:
+                {
+                    var resultado =
+                        await _servicioGlosas
+                            .AnalizarYPrepararAsync(
+                                loteId,
+                                solicitud,
+                                usuario,
+                                cancellationToken);
+
+                    return MapearGlosas(
+                        tipo,
+                        resultado);
+                }
+
+            case TipoImportacion.Pagos:
+                {
+                    var resultado =
+                        await _servicioPagos
+                            .AnalizarYPrepararAsync(
+                                loteId,
+                                solicitud,
+                                usuario,
+                                cancellationToken);
+
+                    return MapearPagos(
+                        tipo,
+                        resultado);
+                }
+
+            default:
+                throw new InvalidOperationException(
+                    "El tipo de importación no está " +
+                    "habilitado en la aplicación web.");
+        }
+    }
+
+    private static
+        ResultadoImportacionModularViewModel
+        MapearFacturas(
+            TipoImportacion tipo,
+            ResultadoAnalisisStagingFacturasDto
+                resultado)
+    {
+        var analisis = resultado.Analisis;
+
+        return new ResultadoImportacionModularViewModel
+        {
+            LoteId = resultado.Lote.LoteId,
+            Tipo = tipo,
+            EstadoLote = resultado.Lote.Estado,
+            NombreArchivo = analisis.NombreArchivo,
+            EsValido = analisis.EsValido,
+
+            PuedeConfirmarse =
+                resultado.Lote.PuedeConfirmarse,
+
+            TotalFilasAnalizadas =
+                analisis.TotalFilasAnalizadas,
+
+            TotalErrores = analisis.TotalErrores,
+
+            TotalAdvertencias =
+                analisis.TotalAdvertencias,
+
+            CatalogosNoMapeados =
+                analisis.CatalogosNoMapeados,
+
+            HojasDetectadas =
+                analisis.HojasDetectadas,
+
+            Inconsistencias =
+                analisis.Inconsistencias,
+
+            Indicadores =
+            [
+                CrearIndicador(
+                    "Facturas temporales",
+                    resultado.TotalFacturasTemporales),
+
+                CrearIndicador(
+                    "Facturas detectadas",
+                    analisis.FacturasDetectadas),
+
+                CrearIndicador(
+                    "Movimientos heredados",
+                    analisis.MovimientosDetectados),
+
+                CrearIndicador(
+                    "Catálogos sin mapear",
+                    analisis.CatalogosNoMapeados)
+            ]
+        };
+    }
+
+    private static
+        ResultadoImportacionModularViewModel
+        MapearNotas(
+            TipoImportacion tipo,
+            ResultadoAnalisisStagingNotasFacturaDto
+                resultado)
+    {
+        var validacion = resultado.Validacion;
+
+        var totalAdvertencias =
+            ContarAdvertencias(
+                validacion.Inconsistencias);
+
+        return new ResultadoImportacionModularViewModel
+        {
+            LoteId = resultado.Lote.LoteId,
+            Tipo = tipo,
+            EstadoLote = resultado.Lote.Estado,
+            NombreArchivo = validacion.NombreArchivo,
+            EsValido = validacion.EsValido,
+
+            PuedeConfirmarse =
+                resultado.Lote.PuedeConfirmarse,
+
+            TotalFilasAnalizadas =
+                validacion.TotalFilasAnalizadas,
+
+            TotalErrores =
+                validacion.TotalErrores,
+
+            TotalAdvertencias =
+                totalAdvertencias,
+
+            CatalogosNoMapeados =
+                validacion.CatalogosNoMapeados,
+
+            HojasDetectadas =
+                validacion.HojasDetectadas,
+
+            Inconsistencias =
+                validacion.Inconsistencias,
+
+            Indicadores =
+            [
+                CrearIndicador(
+                    "Notas temporales",
+                    resultado.TotalNotasTemporales),
+
+                CrearIndicador(
+                    "Notas crédito",
+                    resultado
+                        .TotalNotasCreditoTemporales),
+
+                CrearIndicador(
+                    "Notas débito",
+                    resultado
+                        .TotalNotasDebitoTemporales),
+
+                CrearIndicador(
+                    "Impacto neto",
+                    FormatearMoneda(
+                        resultado.ImpactoNetoSaldo))
+            ]
+        };
+    }
+
+    private static
+        ResultadoImportacionModularViewModel
+        MapearGlosas(
+            TipoImportacion tipo,
+            ResultadoAnalisisStagingGlosasDto
+                resultado)
+    {
+        var validacion = resultado.Validacion;
+
+        return new ResultadoImportacionModularViewModel
+        {
+            LoteId = resultado.Lote.LoteId,
+            Tipo = tipo,
+            EstadoLote = resultado.Lote.Estado,
+            NombreArchivo = validacion.NombreArchivo,
+            EsValido = validacion.EsValido,
+
+            PuedeConfirmarse =
+                resultado.Lote.PuedeConfirmarse,
+
+            TotalFilasAnalizadas =
+                validacion.TotalFilasAnalizadas,
+
+            TotalErrores =
+                validacion.TotalErrores,
+
+            TotalAdvertencias =
+                validacion.TotalAdvertencias,
+
+            CatalogosNoMapeados =
+                validacion.CatalogosNoMapeados,
+
+            HojasDetectadas =
+                validacion.HojasDetectadas,
+
+            Inconsistencias =
+                validacion.Inconsistencias,
+
+            Indicadores =
+            [
+                CrearIndicador(
+                    "Glosas temporales",
+                    resultado.TotalGlosasTemporales),
+
+                CrearIndicador(
+                    "Con respuesta",
+                    resultado
+                        .TotalGlosasConRespuestaTemporales),
+
+                CrearIndicador(
+                    "Sin respuesta",
+                    resultado
+                        .TotalGlosasSinRespuestaTemporales),
+
+                CrearIndicador(
+                    "Valor glosado",
+                    FormatearMoneda(
+                        resultado.ValorTotalGlosado))
+            ]
+        };
+    }
+
+    private static
+        ResultadoImportacionModularViewModel
+        MapearPagos(
+            TipoImportacion tipo,
+            ResultadoAnalisisStagingPagosDto
+                resultado)
+    {
+        var validacion = resultado.Validacion;
+
+        return new ResultadoImportacionModularViewModel
+        {
+            LoteId = resultado.Lote.LoteId,
+            Tipo = tipo,
+            EstadoLote = resultado.Lote.Estado,
+            NombreArchivo = validacion.NombreArchivo,
+            EsValido = validacion.EsValido,
+
+            PuedeConfirmarse =
+                resultado.Lote.PuedeConfirmarse,
+
+            TotalFilasAnalizadas =
+                validacion.TotalFilasAnalizadas,
+
+            TotalErrores =
+                validacion.TotalErrores,
+
+            TotalAdvertencias =
+                validacion.TotalAdvertencias,
+
+            CatalogosNoMapeados =
+                validacion.CatalogosNoMapeados,
+
+            HojasDetectadas =
+                validacion.HojasDetectadas,
+
+            Inconsistencias =
+                validacion.Inconsistencias,
+
+            Indicadores =
+            [
+                CrearIndicador(
+                    "Pagos temporales",
+                    resultado.TotalPagosTemporales),
+
+                CrearIndicador(
+                    "Aplicaciones",
+                    resultado
+                        .TotalAplicacionesTemporales),
+
+                CrearIndicador(
+                    "Valor pagado",
+                    FormatearMoneda(
+                        resultado.ValorTotalPagado)),
+
+                CrearIndicador(
+                    "Valor cruzado",
+                    FormatearMoneda(
+                        resultado.ValorTotalCruzado))
+            ]
+        };
+    }
+
+    private static IndicadorImportacionViewModel
+        CrearIndicador(
+            string etiqueta,
+            int valor)
+    {
+        return CrearIndicador(
+            etiqueta,
+            valor.ToString("N0"));
+    }
+
+    private static IndicadorImportacionViewModel
+        CrearIndicador(
+            string etiqueta,
+            string valor)
+    {
+        return new IndicadorImportacionViewModel
+        {
+            Etiqueta = etiqueta,
+            Valor = valor
+        };
+    }
+
+    private static string FormatearMoneda(
+        decimal valor)
+    {
+        return valor.ToString(
+            "C2",
+            CultureInfo.GetCultureInfo("es-CO"));
+    }
+
+    private static int ContarAdvertencias(
+        IReadOnlyCollection<
+            InconsistenciaImportacionDto>
+            inconsistencias)
+    {
+        return inconsistencias.Count(
+            inconsistencia =>
+                inconsistencia.Severidad ==
+                SeveridadInconsistenciaImportacion
+                    .Advertencia);
+    }
+
+    private void ValidarTipoImportacion(
+        TipoImportacion? tipo)
+    {
+        var esPermitido =
+            tipo is
+                TipoImportacion.Facturas or
+                TipoImportacion.NotasFactura or
+                TipoImportacion.Glosas or
+                TipoImportacion.Pagos;
+
+        if (!esPermitido)
+        {
+            ModelState.AddModelError(
+                nameof(
+                    AnalisisImportacionViewModel.Tipo),
+                "Debe seleccionar un tipo de importación.");
         }
     }
 
@@ -160,7 +624,7 @@ public sealed class ImportacionController : Controller
             ModelState.AddModelError(
                 nameof(
                     AnalisisImportacionViewModel.Archivo),
-                "El archivo seleccionado se encuentra vacío.");
+                "El archivo seleccionado está vacío.");
 
             return;
         }
@@ -172,21 +636,77 @@ public sealed class ImportacionController : Controller
                 nameof(
                     AnalisisImportacionViewModel.Archivo),
                 $"El archivo no puede superar los " +
-                $"{LimitesCargaArchivos.TamanoMaximoMegabytes} MB.");
+                $"{LimitesCargaArchivos
+                    .TamanoMaximoMegabytes} MB.");
+
+            return;
         }
+
+        var extension =
+            Path.GetExtension(archivo.FileName);
+
+        if (!string.Equals(
+                extension,
+                ".xlsx",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            ModelState.AddModelError(
+                nameof(
+                    AnalisisImportacionViewModel.Archivo),
+                "Únicamente se permiten archivos XLSX.");
+        }
+    }
+
+    private static async Task<MemoryStream>
+        CopiarArchivoAsync(
+            IFormFile archivo,
+            CancellationToken cancellationToken)
+    {
+        await using var origen =
+            archivo.OpenReadStream();
+
+        var contenido = new MemoryStream();
+
+        try
+        {
+            await origen.CopyToAsync(
+                contenido,
+                cancellationToken);
+
+            contenido.Position = 0;
+
+            return contenido;
+        }
+        catch
+        {
+            await contenido.DisposeAsync();
+            throw;
+        }
+    }
+
+    private string ObtenerUsuarioActual()
+    {
+        var usuarioAutenticado =
+            User.Identity?.IsAuthenticated == true
+                ? User.Identity.Name
+                : null;
+
+        return string.IsNullOrWhiteSpace(
+            usuarioAutenticado)
+                ? "usuario-web"
+                : usuarioAutenticado.Trim();
     }
 
     private void AgregarErroresValidacion(
         ExcepcionValidacionAplicacion excepcion)
     {
-        foreach (var mensajes
-                 in excepcion.Errores.Values)
+        foreach (var mensajes in
+                 excepcion.Errores.Values)
         {
             foreach (var mensaje in mensajes)
             {
                 ModelState.AddModelError(
-                    nameof(
-                        AnalisisImportacionViewModel.Archivo),
+                    string.Empty,
                     mensaje);
             }
         }

@@ -1,35 +1,36 @@
 ﻿@using SeguimientoFacturacion.Application.DTOs.Importacion
+@using SeguimientoFacturacion.Domain.Enums
 @model SeguimientoFacturacion.ViewModels.Importacion.AnalisisImportacionViewModel
 
 @{
-    ViewData["Title"] = "Análisis de importación";
+    ViewData["Title"] = "Importación masiva";
     var resultado = Model.Resultado;
 }
 
 <div class="row justify-content-center">
-    <div class="col-12 col-xl-10">
+    <div class="col-12 col-xl-11">
         <div class="mb-4">
             <h1 class="h2 mb-2">
-                Análisis previo de facturación
+                Importación masiva modular
             </h1>
 
             <p class="text-secondary mb-0">
-                Verifique la estructura del archivo antes de
-                iniciar cualquier importación.
+                Seleccione el proceso y cargue la plantilla
+                correspondiente.
             </p>
         </div>
 
         <div class="alert alert-info" role="alert">
-            <strong>Modo seguro:</strong>
-            esta operación analiza el archivo en memoria.
-            No modifica el Excel ni guarda información en
-            SQL Server.
+            <strong>Etapa de análisis:</strong>
+            el archivo se valida y sus datos se almacenan
+            únicamente en staging. Todavía no se modifican
+            las tablas definitivas de facturación y cartera.
         </div>
 
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white">
                 <h2 class="h5 mb-0">
-                    Seleccionar archivo
+                    Seleccionar plantilla
                 </h2>
             </div>
 
@@ -45,44 +46,84 @@
                          role="alert">
                     </div>
 
-                    <div class="mb-3">
-                        <label asp-for="Archivo"
-                               class="form-label">
-                        </label>
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-5">
+                            <label asp-for="Tipo"
+                                   class="form-label">
+                            </label>
 
-                        <input asp-for="Archivo"
-                               type="file"
-                               class="form-control"
-                               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                            <select asp-for="Tipo"
+                                    class="form-select">
+                                <option value="">
+                                    Seleccione un proceso
+                                </option>
 
-                        <span asp-validation-for="Archivo"
-                              class="text-danger">
-                        </span>
+                                <option value="@((int)TipoImportacion.Facturas)">
+                                    Facturas y pacientes
+                                </option>
 
-                        <div class="form-text">
-                            Únicamente archivos XLSX.
-                            Tamaño máximo:
-                            @Model.TamanoMaximoMegabytes MB.
+                                <option value="@((int)TipoImportacion.NotasFactura)">
+                                    Notas crédito y débito
+                                </option>
+
+                                <option value="@((int)TipoImportacion.Glosas)">
+                                    Glosas y respuestas
+                                </option>
+
+                                <option value="@((int)TipoImportacion.Pagos)">
+                                    Pagos y aplicaciones
+                                </option>
+                            </select>
+
+                            <span asp-validation-for="Tipo"
+                                  class="text-danger">
+                            </span>
+                        </div>
+
+                        <div class="col-12 col-lg-7">
+                            <label asp-for="Archivo"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Archivo"
+                                   type="file"
+                                   class="form-control"
+                                   accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+
+                            <span asp-validation-for="Archivo"
+                                  class="text-danger">
+                            </span>
                         </div>
                     </div>
 
-                    <button type="submit"
-                            class="btn btn-primary">
-                        Analizar archivo
-                    </button>
+                    <div class="form-text mt-3">
+                        Únicamente archivos XLSX. Tamaño
+                        máximo: @Model.TamanoMaximoMegabytes MB.
+                        El tipo seleccionado debe coincidir
+                        con la estructura de la plantilla.
+                    </div>
+
+                    <div class="mt-3">
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Registrar y analizar archivo
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
 
         @if (resultado is not null)
         {
-            var claseResultado = resultado.EsValido
-                ? "alert-success"
-                : "alert-danger";
+            var claseResultado =
+                resultado.EsValido
+                    ? "alert-success"
+                    : "alert-danger";
 
-            var textoResultado = resultado.EsValido
-                ? "El archivo superó el análisis estructural."
-                : "El archivo contiene errores que impiden continuar.";
+            var textoResultado =
+                resultado.EsValido
+                    ? "El archivo superó el análisis y su staging fue preparado."
+                    : "El archivo contiene errores que impiden confirmarlo.";
 
             <div class="alert @claseResultado"
                  role="alert">
@@ -90,73 +131,70 @@
                 @textoResultado
             </div>
 
+            @if (resultado.PuedeConfirmarse)
+            {
+                <div class="alert alert-warning"
+                     role="alert">
+                    <strong>Lote preparado:</strong>
+                    los datos todavía no han sido trasladados
+                    a las tablas definitivas. La confirmación
+                    se habilitará en el siguiente paso.
+                </div>
+            }
+
             <div class="row g-3 mb-4">
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body">
-                            <div class="text-secondary small">
-                                Filas analizadas
-                            </div>
+                @foreach (var indicador in
+                    resultado.Indicadores)
+                {
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <div class="text-secondary small">
+                                    @indicador.Etiqueta
+                                </div>
 
-                            <div class="fs-3 fw-semibold">
-                                @resultado.TotalFilasAnalizadas.ToString("N0")
+                                <div class="fs-4 fw-semibold">
+                                    @indicador.Valor
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body">
-                            <div class="text-secondary small">
-                                Facturas detectadas
-                            </div>
-
-                            <div class="fs-3 fw-semibold">
-                                @resultado.FacturasDetectadas.ToString("N0")
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body">
-                            <div class="text-secondary small">
-                                Movimientos
-                            </div>
-
-                            <div class="fs-3 fw-semibold">
-                                @resultado.MovimientosDetectados.ToString("N0")
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body">
-                            <div class="text-secondary small">
-                                Catálogos sin mapear
-                            </div>
-
-                            <div class="fs-3 fw-semibold">
-                                @resultado.CatalogosNoMapeados.ToString("N0")
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                }
             </div>
 
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white">
                     <h2 class="h5 mb-0">
-                        Información detectada
+                        Información del lote
                     </h2>
                 </div>
 
                 <div class="card-body">
                     <dl class="row mb-0">
+                        <dt class="col-sm-4">
+                            Identificador del lote
+                        </dt>
+
+                        <dd class="col-sm-8">
+                            <code>@resultado.LoteId</code>
+                        </dd>
+
+                        <dt class="col-sm-4">
+                            Tipo
+                        </dt>
+
+                        <dd class="col-sm-8">
+                            @resultado.Tipo
+                        </dd>
+
+                        <dt class="col-sm-4">
+                            Estado
+                        </dt>
+
+                        <dd class="col-sm-8">
+                            @resultado.EstadoLote
+                        </dd>
+
                         <dt class="col-sm-4">
                             Archivo
                         </dt>
@@ -183,20 +221,11 @@
                         </dd>
 
                         <dt class="col-sm-4">
-                            Años
+                            Filas analizadas
                         </dt>
 
                         <dd class="col-sm-8">
-                            @if (resultado.AniosDetectados.Count > 0)
-                            {
-                                @string.Join(
-                                    ", ",
-                                    resultado.AniosDetectados)
-                            }
-                            else
-                            {
-                                <span>No detectados</span>
-                            }
+                            @resultado.TotalFilasAnalizadas.ToString("N0")
                         </dd>
 
                         <dt class="col-sm-4">
@@ -204,7 +233,7 @@
                         </dt>
 
                         <dd class="col-sm-8">
-                            @resultado.TotalErrores
+                            @resultado.TotalErrores.ToString("N0")
                         </dd>
 
                         <dt class="col-sm-4">
@@ -212,7 +241,15 @@
                         </dt>
 
                         <dd class="col-sm-8">
-                            @resultado.TotalAdvertencias
+                            @resultado.TotalAdvertencias.ToString("N0")
+                        </dd>
+
+                        <dt class="col-sm-4">
+                            Catálogos sin mapear
+                        </dt>
+
+                        <dd class="col-sm-8">
+                            @resultado.CatalogosNoMapeados.ToString("N0")
                         </dd>
                     </dl>
                 </div>
@@ -229,8 +266,7 @@
                     @if (resultado.Inconsistencias.Count == 0)
                     {
                         <div class="p-4 text-center text-success">
-                            No se encontraron inconsistencias
-                            estructurales.
+                            No se encontraron inconsistencias.
                         </div>
                     }
                     else
@@ -258,8 +294,8 @@
                                 </thead>
 
                                 <tbody>
-                                    @foreach (var inconsistencia
-                                        in resultado.Inconsistencias
+                                    @foreach (var inconsistencia in
+                                        resultado.Inconsistencias
                                             .OrderByDescending(
                                                 elemento =>
                                                     elemento.Severidad)
@@ -272,13 +308,15 @@
                                             SeveridadInconsistenciaImportacion
                                                 .Error;
 
-                                        var claseSeveridad = esError
-                                            ? "text-bg-danger"
-                                            : "text-bg-warning";
+                                        var claseSeveridad =
+                                            esError
+                                                ? "text-bg-danger"
+                                                : "text-bg-warning";
 
-                                        var textoSeveridad = esError
-                                            ? "Error"
-                                            : "Advertencia";
+                                        var textoSeveridad =
+                                            esError
+                                                ? "Error"
+                                                : "Advertencia";
 
                                         <tr>
                                             <td>
