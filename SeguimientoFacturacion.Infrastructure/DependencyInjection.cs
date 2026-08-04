@@ -1,15 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SeguimientoFacturacion.Application
-    .Interfaces.Importacion;
-using SeguimientoFacturacion.Application
-    .Interfaces.Persistence;
+using SeguimientoFacturacion.Application.Interfaces.Importacion;
+using SeguimientoFacturacion.Application.Interfaces.Persistence;
 using SeguimientoFacturacion.Infrastructure.Configuration;
 using SeguimientoFacturacion.Infrastructure.Persistence;
 using SeguimientoFacturacion.Infrastructure.Repositories;
-using SeguimientoFacturacion.Infrastructure
-    .Services.Importacion;
+using SeguimientoFacturacion.Infrastructure.Services.Importacion;
 
 namespace SeguimientoFacturacion.Infrastructure;
 
@@ -149,6 +146,14 @@ public static class DependencyInjection
         services.AddTransient<
             IPreparadorGlosasModular,
             PreparadorGlosasModularClosedXml>();
+
+        /*
+         * Flujo modular de pagos.
+         * El preparador se registrará en el PASO 045C.
+         */
+        services.AddTransient<
+            IValidadorPagosModular,
+            ValidadorPagosModularClosedXml>();
 
         /*
          * El análisis y el staging utilizarán las
