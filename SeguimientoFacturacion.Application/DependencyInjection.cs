@@ -1,10 +1,8 @@
 ﻿using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using SeguimientoFacturacion.Application
-    .Interfaces.Importacion;
-using SeguimientoFacturacion.Application
-    .Interfaces.Services;
+using SeguimientoFacturacion.Application.Interfaces.Importacion;
+using SeguimientoFacturacion.Application.Interfaces.Services;
 using SeguimientoFacturacion.Application.Services;
 
 namespace SeguimientoFacturacion.Application;
@@ -82,6 +80,10 @@ public static class DependencyInjection
         services.AddTransient<
             IServicioProcesamientoLoteGlosas,
             ServicioProcesamientoLoteGlosas>();
+
+        services.AddTransient<
+            IServicioProcesamientoLotePagos,
+            ServicioProcesamientoLotePagos>();
 
         return services;
     }
