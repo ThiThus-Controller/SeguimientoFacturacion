@@ -10,4 +10,22 @@ public static class EsquemasBaseDatos
     /// del sistema de seguimiento de facturación.
     /// </summary>
     public const string Facturacion = "facturacion";
+
+    /// <summary>
+    /// Esquema reservado para los registros históricos
+    /// e inmutables de auditoría.
+    /// </summary>
+    public const string Auditoria = "auditoria";
+
+    /// <summary>
+    /// Esquema reservado para el análisis y control
+    /// de las importaciones masivas.
+    /// </summary>
+    public const string Importacion = "importacion";
+
+    /// <summary>
+    /// Esquema reservado para pagos, aplicaciones
+    /// y operaciones de cartera.
+    /// </summary>
+    public const string Cartera = "cartera";
 }

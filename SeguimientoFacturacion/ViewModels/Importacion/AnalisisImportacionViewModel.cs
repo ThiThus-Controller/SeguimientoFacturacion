@@ -1,26 +1,34 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using SeguimientoFacturacion.Application.DTOs.Importacion;
 using SeguimientoFacturacion.Configurations;
+using SeguimientoFacturacion.Domain.Enums;
 
 namespace SeguimientoFacturacion.ViewModels.Importacion;
 
 /// <summary>
 /// Representa los datos utilizados por la pantalla
-/// de análisis previo de archivos.
+/// de análisis modular de archivos.
 /// </summary>
 public sealed class AnalisisImportacionViewModel
 {
     /// <summary>
+    /// Obtiene o establece el tipo de información
+    /// que contiene el archivo.
+    /// </summary>
+    [Display(Name = "Tipo de importación")]
+    public TipoImportacion? Tipo { get; set; }
+
+    /// <summary>
     /// Obtiene o establece el archivo seleccionado
     /// por el usuario.
     /// </summary>
-    [Display(Name = "Archivo de seguimiento")]
+    [Display(Name = "Archivo modular")]
     public IFormFile? Archivo { get; set; }
 
     /// <summary>
-    /// Obtiene el resultado del análisis realizado.
+    /// Obtiene el resultado unificado del análisis.
     /// </summary>
-    public ResultadoAnalisisImportacionDto? Resultado
+    public ResultadoImportacionModularViewModel?
+        Resultado
     {
         get;
         init;

@@ -66,19 +66,148 @@ public static class DependencyInjection
             ConsultaFacturasEfCore>();
 
         services.AddScoped<
+            IRepositorioImportaciones,
+            RepositorioImportacionesEfCore>();
+
+        services.AddScoped<
+            IRepositorioFacturasTemporalesImportacion,
+            RepositorioFacturasTemporalesImportacionEfCore>();
+
+        services.AddScoped<
+            IRepositorioNotasFacturaTemporalesImportacion,
+            RepositorioNotasFacturaTemporalesImportacionEfCore>();
+
+        services.AddScoped<
+            IRepositorioGlosasTemporalesImportacion,
+            RepositorioGlosasTemporalesImportacionEfCore>();
+
+        services.AddScoped<
+            IRepositorioPagosTemporalesImportacion,
+            RepositorioPagosTemporalesImportacionEfCore>();
+
+        services.AddScoped<
+            IRepositorioPersistenciaFacturasImportacion,
+            RepositorioPersistenciaFacturasImportacionEfCore>();
+
+        services.AddScoped<
+            IRepositorioPersistenciaNotasFacturaImportacion,
+            RepositorioPersistenciaNotasFacturaImportacionEfCore>();
+
+        services.AddScoped<
+            IRepositorioPersistenciaGlosasImportacion,
+            RepositorioPersistenciaGlosasImportacionEfCore>();
+
+        services.AddScoped<
+            IRepositorioPersistenciaPagosImportacion,
+            RepositorioPersistenciaPagosImportacionEfCore>();
+
+        services.AddScoped<
             IConsultaCatalogosImportacion,
             ConsultaCatalogosImportacionEfCore>();
 
+        services.AddScoped<
+            IConsultaReferenciasFacturasImportacion,
+            ConsultaReferenciasFacturasImportacionEfCore>();
+
+        services.AddTransient<
+            ICalculadorHashArchivo,
+            CalculadorHashArchivoSha256>();
+
+        services.AddTransient<
+            IInspectorEstructuraPlantilla,
+            InspectorEstructuraPlantillaClosedXml>();
+
+        /*
+         * Flujo modular activo para facturas.
+         */
+        services.AddTransient<
+            LectorEstructuralFacturasModularClosedXml>();
+
+        services.AddTransient<
+            IValidadorFilasFacturasModular,
+            ValidadorFilasFacturasModularClosedXml>();
+
+        services.AddTransient<
+            LectorFacturasModularValidadoClosedXml>();
+
+        services.AddTransient<
+            PreparadorFacturasModularClosedXml>();
+
+        /*
+         * Flujo modular de notas crédito y débito.
+         */
+        services.AddTransient<
+            IValidadorNotasFacturaModular,
+            ValidadorNotasFacturaModularClosedXml>();
+
+        services.AddTransient<
+            IPreparadorNotasFacturaModular,
+            PreparadorNotasFacturaModularClosedXml>();
+
+        /*
+         * Flujo modular de glosas.
+         */
+        services.AddTransient<
+            IValidadorGlosasModular,
+            ValidadorGlosasModularClosedXml>();
+
+        services.AddTransient<
+            IPreparadorGlosasModular,
+            PreparadorGlosasModularClosedXml>();
+
+        /*
+         * Flujo modular de pagos.
+         */
+        services.AddTransient<
+            IValidadorPagosModular,
+            ValidadorPagosModularClosedXml>();
+
+        services.AddTransient<
+            IPreparadorPagosModular,
+            PreparadorPagosModularClosedXml>();
+
+        /*
+         * El análisis y el staging utilizarán las
+         * implementaciones modulares de facturas.
+         */
+        services.AddTransient<
+            ILectorArchivoFacturacion>(
+                serviceProvider =>
+                    serviceProvider.GetRequiredService<
+                        LectorFacturasModularValidadoClosedXml>());
+
+        services.AddTransient<
+            IPreparadorImportacionFacturacion>(
+                serviceProvider =>
+                    serviceProvider.GetRequiredService<
+                        PreparadorFacturasModularClosedXml>());
+
+        /*
+         * Componentes heredados conservados temporalmente
+         * como tipos concretos para diagnóstico.
+         */
         services.AddTransient<
             LectorArchivoFacturacionClosedXml>();
 
         services.AddTransient<
-            ILectorArchivoFacturacion,
-            LectorArchivoFacturacionValidado>();
+            LectorArchivoFacturacionValidado>(
+                serviceProvider =>
+                    new LectorArchivoFacturacionValidado(
+                        serviceProvider.GetRequiredService<
+                            LectorArchivoFacturacionClosedXml>(),
+
+                        serviceProvider.GetRequiredService<
+                            IConsultaCatalogosImportacion>()));
 
         services.AddTransient<
-            IPreparadorImportacionFacturacion,
-            PreparadorImportacionFacturacionClosedXml>();
+            PreparadorImportacionFacturacionClosedXml>(
+                serviceProvider =>
+                    new PreparadorImportacionFacturacionClosedXml(
+                        serviceProvider.GetRequiredService<
+                            LectorArchivoFacturacionValidado>(),
+
+                        serviceProvider.GetRequiredService<
+                            IConsultaCatalogosImportacion>()));
 
         return services;
     }

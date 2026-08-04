@@ -1,20 +1,34 @@
 ﻿using SeguimientoFacturacion.Application.DTOs.Facturas;
 using SeguimientoFacturacion.Domain.Entities;
+using SeguimientoFacturacion.Domain.ValueObjects;
 
 namespace SeguimientoFacturacion.Application.Mappings;
 
 /// <summary>
-/// Contiene conversiones explícitas relacionadas con facturas.
+/// Contiene conversiones explícitas relacionadas
+/// con facturas.
 /// </summary>
 public static class FacturaMappings
 {
     /// <summary>
-    /// Convierte una entidad Factura en un DTO para la grilla.
+    /// Convierte una factura y su resumen financiero
+    /// en un DTO para la grilla principal.
     /// </summary>
+    /// <param name="factura">
+    /// Factura que contiene la información administrativa.
+    /// </param>
+    /// <param name="resumenSaldo">
+    /// Resultado financiero calculado para la factura.
+    /// </param>
+    /// <returns>
+    /// DTO preparado para presentación.
+    /// </returns>
     public static FacturaResumenDto ToResumenDto(
-        this Factura factura)
+        this Factura factura,
+        ResumenSaldoFactura resumenSaldo)
     {
         ArgumentNullException.ThrowIfNull(factura);
+        ArgumentNullException.ThrowIfNull(resumenSaldo);
 
         return new FacturaResumenDto
         {
@@ -25,48 +39,72 @@ public static class FacturaMappings
 
             AseguradoraId = factura.AseguradoraId,
             Aseguradora =
-                factura.Aseguradora?.Descripcion ?? string.Empty,
+                factura.Aseguradora?.Descripcion ??
+                string.Empty,
 
             Valor = factura.Valor,
             FechaRadicacion = factura.FechaRadicacion,
-            DiasHastaRadicacion = factura.DiasHastaRadicacion,
+            DiasHastaRadicacion =
+                factura.DiasHastaRadicacion,
 
-            TipoDocumentoId = factura.TipoDocumentoId,
+            TipoDocumentoId =
+                factura.TipoDocumentoId,
+
             TipoDocumentoSigla =
-                factura.TipoDocumento?.Sigla ?? string.Empty,
+                factura.TipoDocumento?.Sigla ??
+                string.Empty,
 
-            NumeroDocumento = factura.NumeroDocumento,
-            NombreCompleto = factura.NombreCompleto,
+            NumeroDocumento =
+                factura.NumeroDocumento,
+
+            NombreCompleto =
+                factura.NombreCompleto,
 
             AtencionId = factura.AtencionId,
             Atencion =
-                factura.Atencion?.Descripcion ?? string.Empty,
+                factura.Atencion?.Descripcion ??
+                string.Empty,
 
             CostoId = factura.CostoId,
             Costo =
-                factura.Costo?.Descripcion ?? string.Empty,
+                factura.Costo?.Descripcion ??
+                string.Empty,
 
-            NumeroAdmision = factura.NumeroAdmision,
-            FechaAdmision = factura.FechaAdmision,
+            NumeroAdmision =
+                factura.NumeroAdmision,
+
+            FechaAdmision =
+                factura.FechaAdmision,
 
             EstadoId = factura.EstadoId,
             Estado =
-                factura.Estado?.Descripcion ?? string.Empty,
+                factura.Estado?.Descripcion ??
+                string.Empty,
 
-            FacturadorId = factura.FacturadorId,
+            FacturadorId =
+                factura.FacturadorId,
+
             Facturador =
-                factura.Facturador?.Nombre ?? string.Empty,
+                factura.Facturador?.Nombre ??
+                string.Empty,
 
-            TotalNotasCredito = factura.TotalNotasCredito,
-            TotalAbonos = factura.TotalAbonos,
+            TotalNotasCredito =
+                resumenSaldo.TotalNotasCredito,
 
-            TotalGlosasODevoluciones =
-                factura.TotalGlosasODevoluciones,
+            TotalNotasDebito =
+                resumenSaldo.TotalNotasDebito,
 
-            TotalConciliaciones =
-                factura.TotalConciliaciones,
+            TotalPagosAplicados =
+                resumenSaldo.TotalPagosAplicados,
 
-            Saldo = factura.Saldo
+            ValorGlosaPendiente =
+                resumenSaldo.ValorGlosaPendiente,
+
+            SaldoCartera =
+                resumenSaldo.SaldoCartera,
+
+            SaldoDisponibleGestion =
+                resumenSaldo.SaldoDisponibleGestion
         };
     }
 }
