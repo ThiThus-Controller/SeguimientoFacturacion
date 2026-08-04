@@ -24,8 +24,10 @@ public interface IRepositorioImportaciones
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Determina si el archivo ya fue presentado
-    /// para el mismo tipo de importación.
+    /// Determina si existe un intento anterior del mismo
+    /// tipo y contenido que debe bloquear un nuevo registro.
+    /// Los lotes analizados con errores, fallidos o
+    /// cancelados permiten un nuevo intento.
     /// </summary>
     Task<bool> ExisteArchivoAsync(
         TipoImportacion tipo,

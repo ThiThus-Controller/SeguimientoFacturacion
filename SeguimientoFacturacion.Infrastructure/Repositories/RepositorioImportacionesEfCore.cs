@@ -2,6 +2,7 @@
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Enums;
+using SeguimientoFacturacion.Domain.Specifications;
 using SeguimientoFacturacion.Infrastructure.Persistence;
 
 namespace SeguimientoFacturacion.Infrastructure.Repositories;
@@ -52,7 +53,7 @@ public sealed class RepositorioImportacionesEfCore :
     }
 
     /// <inheritdoc />
-    public Task<bool> ExisteArchivoAsync(
+    public async Task<bool> ExisteArchivoAsync(
         TipoImportacion tipo,
         string hashArchivo,
         CancellationToken cancellationToken = default)
@@ -62,13 +63,29 @@ public sealed class RepositorioImportacionesEfCore :
         var hashNormalizado =
             ValidarYNormalizarHash(hashArchivo);
 
-        return _contexto.LotesImportacion
-            .AsNoTracking()
-            .AnyAsync(
-                lote =>
-                    lote.Tipo == tipo &&
-                    lote.HashArchivo == hashNormalizado,
-                cancellationToken);
+        var intentosAnteriores =
+            await _contexto.LotesImportacion
+                .AsNoTracking()
+                .Where(
+                    lote =>
+                        lote.Tipo == tipo &&
+                        lote.HashArchivo ==
+                        hashNormalizado)
+                .Select(
+                    lote =>
+                        new
+                        {
+                            lote.Estado,
+                            lote.TotalErrores
+                        })
+                .ToArrayAsync(cancellationToken);
+
+        return intentosAnteriores.Any(
+            intento =>
+                PoliticaReintentoLoteImportacion
+                    .ImpideNuevoIntento(
+                        intento.Estado,
+                        intento.TotalErrores));
     }
 
     /// <inheritdoc />
