@@ -82,6 +82,10 @@ public static class DependencyInjection
             RepositorioGlosasTemporalesImportacionEfCore>();
 
         services.AddScoped<
+            IRepositorioPagosTemporalesImportacion,
+            RepositorioPagosTemporalesImportacionEfCore>();
+
+        services.AddScoped<
             IRepositorioPersistenciaFacturasImportacion,
             RepositorioPersistenciaFacturasImportacionEfCore>();
 
@@ -148,7 +152,7 @@ public static class DependencyInjection
             PreparadorGlosasModularClosedXml>();
 
         /*
-         * Flujo modular de pagos
+         * Flujo modular de pagos.
          */
         services.AddTransient<
             IValidadorPagosModular,
