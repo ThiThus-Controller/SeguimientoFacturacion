@@ -30,28 +30,39 @@ public sealed class SeguimientoDbContext :
         Set<Factura>();
 
     /// <summary>
-    /// Obtiene las filas temporales de facturación
-    /// preparadas durante el análisis.
+    /// Obtiene las filas temporales de facturación.
     /// </summary>
     public DbSet<FacturaImportacionTemporal>
         FacturasTemporalesImportacion =>
             Set<FacturaImportacionTemporal>();
 
     /// <summary>
-    /// Obtiene las notas crédito y débito almacenadas
-    /// temporalmente durante una importación.
+    /// Obtiene las notas almacenadas temporalmente.
     /// </summary>
     public DbSet<NotaFacturaImportacionTemporal>
         NotasFacturaTemporalesImportacion =>
             Set<NotaFacturaImportacionTemporal>();
 
     /// <summary>
-    /// Obtiene las glosas almacenadas temporalmente
-    /// durante una importación.
+    /// Obtiene las glosas almacenadas temporalmente.
     /// </summary>
     public DbSet<GlosaImportacionTemporal>
         GlosasTemporalesImportacion =>
             Set<GlosaImportacionTemporal>();
+
+    /// <summary>
+    /// Obtiene los pagos almacenados temporalmente.
+    /// </summary>
+    public DbSet<PagoImportacionTemporal>
+        PagosTemporalesImportacion =>
+            Set<PagoImportacionTemporal>();
+
+    /// <summary>
+    /// Obtiene las aplicaciones temporales de pagos.
+    /// </summary>
+    public DbSet<AplicacionPagoImportacionTemporal>
+        AplicacionesPagoTemporalesImportacion =>
+            Set<AplicacionPagoImportacionTemporal>();
 
     /// <summary>
     /// Obtiene el conjunto normalizado de pacientes.
@@ -90,8 +101,7 @@ public sealed class SeguimientoDbContext :
         Set<LoteImportacion>();
 
     /// <summary>
-    /// Obtiene las inconsistencias detectadas
-    /// durante las importaciones.
+    /// Obtiene las inconsistencias de importación.
     /// </summary>
     public DbSet<InconsistenciaImportacion>
         InconsistenciasImportacion =>
@@ -100,13 +110,12 @@ public sealed class SeguimientoDbContext :
     /// <summary>
     /// Obtiene los registros históricos de auditoría.
     /// </summary>
-    public DbSet<RegistroAuditoria> RegistrosAuditoria =>
-        Set<RegistroAuditoria>();
+    public DbSet<RegistroAuditoria>
+        RegistrosAuditoria =>
+            Set<RegistroAuditoria>();
 
     /// <summary>
     /// Obtiene los movimientos del modelo anterior.
-    /// Esta colección será retirada al finalizar
-    /// la transición al modelo modular.
     /// </summary>
     public DbSet<Movimiento> Movimientos =>
         Set<Movimiento>();
@@ -148,8 +157,7 @@ public sealed class SeguimientoDbContext :
         Set<TipoDocumento>();
 
     /// <summary>
-    /// Obtiene el catálogo de movimientos anterior.
-    /// Será retirado junto con la entidad Movimiento.
+    /// Obtiene el catálogo anterior de movimientos.
     /// </summary>
     public DbSet<TipoMovimiento> TiposMovimiento =>
         Set<TipoMovimiento>();
