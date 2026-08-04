@@ -148,12 +148,15 @@ public static class DependencyInjection
             PreparadorGlosasModularClosedXml>();
 
         /*
-         * Flujo modular de pagos.
-         * El preparador se registrará en el PASO 045C.
+         * Flujo modular de pagos
          */
         services.AddTransient<
             IValidadorPagosModular,
             ValidadorPagosModularClosedXml>();
+
+        services.AddTransient<
+            IPreparadorPagosModular,
+            PreparadorPagosModularClosedXml>();
 
         /*
          * El análisis y el staging utilizarán las
