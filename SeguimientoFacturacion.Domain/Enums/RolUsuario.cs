@@ -1,30 +1,50 @@
-﻿namespace SeguimientoFacturacion.Domain.Enums;
+namespace SeguimientoFacturacion.Domain.Enums;
 
 /// <summary>
-/// Define los roles autorizados dentro del sistema.
+/// Define los perfiles de rol predeterminados del sistema.
+/// Un usuario puede tener más de uno y sus permisos pueden ser
+/// concedidos o revocados individualmente.
 /// </summary>
 public enum RolUsuario
 {
     /// <summary>
-    /// Puede administrar usuarios, catálogos, facturas,
-    /// movimientos y configuración.
+    /// Perfil con acceso total al sistema.
     /// </summary>
     Administrador = 1,
 
     /// <summary>
-    /// Puede supervisar facturas, movimientos,
-    /// indicadores y reportes.
+    /// Supervisa, confirma y procesa los módulos operativos.
     /// </summary>
     Supervisor = 2,
 
     /// <summary>
-    /// Puede registrar y actualizar información
-    /// relacionada con la facturación.
+    /// Opera facturas y pacientes.
     /// </summary>
-    Facturador = 3,
+    OperadorFacturas = 3,
 
     /// <summary>
-    /// Tiene acceso de solo lectura.
+    /// Perfil de acceso exclusivamente consultivo.
     /// </summary>
-    Consulta = 4
+    Consulta = 4,
+
+    /// <summary>
+    /// Opera notas crédito y débito.
+    /// </summary>
+    OperadorNotas = 5,
+
+    /// <summary>
+    /// Opera glosas, respuestas y conciliaciones.
+    /// </summary>
+    OperadorGlosas = 6,
+
+    /// <summary>
+    /// Opera pagos y sus aplicaciones.
+    /// </summary>
+    OperadorCartera = 7,
+
+    /// <summary>
+    /// No hereda permisos y se configura mediante concesiones
+    /// particulares para funciones especiales.
+    /// </summary>
+    Personalizado = 8
 }
