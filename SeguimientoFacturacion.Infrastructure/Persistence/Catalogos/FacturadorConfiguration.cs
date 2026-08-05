@@ -28,5 +28,30 @@ internal sealed class FacturadorConfiguration :
             .HasMaxLength(Facturador.NombreLongitudMaxima)
             .IsUnicode()
             .IsRequired();
+
+        builder.Property(facturador => facturador.Activo)
+            .HasDefaultValue(true)
+            .IsRequired();
+
+        builder.Property(facturador => facturador.FechaCreacionUtc)
+            .HasColumnType("datetimeoffset")
+            .HasDefaultValueSql("SYSUTCDATETIME()")
+            .IsRequired();
+
+        builder.Property(facturador => facturador.CreadoPor)
+            .HasMaxLength(100)
+            .IsUnicode()
+            .HasDefaultValue("migracion-sistema")
+            .IsRequired();
+
+        builder.Property(facturador => facturador.FechaModificacionUtc)
+            .HasColumnType("datetimeoffset");
+
+        builder.Property(facturador => facturador.ModificadoPor)
+            .HasMaxLength(100)
+            .IsUnicode();
+
+        builder.HasIndex(facturador => facturador.Nombre)
+            .HasDatabaseName("IX_Facturadores_Nombre");
     }
 }

@@ -29,6 +29,30 @@ public sealed class CatalogoTests
         Assert.Throws<ArgumentOutOfRangeException>(accion);
     }
 
+    [Fact]
+    public void CrearFacturador_DebeQuedarActivo()
+    {
+        var facturador = new Facturador(
+            id: 15,
+            nombre: " Facturador principal ");
+
+        Assert.Equal(15, facturador.Id);
+        Assert.Equal("Facturador principal", facturador.Nombre);
+        Assert.True(facturador.Activo);
+    }
+
+    [Fact]
+    public void DesactivarYActivarFacturador_DebeCambiarEstado()
+    {
+        var facturador = new Facturador(15, "Facturador");
+
+        facturador.Desactivar();
+        Assert.False(facturador.Activo);
+
+        facturador.Activar();
+        Assert.True(facturador.Activo);
+    }
+
     [Theory]
     [InlineData(TipoMovimientoCodigo.NotaCredito)]
     [InlineData(TipoMovimientoCodigo.Abono)]
