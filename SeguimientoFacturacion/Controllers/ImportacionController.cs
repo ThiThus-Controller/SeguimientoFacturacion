@@ -9,6 +9,7 @@ using SeguimientoFacturacion.Application
     .Interfaces.Importacion;
 using SeguimientoFacturacion.Configurations;
 using SeguimientoFacturacion.Domain.Enums;
+using SeguimientoFacturacion.Services.Seguridad;
 using SeguimientoFacturacion.ViewModels.Importacion;
 
 namespace SeguimientoFacturacion.Controllers;
@@ -45,6 +46,9 @@ public sealed class ImportacionController : Controller
     private readonly IAuthorizationService
         _servicioAutorizacion;
 
+    private readonly IContextoUsuarioActual
+        _contextoUsuarioActual;
+
     private readonly ILogger<ImportacionController>
         _logger;
 
@@ -67,6 +71,7 @@ public sealed class ImportacionController : Controller
         IServicioProcesamientoLoteFacturas
             servicioProcesamientoFacturas,
         IAuthorizationService servicioAutorizacion,
+        IContextoUsuarioActual contextoUsuarioActual,
         ILogger<ImportacionController> logger)
     {
         ArgumentNullException.ThrowIfNull(
@@ -93,6 +98,9 @@ public sealed class ImportacionController : Controller
         ArgumentNullException.ThrowIfNull(
             servicioAutorizacion);
 
+        ArgumentNullException.ThrowIfNull(
+            contextoUsuarioActual);
+
         ArgumentNullException.ThrowIfNull(logger);
 
         _servicioRegistroLote =
@@ -108,6 +116,7 @@ public sealed class ImportacionController : Controller
             servicioProcesamientoFacturas;
 
         _servicioAutorizacion = servicioAutorizacion;
+        _contextoUsuarioActual = contextoUsuarioActual;
         _logger = logger;
     }
 
@@ -182,8 +191,10 @@ public sealed class ImportacionController : Controller
         var nombreSeguro =
             Path.GetFileName(archivo.FileName);
 
-        var usuario =
-            ObtenerUsuarioActual();
+        var identidad =
+            _contextoUsuarioActual.ObtenerRequerido();
+
+        var usuario = identidad.NombreUsuario;
 
         try
         {
@@ -224,11 +235,13 @@ public sealed class ImportacionController : Controller
 
             _logger.LogInformation(
                 "Lote {LoteId} de tipo {Tipo} analizado. " +
-                "Válido: {EsValido}. Usuario: {Usuario}.",
+                "Válido: {EsValido}. Usuario: {Usuario}. " +
+                "UsuarioId: {UsuarioId}.",
                 resultado.LoteId,
                 resultado.Tipo,
                 resultado.EsValido,
-                usuario);
+                usuario,
+                identidad.UsuarioId);
 
             return View(
                 "Index",
@@ -301,7 +314,10 @@ public sealed class ImportacionController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var usuario = ObtenerUsuarioActual();
+        var identidad =
+            _contextoUsuarioActual.ObtenerRequerido();
+
+        var usuario = identidad.NombreUsuario;
 
         try
         {
@@ -317,9 +333,11 @@ public sealed class ImportacionController : Controller
                         cancellationToken);
 
             _logger.LogInformation(
-                "Lote {LoteId} confirmado por {Usuario}.",
+                "Lote {LoteId} confirmado por {Usuario}. " +
+                "UsuarioId: {UsuarioId}.",
                 resultado.LoteId,
-                usuario);
+                usuario,
+                identidad.UsuarioId);
 
             return View(
                 "Confirmacion",
@@ -415,7 +433,10 @@ public sealed class ImportacionController : Controller
             return View("ProcesarFacturas", modelo);
         }
 
-        var usuario = ObtenerUsuarioActual();
+        var identidad =
+            _contextoUsuarioActual.ObtenerRequerido();
+
+        var usuario = identidad.NombreUsuario;
 
         try
         {
@@ -433,11 +454,13 @@ public sealed class ImportacionController : Controller
             _logger.LogInformation(
                 "Lote {LoteId} procesado. Facturas: " +
                 "{TotalFacturas}. Pacientes nuevos: " +
-                "{TotalPacientes}. Usuario: {Usuario}.",
+                "{TotalPacientes}. Usuario: {Usuario}. " +
+                "UsuarioId: {UsuarioId}.",
                 resultado.LoteId,
                 resultado.TotalFacturasImportadas,
                 resultado.TotalPacientesNuevos,
-                usuario);
+                usuario,
+                identidad.UsuarioId);
 
             return View(
                 "ProcesamientoFacturasCompletado",
@@ -1007,19 +1030,6 @@ public sealed class ImportacionController : Controller
             await contenido.DisposeAsync();
             throw;
         }
-    }
-
-    private string ObtenerUsuarioActual()
-    {
-        var usuarioAutenticado =
-            User.Identity?.IsAuthenticated == true
-                ? User.Identity.Name
-                : null;
-
-        return string.IsNullOrWhiteSpace(
-            usuarioAutenticado)
-                ? "usuario-web"
-                : usuarioAutenticado.Trim();
     }
 
     private void AgregarErroresValidacion(

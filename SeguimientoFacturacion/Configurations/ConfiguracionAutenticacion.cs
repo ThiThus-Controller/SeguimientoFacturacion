@@ -19,7 +19,12 @@ public static class ConfiguracionAutenticacion
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddHttpContextAccessor();
         services.AddScoped<EventosCookieAutenticacion>();
+        services.AddScoped<
+            IContextoUsuarioActual,
+            ContextoUsuarioActualHttp>();
+
         services.AddSingleton<
             IAuthorizationHandler,
             ManejadorRequisitoPermisos>();
