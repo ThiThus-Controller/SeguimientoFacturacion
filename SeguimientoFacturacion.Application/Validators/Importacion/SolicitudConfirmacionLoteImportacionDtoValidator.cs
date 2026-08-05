@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using SeguimientoFacturacion.Application.DTOs.Importacion;
 using SeguimientoFacturacion.Domain.Entities;
+using SeguimientoFacturacion.Domain.Enums;
 
 namespace SeguimientoFacturacion.Application.Validators.Importacion;
 
@@ -22,6 +23,16 @@ public sealed class
             .NotEmpty()
             .WithMessage(
                 "El identificador del lote es obligatorio.");
+
+        RuleFor(solicitud => solicitud.Tipo)
+            .Must(
+                tipo => tipo is
+                    TipoImportacion.Facturas or
+                    TipoImportacion.NotasFactura or
+                    TipoImportacion.Glosas or
+                    TipoImportacion.Pagos)
+            .WithMessage(
+                "El tipo de importación no admite confirmación modular.");
 
         RuleFor(solicitud => solicitud.Usuario)
             .Cascade(CascadeMode.Stop)

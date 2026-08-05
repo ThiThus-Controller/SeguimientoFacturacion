@@ -295,23 +295,34 @@ public sealed class ImportacionController : Controller
     }
 
     /// <summary>
-    /// Confirma un lote válido de facturas para autorizar
+    /// Confirma un lote modular válido para autorizar
     /// su posterior procesamiento definitivo.
     /// </summary>
-    [HttpPost("confirmar-facturas")]
+    [HttpPost("confirmar")]
     [Authorize(
-        Policy = PoliticasAutorizacion.ConfirmarFacturas)]
+        Policy = PoliticasAutorizacion.ImportacionesAcceder)]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ConfirmarFacturas(
+    public async Task<IActionResult> ConfirmarLote(
         Guid loteId,
+        TipoImportacion tipo,
         CancellationToken cancellationToken)
     {
-        if (loteId == Guid.Empty)
+        if (loteId == Guid.Empty || !EsTipoModular(tipo))
         {
             TempData["ErrorImportacion"] =
-                "El identificador del lote es obligatorio.";
+                "El identificador y el tipo del lote son obligatorios.";
 
             return RedirectToAction(nameof(Index));
+        }
+
+        var autorizacion =
+            await _servicioAutorizacion.AuthorizeAsync(
+                User,
+                PoliticasAutorizacion.ParaConfirmacion(tipo));
+
+        if (!autorizacion.Succeeded)
+        {
+            return Forbid();
         }
 
         var identidad =
@@ -328,14 +339,16 @@ public sealed class ImportacionController : Controller
                             SolicitudConfirmacionLoteImportacionDto
                         {
                             LoteId = loteId,
+                            Tipo = tipo,
                             Usuario = usuario
                         },
                         cancellationToken);
 
             _logger.LogInformation(
-                "Lote {LoteId} confirmado por {Usuario}. " +
+                "Lote {LoteId} de tipo {Tipo} confirmado por {Usuario}. " +
                 "UsuarioId: {UsuarioId}.",
                 resultado.LoteId,
+                resultado.Tipo,
                 usuario,
                 identidad.UsuarioId);
 
@@ -344,6 +357,7 @@ public sealed class ImportacionController : Controller
                 new ConfirmacionLoteImportacionViewModel
                 {
                     LoteId = resultado.LoteId,
+                    Tipo = resultado.Tipo,
                     Estado = resultado.Estado,
                     ConfirmadoPor =
                         resultado.ConfirmadoPor,
@@ -362,7 +376,8 @@ public sealed class ImportacionController : Controller
                 ExcepcionValidacionAplicacion or
                 ExcepcionLoteImportacionNoEncontrado or
                 ExcepcionLoteImportacionNoConfirmable or
-                ExcepcionLoteImportacionSinStaging)
+                ExcepcionLoteImportacionSinStaging or
+                ExcepcionTipoLoteImportacionNoCoincide)
         {
             _logger.LogWarning(
                 excepcion,
@@ -952,6 +967,15 @@ public sealed class ImportacionController : Controller
                     AnalisisImportacionViewModel.Tipo),
                 "Debe seleccionar un tipo de importación.");
         }
+    }
+
+    private static bool EsTipoModular(TipoImportacion tipo)
+    {
+        return tipo is
+            TipoImportacion.Facturas or
+            TipoImportacion.NotasFactura or
+            TipoImportacion.Glosas or
+            TipoImportacion.Pagos;
     }
 
     private void ValidarArchivoWeb(

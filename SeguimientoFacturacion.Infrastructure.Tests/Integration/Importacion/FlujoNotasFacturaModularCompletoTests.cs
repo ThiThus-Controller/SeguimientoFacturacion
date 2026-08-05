@@ -83,6 +83,12 @@ public sealed class
                     RepositorioFacturasTemporalesImportacionEfCore(
                         contexto),
                 repositorioNotasTemporales,
+                new
+                    RepositorioGlosasTemporalesImportacionEfCore(
+                        contexto),
+                new
+                    RepositorioPagosTemporalesImportacionEfCore(
+                        contexto),
                 contexto,
                 new
                     SolicitudConfirmacionLoteImportacionDtoValidator(),
@@ -95,6 +101,7 @@ public sealed class
                     SolicitudConfirmacionLoteImportacionDto
                 {
                     LoteId = loteId,
+                    Tipo = TipoImportacion.NotasFactura,
                     Usuario = "usuario-confirmacion"
                 });
 

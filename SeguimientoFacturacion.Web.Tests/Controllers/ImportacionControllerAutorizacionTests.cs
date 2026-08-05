@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SeguimientoFacturacion.Configurations;
 using SeguimientoFacturacion.Controllers;
 using SeguimientoFacturacion.Services.Seguridad;
@@ -29,8 +30,8 @@ public sealed class ImportacionControllerAutorizacionTests
         nameof(ImportacionController.Analizar),
         PoliticasAutorizacion.ImportacionesAcceder)]
     [InlineData(
-        nameof(ImportacionController.ConfirmarFacturas),
-        PoliticasAutorizacion.ConfirmarFacturas)]
+        nameof(ImportacionController.ConfirmarLote),
+        PoliticasAutorizacion.ImportacionesAcceder)]
     [InlineData(
         nameof(ImportacionController.PrepararProcesamientoFacturas),
         PoliticasAutorizacion.ProcesarFacturas)]
@@ -50,5 +51,19 @@ public sealed class ImportacionControllerAutorizacionTests
             metodo.GetCustomAttributes<AuthorizeAttribute>());
 
         Assert.Equal(politicaEsperada, atributo.Policy);
+    }
+
+    [Fact]
+    public void ConfirmarLote_DebeSerPostYValidarAntiforgery()
+    {
+        var metodo = typeof(ImportacionController)
+            .GetMethod(nameof(ImportacionController.ConfirmarLote));
+
+        Assert.NotNull(metodo);
+        Assert.NotNull(
+            metodo.GetCustomAttribute<HttpPostAttribute>());
+        Assert.NotNull(
+            metodo.GetCustomAttribute<
+                ValidateAntiForgeryTokenAttribute>());
     }
 }

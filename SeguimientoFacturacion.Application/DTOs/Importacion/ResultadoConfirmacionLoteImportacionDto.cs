@@ -14,6 +14,11 @@ public sealed record ResultadoConfirmacionLoteImportacionDto
     public Guid LoteId { get; init; }
 
     /// <summary>
+    /// Obtiene el tipo real del lote confirmado.
+    /// </summary>
+    public TipoImportacion Tipo { get; init; }
+
+    /// <summary>
     /// Obtiene el estado alcanzado por el lote.
     /// </summary>
     public EstadoImportacion Estado { get; init; }

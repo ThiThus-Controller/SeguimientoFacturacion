@@ -37,7 +37,7 @@ public sealed class
 
         var resultado =
             await servicio.ConfirmarAsync(
-                CrearSolicitud(lote.Id));
+                CrearSolicitud(lote));
 
         Assert.Equal(
             EstadoImportacion.Confirmada,
@@ -59,15 +59,22 @@ public sealed class
             EstadoImportacion.Confirmada,
             resultado.Estado);
 
+        Assert.Equal(
+            TipoImportacion.Facturas,
+            resultado.Tipo);
+
         Assert.Equal(1, unidadTrabajo.NumeroInvocaciones);
     }
 
-    [Fact]
+    [Theory]
+    [InlineData(TipoImportacion.NotasFactura)]
+    [InlineData(TipoImportacion.Glosas)]
+    [InlineData(TipoImportacion.Pagos)]
     public async Task
-        Confirmar_LoteNotasConStaging_DebeConfirmarlo()
+        Confirmar_LoteDependienteConStaging_DebeConfirmarlo(
+            TipoImportacion tipo)
     {
-        var lote = CrearLoteAnalizado(
-            TipoImportacion.NotasFactura);
+        var lote = CrearLoteAnalizado(tipo);
 
         var unidadTrabajo = new UnidadTrabajoFalsa();
 
@@ -77,15 +84,17 @@ public sealed class
 
         var resultado =
             await servicio.ConfirmarAsync(
-                CrearSolicitud(lote.Id));
+                CrearSolicitud(lote));
 
         Assert.Equal(
             EstadoImportacion.Confirmada,
             lote.Estado);
 
         Assert.Equal(
-            TipoImportacion.NotasFactura,
+            tipo,
             lote.Tipo);
+
+        Assert.Equal(tipo, resultado.Tipo);
 
         Assert.Equal(
             EstadoImportacion.Confirmada,
@@ -97,6 +106,8 @@ public sealed class
     [Theory]
     [InlineData(TipoImportacion.Facturas)]
     [InlineData(TipoImportacion.NotasFactura)]
+    [InlineData(TipoImportacion.Glosas)]
+    [InlineData(TipoImportacion.Pagos)]
     public async Task
         Confirmar_LoteSinStaging_DebeRechazarConfirmacion(
             TipoImportacion tipo)
@@ -113,7 +124,7 @@ public sealed class
             await Assert.ThrowsAsync<
                 ExcepcionLoteImportacionSinStaging>(
                     () => servicio.ConfirmarAsync(
-                        CrearSolicitud(lote.Id)));
+                        CrearSolicitud(lote)));
 
         Assert.Equal(lote.Id, excepcion.LoteId);
         Assert.Equal(tipo, excepcion.Tipo);
@@ -143,7 +154,7 @@ public sealed class
             await Assert.ThrowsAsync<
                 ExcepcionLoteImportacionNoConfirmable>(
                     () => servicio.ConfirmarAsync(
-                        CrearSolicitud(lote.Id)));
+                        CrearSolicitud(lote)));
 
         Assert.Equal(lote.Id, excepcion.LoteId);
         Assert.Equal(1, excepcion.TotalErrores);
@@ -172,7 +183,7 @@ public sealed class
             await Assert.ThrowsAsync<
                 ExcepcionLoteImportacionNoConfirmable>(
                     () => servicio.ConfirmarAsync(
-                        CrearSolicitud(lote.Id)));
+                        CrearSolicitud(lote)));
 
         Assert.Equal(
             EstadoImportacion.Pendiente,
@@ -200,9 +211,45 @@ public sealed class
             await Assert.ThrowsAsync<
                 ExcepcionLoteImportacionNoEncontrado>(
                     () => servicio.ConfirmarAsync(
-                        CrearSolicitud(loteId)));
+                        CrearSolicitud(
+                            loteId,
+                            TipoImportacion.Facturas)));
 
         Assert.Equal(loteId, excepcion.LoteId);
+        Assert.Equal(0, unidadTrabajo.NumeroInvocaciones);
+    }
+
+    [Fact]
+    public async Task
+        Confirmar_TipoSolicitadoDiferenteAlLote_DebeRechazarlo()
+    {
+        var lote = CrearLoteAnalizado(
+            TipoImportacion.Glosas);
+
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+
+        var servicio = CrearServicio(
+            new RepositorioImportacionesFalso(lote),
+            unidadTrabajo);
+
+        var excepcion =
+            await Assert.ThrowsAsync<
+                ExcepcionTipoLoteImportacionNoCoincide>(
+                    () => servicio.ConfirmarAsync(
+                        CrearSolicitud(
+                            lote.Id,
+                            TipoImportacion.Facturas)));
+
+        Assert.Equal(lote.Id, excepcion.LoteId);
+        Assert.Equal(
+            TipoImportacion.Facturas,
+            excepcion.TipoSolicitado);
+        Assert.Equal(
+            TipoImportacion.Glosas,
+            excepcion.TipoReal);
+        Assert.Equal(
+            EstadoImportacion.Analizada,
+            lote.Estado);
         Assert.Equal(0, unidadTrabajo.NumeroInvocaciones);
     }
 
@@ -226,6 +273,7 @@ public sealed class
                         SolicitudConfirmacionLoteImportacionDto
                     {
                         LoteId = Guid.Empty,
+                        Tipo = TipoImportacion.Catalogos,
                         Usuario = " "
                     }));
 
@@ -282,12 +330,34 @@ public sealed class
                     repositorio.Lote.Id)]
                 : [];
 
+        IReadOnlyCollection<
+            GlosaImportacionTemporal> glosas =
+            tieneStaging &&
+            repositorio.Lote?.Tipo ==
+                TipoImportacion.Glosas
+                ? [CrearGlosaTemporal(
+                    repositorio.Lote.Id)]
+                : [];
+
+        IReadOnlyCollection<
+            PagoImportacionTemporal> pagos =
+            tieneStaging &&
+            repositorio.Lote?.Tipo ==
+                TipoImportacion.Pagos
+                ? [CrearPagoTemporal(
+                    repositorio.Lote.Id)]
+                : [];
+
         return new ServicioConfirmacionLoteImportacion(
             repositorio,
             new RepositorioFacturasTemporalFalso(
                 facturas),
             new RepositorioNotasTemporalFalso(
                 notas),
+            new RepositorioGlosasTemporalFalso(
+                glosas),
+            new RepositorioPagosTemporalFalso(
+                pagos),
             unidadTrabajo,
             new
                 SolicitudConfirmacionLoteImportacionDtoValidator(),
@@ -297,12 +367,22 @@ public sealed class
 
     private static
         SolicitudConfirmacionLoteImportacionDto
-        CrearSolicitud(Guid loteId)
+        CrearSolicitud(LoteImportacion lote)
+    {
+        return CrearSolicitud(lote.Id, lote.Tipo);
+    }
+
+    private static
+        SolicitudConfirmacionLoteImportacionDto
+        CrearSolicitud(
+            Guid loteId,
+            TipoImportacion tipo)
     {
         return new
             SolicitudConfirmacionLoteImportacionDto
         {
             LoteId = loteId,
+            Tipo = tipo,
             Usuario = " supervisor "
         };
     }
@@ -353,14 +433,57 @@ public sealed class
             valorNota: 50000m);
     }
 
+    private static GlosaImportacionTemporal
+        CrearGlosaTemporal(Guid loteId)
+    {
+        return new GlosaImportacionTemporal(
+            loteImportacionId: loteId,
+            hojaOrigen: "Glosas",
+            filaOrigen: 2,
+            identificadorFe: "FE000001",
+            prefijo: "FE",
+            numeroFactura: "000001",
+            aseguradoraId: 1,
+            fechaGlosa:
+                new DateOnly(2026, 7, 20),
+            valorGlosa: 50000m,
+            fechaRespuesta: null);
+    }
+
+    private static PagoImportacionTemporal
+        CrearPagoTemporal(Guid loteId)
+    {
+        return new PagoImportacionTemporal(
+            loteImportacionId: loteId,
+            aseguradoraId: 1,
+            fechaPago:
+                new DateOnly(2026, 7, 20),
+            recibo: "RC-001",
+            valorPagado: 100000m,
+            valorCruzado: 100000m,
+            retencion: decimal.Zero,
+            reteIca: decimal.Zero,
+            saldoFavorReportado: 100000m,
+            saldoCruzadoPendienteReportado: 100000m,
+            notas: null);
+    }
+
     private static LoteImportacion CrearLotePendiente(
         TipoImportacion tipo)
     {
+        var nombreArchivo = tipo switch
+        {
+            TipoImportacion.Facturas => "Facturas.xlsx",
+            TipoImportacion.NotasFactura =>
+                "NotasFactura.xlsx",
+            TipoImportacion.Glosas => "Glosas.xlsx",
+            TipoImportacion.Pagos => "Pagos.xlsx",
+            _ => "Importacion.xlsx"
+        };
+
         var lote = new LoteImportacion(
             tipo,
-            tipo == TipoImportacion.Facturas
-                ? "Facturas.xlsx"
-                : "NotasFactura.xlsx",
+            nombreArchivo,
             HashValido);
 
         lote.RegistrarCreacion(
@@ -515,6 +638,102 @@ public sealed class
         {
             IReadOnlyList<
                 NotaFacturaImportacionTemporal> resultado =
+                _registros
+                    .Where(
+                        registro =>
+                            registro.LoteImportacionId ==
+                            loteId)
+                    .ToList();
+
+            return Task.FromResult(resultado);
+        }
+
+        public Task EliminarAsync(
+            Guid loteId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class
+        RepositorioGlosasTemporalFalso :
+            IRepositorioGlosasTemporalesImportacion
+    {
+        private readonly IReadOnlyList<
+            GlosaImportacionTemporal> _registros;
+
+        public RepositorioGlosasTemporalFalso(
+            IReadOnlyCollection<
+                GlosaImportacionTemporal> registros)
+        {
+            _registros = registros.ToList();
+        }
+
+        public Task ReemplazarAsync(
+            Guid loteId,
+            IReadOnlyCollection<
+                GlosaImportacionTemporal> glosas,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<
+            GlosaImportacionTemporal>>
+            ListarAsync(
+                Guid loteId,
+                CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<GlosaImportacionTemporal> resultado =
+                _registros
+                    .Where(
+                        registro =>
+                            registro.LoteImportacionId ==
+                            loteId)
+                    .ToList();
+
+            return Task.FromResult(resultado);
+        }
+
+        public Task EliminarAsync(
+            Guid loteId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class
+        RepositorioPagosTemporalFalso :
+            IRepositorioPagosTemporalesImportacion
+    {
+        private readonly IReadOnlyList<
+            PagoImportacionTemporal> _registros;
+
+        public RepositorioPagosTemporalFalso(
+            IReadOnlyCollection<
+                PagoImportacionTemporal> registros)
+        {
+            _registros = registros.ToList();
+        }
+
+        public Task ReemplazarAsync(
+            Guid loteId,
+            IReadOnlyCollection<
+                PagoImportacionTemporal> pagos,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<
+            PagoImportacionTemporal>>
+            ListarAsync(
+                Guid loteId,
+                CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<PagoImportacionTemporal> resultado =
                 _registros
                     .Where(
                         registro =>

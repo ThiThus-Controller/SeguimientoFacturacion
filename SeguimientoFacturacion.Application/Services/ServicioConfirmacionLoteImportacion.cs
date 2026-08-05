@@ -25,6 +25,12 @@ public sealed class ServicioConfirmacionLoteImportacion :
         IRepositorioNotasFacturaTemporalesImportacion
         _repositorioNotasTemporales;
 
+    private readonly IRepositorioGlosasTemporalesImportacion
+        _repositorioGlosasTemporales;
+
+    private readonly IRepositorioPagosTemporalesImportacion
+        _repositorioPagosTemporales;
+
     private readonly IUnidadTrabajo _unidadTrabajo;
 
     private readonly IValidator<
@@ -42,6 +48,10 @@ public sealed class ServicioConfirmacionLoteImportacion :
             repositorioFacturasTemporales,
         IRepositorioNotasFacturaTemporalesImportacion
             repositorioNotasTemporales,
+        IRepositorioGlosasTemporalesImportacion
+            repositorioGlosasTemporales,
+        IRepositorioPagosTemporalesImportacion
+            repositorioPagosTemporales,
         IUnidadTrabajo unidadTrabajo,
         IValidator<SolicitudConfirmacionLoteImportacionDto>
             validator,
@@ -56,6 +66,12 @@ public sealed class ServicioConfirmacionLoteImportacion :
         ArgumentNullException.ThrowIfNull(
             repositorioNotasTemporales);
 
+        ArgumentNullException.ThrowIfNull(
+            repositorioGlosasTemporales);
+
+        ArgumentNullException.ThrowIfNull(
+            repositorioPagosTemporales);
+
         ArgumentNullException.ThrowIfNull(unidadTrabajo);
         ArgumentNullException.ThrowIfNull(validator);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -68,6 +84,12 @@ public sealed class ServicioConfirmacionLoteImportacion :
 
         _repositorioNotasTemporales =
             repositorioNotasTemporales;
+
+        _repositorioGlosasTemporales =
+            repositorioGlosasTemporales;
+
+        _repositorioPagosTemporales =
+            repositorioPagosTemporales;
 
         _unidadTrabajo = unidadTrabajo;
         _validator = validator;
@@ -107,6 +129,14 @@ public sealed class ServicioConfirmacionLoteImportacion :
                     solicitud.LoteId);
         }
 
+        if (lote.Tipo != solicitud.Tipo)
+        {
+            throw new ExcepcionTipoLoteImportacionNoCoincide(
+                lote.Id,
+                solicitud.Tipo,
+                lote.Tipo);
+        }
+
         if (!lote.PuedeConfirmarse)
         {
             throw new
@@ -142,6 +172,7 @@ public sealed class ServicioConfirmacionLoteImportacion :
         return new ResultadoConfirmacionLoteImportacionDto
         {
             LoteId = lote.Id,
+            Tipo = lote.Tipo,
             Estado = lote.Estado,
             ConfirmadoPor = lote.ConfirmadoPor!,
 
@@ -171,12 +202,25 @@ public sealed class ServicioConfirmacionLoteImportacion :
 
                 break;
 
-            /*
-             * Los demás módulos se incorporarán cuando
-             * sus repositorios de staging estén disponibles.
-             */
-            default:
+            case TipoImportacion.Glosas:
+                await ValidarStagingGlosasAsync(
+                    loteId,
+                    cancellationToken);
+
                 break;
+
+            case TipoImportacion.Pagos:
+                await ValidarStagingPagosAsync(
+                    loteId,
+                    cancellationToken);
+
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(
+                    nameof(tipo),
+                    tipo,
+                    "El tipo no admite confirmación modular.");
         }
     }
 
@@ -215,6 +259,40 @@ public sealed class ServicioConfirmacionLoteImportacion :
                 ExcepcionLoteImportacionSinStaging(
                     loteId,
                     TipoImportacion.NotasFactura);
+        }
+    }
+
+    private async Task ValidarStagingGlosasAsync(
+        Guid loteId,
+        CancellationToken cancellationToken)
+    {
+        var glosasTemporales =
+            await _repositorioGlosasTemporales.ListarAsync(
+                loteId,
+                cancellationToken);
+
+        if (glosasTemporales.Count == 0)
+        {
+            throw new ExcepcionLoteImportacionSinStaging(
+                loteId,
+                TipoImportacion.Glosas);
+        }
+    }
+
+    private async Task ValidarStagingPagosAsync(
+        Guid loteId,
+        CancellationToken cancellationToken)
+    {
+        var pagosTemporales =
+            await _repositorioPagosTemporales.ListarAsync(
+                loteId,
+                cancellationToken);
+
+        if (pagosTemporales.Count == 0)
+        {
+            throw new ExcepcionLoteImportacionSinStaging(
+                loteId,
+                TipoImportacion.Pagos);
         }
     }
 }
