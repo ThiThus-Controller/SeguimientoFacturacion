@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Configurations;
 using SeguimientoFacturacion.Controllers;
 using SeguimientoFacturacion.Services.Seguridad;
@@ -20,6 +21,13 @@ public sealed class ImportacionControllerAutorizacionTests
             parametro =>
                 parametro.ParameterType ==
                     typeof(IContextoUsuarioActual));
+
+        Assert.Contains(
+            constructor.GetParameters(),
+            parametro =>
+                parametro.ParameterType ==
+                    typeof(
+                        IServicioProcesamientoLoteNotasFactura));
     }
 
     [Theory]
@@ -38,6 +46,12 @@ public sealed class ImportacionControllerAutorizacionTests
     [InlineData(
         nameof(ImportacionController.ProcesarFacturas),
         PoliticasAutorizacion.ProcesarFacturas)]
+    [InlineData(
+        nameof(ImportacionController.PrepararProcesamientoNotasFactura),
+        PoliticasAutorizacion.ProcesarNotasFactura)]
+    [InlineData(
+        nameof(ImportacionController.ProcesarNotasFactura),
+        PoliticasAutorizacion.ProcesarNotasFactura)]
     public void Accion_DebeExigirPoliticaEsperada(
         string nombreAccion,
         string politicaEsperada)
@@ -53,11 +67,14 @@ public sealed class ImportacionControllerAutorizacionTests
         Assert.Equal(politicaEsperada, atributo.Policy);
     }
 
-    [Fact]
-    public void ConfirmarLote_DebeSerPostYValidarAntiforgery()
+    [Theory]
+    [InlineData(nameof(ImportacionController.ConfirmarLote))]
+    [InlineData(nameof(ImportacionController.ProcesarNotasFactura))]
+    public void AccionPost_DebeValidarAntiforgery(
+        string nombreAccion)
     {
         var metodo = typeof(ImportacionController)
-            .GetMethod(nameof(ImportacionController.ConfirmarLote));
+            .GetMethod(nombreAccion);
 
         Assert.NotNull(metodo);
         Assert.NotNull(

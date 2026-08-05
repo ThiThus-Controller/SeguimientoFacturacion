@@ -49,6 +49,13 @@ public sealed class LoteImportacionExistenteViewModel
     public bool PuedeContinuarConfirmacion { get; init; }
 
     /// <summary>
+    /// Indica si el lote confirmado puede continuar
+    /// hacia su procesamiento definitivo.
+    /// </summary>
+    public bool PuedeContinuarProcesamiento =>
+        Estado == EstadoImportacion.Confirmada;
+
+    /// <summary>
     /// Obtiene la descripción legible del tipo.
     /// </summary>
     public string TipoDescripcion => Tipo switch

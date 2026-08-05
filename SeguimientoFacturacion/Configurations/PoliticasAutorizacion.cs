@@ -42,6 +42,9 @@ public static class PoliticasAutorizacion
     public const string ProcesarFacturas =
         PrefijoPermiso + PermisosSistema.Facturas.Procesar;
 
+    public const string ProcesarNotasFactura =
+        "Importaciones.Procesar.NotasFactura";
+
     public const string UsuariosConsultar =
         PrefijoPermiso + PermisosSistema.Usuarios.Ver;
 
@@ -123,6 +126,12 @@ public static class PoliticasAutorizacion
     [
         PermisosSistema.NotasCredito.Confirmar,
         PermisosSistema.NotasDebito.Confirmar
+    ];
+
+    private static readonly string[] PermisosProcesamientoNotas =
+    [
+        PermisosSistema.NotasCredito.Procesar,
+        PermisosSistema.NotasDebito.Procesar
     ];
 
     /// <summary>
@@ -210,6 +219,12 @@ public static class PoliticasAutorizacion
             ConfirmarNotasFactura,
             RequisitoPermisos.ExigirTodos(
                 PermisosConfirmacionNotas));
+
+        AgregarPolitica(
+            options,
+            ProcesarNotasFactura,
+            RequisitoPermisos.ExigirTodos(
+                PermisosProcesamientoNotas));
 
         AgregarPolitica(
             options,

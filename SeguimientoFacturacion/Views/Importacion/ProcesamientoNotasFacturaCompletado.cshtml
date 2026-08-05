@@ -1,0 +1,116 @@
+@model SeguimientoFacturacion.ViewModels.Importacion.ResultadoProcesamientoLoteNotasFacturaViewModel
+
+@{
+    ViewData["Title"] = "Notas importadas";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        <div class="alert alert-success" role="alert">
+            <h1 class="h4 alert-heading">
+                Procesamiento de notas completado
+            </h1>
+            <p class="mb-0">
+                Las notas fueron trasladadas a las tablas
+                definitivas y el staging del lote fue liberado.
+            </p>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-secondary small">
+                            Registros en staging
+                        </div>
+                        <div class="fs-4 fw-semibold">
+                            @Model.TotalNotasStaging.ToString("N0")
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-secondary small">
+                            Notas importadas
+                        </div>
+                        <div class="fs-4 fw-semibold">
+                            @Model.TotalNotasImportadas.ToString("N0")
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-secondary small">
+                            Notas crédito
+                        </div>
+                        <div class="fs-4 fw-semibold">
+                            @Model.TotalNotasCreditoImportadas.ToString("N0")
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-secondary small">
+                            Notas débito
+                        </div>
+                        <div class="fs-4 fw-semibold">
+                            @Model.TotalNotasDebitoImportadas.ToString("N0")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h2 class="h5 mb-0">Resultado definitivo</h2>
+            </div>
+
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Lote</dt>
+                    <dd class="col-sm-7"><code>@Model.LoteId</code></dd>
+
+                    <dt class="col-sm-5">Estado</dt>
+                    <dd class="col-sm-7">@Model.Estado</dd>
+
+                    <dt class="col-sm-5">Notas omitidas</dt>
+                    <dd class="col-sm-7">
+                        @Model.TotalNotasOmitidas.ToString("N0")
+                    </dd>
+
+                    <dt class="col-sm-5">Impacto neto</dt>
+                    <dd class="col-sm-7">
+                        @Model.ImpactoNetoImportado.ToString("C0")
+                    </dd>
+
+                    <dt class="col-sm-5">Procesado por</dt>
+                    <dd class="col-sm-7">@Model.ProcesadoPor</dd>
+
+                    <dt class="col-sm-5">Finalización UTC</dt>
+                    <dd class="col-sm-7">
+                        @(Model.FechaFinalizacionUtc.ToString(
+                            "yyyy-MM-dd HH:mm:ss 'UTC'"))
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a asp-controller="Importacion"
+               asp-action="Index"
+               class="btn btn-primary">
+                Volver a importaciones
+            </a>
+        </div>
+    </div>
+</div>

@@ -43,6 +43,9 @@ public sealed class ImportacionController : Controller
     private readonly IServicioProcesamientoLoteFacturas
         _servicioProcesamientoFacturas;
 
+    private readonly IServicioProcesamientoLoteNotasFactura
+        _servicioProcesamientoNotas;
+
     private readonly IAuthorizationService
         _servicioAutorizacion;
 
@@ -70,6 +73,8 @@ public sealed class ImportacionController : Controller
             servicioConfirmacion,
         IServicioProcesamientoLoteFacturas
             servicioProcesamientoFacturas,
+        IServicioProcesamientoLoteNotasFactura
+            servicioProcesamientoNotas,
         IAuthorizationService servicioAutorizacion,
         IContextoUsuarioActual contextoUsuarioActual,
         ILogger<ImportacionController> logger)
@@ -96,6 +101,9 @@ public sealed class ImportacionController : Controller
             servicioProcesamientoFacturas);
 
         ArgumentNullException.ThrowIfNull(
+            servicioProcesamientoNotas);
+
+        ArgumentNullException.ThrowIfNull(
             servicioAutorizacion);
 
         ArgumentNullException.ThrowIfNull(
@@ -114,6 +122,9 @@ public sealed class ImportacionController : Controller
 
         _servicioProcesamientoFacturas =
             servicioProcesamientoFacturas;
+
+        _servicioProcesamientoNotas =
+            servicioProcesamientoNotas;
 
         _servicioAutorizacion = servicioAutorizacion;
         _contextoUsuarioActual = contextoUsuarioActual;
@@ -578,6 +589,157 @@ public sealed class ImportacionController : Controller
                 "No se confirmaron cambios parciales.");
 
             return View("ProcesarFacturas", modelo);
+        }
+    }
+
+    /// <summary>
+    /// Muestra la autorización final para procesar
+    /// un lote confirmado de notas crédito y débito.
+    /// </summary>
+    [HttpGet("notas/{loteId:guid}/procesar")]
+    [Authorize(
+        Policy = PoliticasAutorizacion.ProcesarNotasFactura)]
+    public IActionResult PrepararProcesamientoNotasFactura(
+        Guid loteId)
+    {
+        return View(
+            "ProcesarNotasFactura",
+            new ProcesamientoLoteNotasFacturaViewModel
+            {
+                LoteId = loteId
+            });
+    }
+
+    /// <summary>
+    /// Procesa definitivamente un lote confirmado
+    /// de notas crédito y débito.
+    /// </summary>
+    [HttpPost("notas/procesar")]
+    [Authorize(
+        Policy = PoliticasAutorizacion.ProcesarNotasFactura)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ProcesarNotasFactura(
+        ProcesamientoLoteNotasFacturaViewModel modelo,
+        CancellationToken cancellationToken)
+    {
+        if (modelo.LoteId == Guid.Empty)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                "El identificador del lote es obligatorio.");
+
+            return View("ProcesarNotasFactura", modelo);
+        }
+
+        var identidad =
+            _contextoUsuarioActual.ObtenerRequerido();
+
+        var usuario = identidad.NombreUsuario;
+
+        try
+        {
+            var resultado =
+                await _servicioProcesamientoNotas
+                    .ProcesarAsync(
+                        new
+                            SolicitudProcesamientoLoteNotasFacturaDto
+                        {
+                            LoteId = modelo.LoteId,
+                            Usuario = usuario
+                        },
+                        cancellationToken);
+
+            _logger.LogInformation(
+                "Lote de notas {LoteId} procesado. " +
+                "Importadas: {Importadas}; omitidas: " +
+                "{Omitidas}; usuario: {Usuario}; " +
+                "UsuarioId: {UsuarioId}.",
+                resultado.LoteId,
+                resultado.TotalNotasImportadas,
+                resultado.TotalNotasOmitidas,
+                usuario,
+                identidad.UsuarioId);
+
+            return View(
+                "ProcesamientoNotasFacturaCompletado",
+                new
+                    ResultadoProcesamientoLoteNotasFacturaViewModel
+                {
+                    LoteId = resultado.LoteId,
+                    Estado = resultado.Estado,
+                    TotalNotasStaging =
+                        resultado.TotalNotasStaging,
+                    TotalNotasImportadas =
+                        resultado.TotalNotasImportadas,
+                    TotalNotasOmitidas =
+                        resultado.TotalNotasOmitidas,
+                    TotalNotasCreditoImportadas =
+                        resultado.TotalNotasCreditoImportadas,
+                    TotalNotasDebitoImportadas =
+                        resultado.TotalNotasDebitoImportadas,
+                    ImpactoNetoImportado =
+                        resultado.ImpactoNetoImportado,
+                    ProcesadoPor = resultado.ProcesadoPor,
+                    FechaFinalizacionUtc =
+                        resultado.FechaFinalizacionUtc
+                });
+        }
+        catch (OperationCanceledException)
+            when (HttpContext.RequestAborted
+                .IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (ExcepcionLoteNotasFacturaNoProcesable excepcion)
+        {
+            _logger.LogWarning(
+                excepcion,
+                "El lote de notas {LoteId} no pudo " +
+                "procesarse. Usuario: {Usuario}.",
+                modelo.LoteId,
+                usuario);
+
+            ModelState.AddModelError(
+                string.Empty,
+                excepcion.Motivo);
+
+            return View("ProcesarNotasFactura", modelo);
+        }
+        catch (Exception excepcion)
+            when (excepcion is
+                ExcepcionValidacionAplicacion or
+                ExcepcionLoteImportacionNoEncontrado)
+        {
+            _logger.LogWarning(
+                excepcion,
+                "Solicitud inválida para procesar el lote " +
+                "de notas {LoteId}. Usuario: {Usuario}.",
+                modelo.LoteId,
+                usuario);
+
+            ModelState.AddModelError(
+                string.Empty,
+                "El lote de notas solicitado no puede " +
+                "procesarse.");
+
+            return View("ProcesarNotasFactura", modelo);
+        }
+        catch (Exception excepcion)
+        {
+            _logger.LogError(
+                excepcion,
+                "Error inesperado al procesar el lote " +
+                "de notas {LoteId}. Identificador: " +
+                "{TraceIdentifier}.",
+                modelo.LoteId,
+                HttpContext.TraceIdentifier);
+
+            ModelState.AddModelError(
+                string.Empty,
+                "No fue posible completar la importación " +
+                "de notas. No se confirmaron cambios parciales.");
+
+            return View("ProcesarNotasFactura", modelo);
         }
     }
 

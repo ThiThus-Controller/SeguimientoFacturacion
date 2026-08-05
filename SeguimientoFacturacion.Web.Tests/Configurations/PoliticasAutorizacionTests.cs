@@ -96,6 +96,30 @@ public sealed class PoliticasAutorizacionTests
     }
 
     [Fact]
+    public void Registrar_ProcesarNotas_DebeExigirAmbosPermisos()
+    {
+        var options = new AuthorizationOptions();
+        PoliticasAutorizacion.Registrar(options);
+
+        var politica = options.GetPolicy(
+            PoliticasAutorizacion.ProcesarNotasFactura);
+
+        Assert.NotNull(politica);
+
+        var requisito = Assert.Single(
+            politica.Requirements.OfType<RequisitoPermisos>());
+        var alternativa = Assert.Single(requisito.Alternativas);
+
+        Assert.Equal(2, alternativa.Count);
+        Assert.Contains(
+            PermisosSistema.NotasCredito.Procesar,
+            alternativa);
+        Assert.Contains(
+            PermisosSistema.NotasDebito.Procesar,
+            alternativa);
+    }
+
+    [Fact]
     public void Registrar_AccesoImportaciones_DebeTenerCuatroAlternativas()
     {
         var options = new AuthorizationOptions();
