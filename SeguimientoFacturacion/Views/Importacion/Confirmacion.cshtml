@@ -62,8 +62,8 @@
                     </dt>
 
                     <dd class="col-sm-7">
-                        @Model.FechaConfirmacionUtc
-                            .ToString("yyyy-MM-dd HH:mm:ss 'UTC'")
+                        @(Model.FechaConfirmacionUtc.ToString(
+                            "yyyy-MM-dd HH:mm:ss 'UTC'"))
                     </dd>
                 </dl>
             </div>
@@ -71,8 +71,15 @@
 
         <div class="mt-4">
             <a asp-controller="Importacion"
+               asp-action="PrepararProcesamientoFacturas"
+               asp-route-loteId="@Model.LoteId"
+               class="btn btn-danger">
+                Continuar al procesamiento definitivo
+            </a>
+
+            <a asp-controller="Importacion"
                asp-action="Index"
-               class="btn btn-outline-primary">
+               class="btn btn-outline-primary ms-2">
                 Volver a importaciones
             </a>
         </div>

@@ -1,0 +1,73 @@
+@model SeguimientoFacturacion.ViewModels.Importacion.ProcesamientoLoteFacturasViewModel
+
+@{
+    ViewData["Title"] = "Procesar facturas";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h1 class="h4 mb-0">
+                    Procesamiento definitivo de facturas
+                </h1>
+            </div>
+
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger"
+                     role="alert">
+                </div>
+
+                <p>
+                    Esta operación trasladará los pacientes y
+                    las facturas desde staging hacia las tablas
+                    definitivas de facturación.
+                </p>
+
+                <p>
+                    El servicio verificará nuevamente el estado
+                    del lote, la cantidad de registros temporales
+                    y la inexistencia de facturas duplicadas antes
+                    de guardar los cambios.
+                </p>
+
+                <dl class="row">
+                    <dt class="col-sm-5">
+                        Identificador del lote
+                    </dt>
+
+                    <dd class="col-sm-7">
+                        <code>@Model.LoteId</code>
+                    </dd>
+                </dl>
+
+                <div class="alert alert-warning" role="alert">
+                    <strong>Verificación requerida:</strong>
+                    confirme que existe una copia de seguridad
+                    reciente de la base de datos antes de continuar.
+                </div>
+
+                <form asp-controller="Importacion"
+                      asp-action="ProcesarFacturas"
+                      method="post"
+                      onsubmit="return confirm('Esta operación importará definitivamente las facturas y pacientes. ¿Desea continuar?');">
+                    @Html.AntiForgeryToken()
+
+                    <input asp-for="LoteId" type="hidden" />
+
+                    <button type="submit"
+                            class="btn btn-danger">
+                        Procesar facturas definitivamente
+                    </button>
+
+                    <a asp-controller="Importacion"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary ms-2">
+                        Cancelar
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
