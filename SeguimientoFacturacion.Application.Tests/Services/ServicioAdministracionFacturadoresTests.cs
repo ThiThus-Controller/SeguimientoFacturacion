@@ -20,12 +20,11 @@ public sealed class ServicioAdministracionFacturadoresTests
         var resultado = await servicio.CrearAsync(
             new SolicitudCreacionFacturadorDto
             {
-                Codigo = 25,
                 Nombre = " Facturador de prueba "
             },
             " administrador ");
 
-        Assert.Equal(25, resultado.Codigo);
+        Assert.Equal(1, resultado.Codigo);
         Assert.Equal("Facturador de prueba", resultado.Nombre);
         Assert.True(resultado.Activo);
         Assert.Equal("administrador", resultado.CreadoPor);
@@ -35,7 +34,7 @@ public sealed class ServicioAdministracionFacturadoresTests
     }
 
     [Fact]
-    public async Task Crear_CodigoDuplicado_DebeRechazarlo()
+    public async Task Crear_ConRegistros_DebeUsarCodigoMaximoMasUno()
     {
         var repositorio = new RepositorioFacturadoresFalso();
         repositorio.Facturadores.Add(
@@ -45,15 +44,17 @@ public sealed class ServicioAdministracionFacturadoresTests
             repositorio,
             new UnidadTrabajoFalsa());
 
-        var accion = () => servicio.CrearAsync(
+        var resultado = await servicio.CrearAsync(
             new SolicitudCreacionFacturadorDto
             {
-                Codigo = 25,
                 Nombre = "Otro facturador"
             },
             "administrador");
 
-        await Assert.ThrowsAsync<InvalidOperationException>(accion);
+        Assert.Equal(26, resultado.Codigo);
+        Assert.Contains(
+            repositorio.Facturadores,
+            facturador => facturador.Id == 26);
     }
 
     [Fact]
@@ -102,11 +103,11 @@ public sealed class ServicioAdministracionFacturadoresTests
     }
 
     [Fact]
-    public async Task Listar_DebeOrdenarPorNombre()
+    public async Task Listar_DebeOrdenarPorCodigo()
     {
         var repositorio = new RepositorioFacturadoresFalso();
+        repositorio.Facturadores.Add(CrearExistente(30, "Alfa"));
         repositorio.Facturadores.Add(CrearExistente(2, "Zeta"));
-        repositorio.Facturadores.Add(CrearExistente(1, "Alfa"));
 
         var servicio = CrearServicio(
             repositorio,
@@ -114,8 +115,8 @@ public sealed class ServicioAdministracionFacturadoresTests
 
         var resultado = await servicio.ListarAsync();
 
-        Assert.Equal(new[] { "Alfa", "Zeta" },
-            resultado.Select(item => item.Nombre));
+        Assert.Equal(new[] { 2, 30 },
+            resultado.Select(item => item.Codigo));
     }
 
     private static ServicioAdministracionFacturadores CrearServicio(
@@ -157,12 +158,14 @@ public sealed class ServicioAdministracionFacturadoresTests
                 Facturadores.SingleOrDefault(item => item.Id == codigo));
         }
 
-        public Task<bool> ExisteCodigoAsync(
-            int codigo,
+        public Task<int> ObtenerSiguienteCodigoAsync(
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult(
-                Facturadores.Any(item => item.Id == codigo));
+                Facturadores.Count == 0
+                    ? 1
+                    : checked(
+                        Facturadores.Max(item => item.Id) + 1));
         }
 
         public Task<bool> ExisteNombreAsync(

@@ -125,6 +125,37 @@ public sealed class PoliticasAutorizacionTests
             alternativa);
     }
 
+    [Theory]
+    [InlineData(
+        PoliticasAutorizacion.FacturadoresConsultar,
+        PermisosSistema.Facturadores.Ver)]
+    [InlineData(
+        PoliticasAutorizacion.FacturadoresCrear,
+        PermisosSistema.Facturadores.Crear)]
+    [InlineData(
+        PoliticasAutorizacion.FacturadoresEditar,
+        PermisosSistema.Facturadores.Editar)]
+    [InlineData(
+        PoliticasAutorizacion.FacturadoresCambiarEstado,
+        PermisosSistema.Facturadores.Inactivar)]
+    public void Registrar_AdministracionFacturadores_DebeExigirPermiso(
+        string nombrePolitica,
+        string permisoEsperado)
+    {
+        var options = new AuthorizationOptions();
+        PoliticasAutorizacion.Registrar(options);
+
+        var politica = options.GetPolicy(nombrePolitica);
+
+        Assert.NotNull(politica);
+
+        var requisito = Assert.Single(
+            politica.Requirements.OfType<RequisitoPermisos>());
+
+        var alternativa = Assert.Single(requisito.Alternativas);
+        Assert.Equal(new[] { permisoEsperado }, alternativa);
+    }
+
     [Fact]
     public void ParaAnalisis_Catalogos_DebeRechazarlo()
     {

@@ -14,8 +14,7 @@ public interface IRepositorioFacturadores
         int codigo,
         CancellationToken cancellationToken = default);
 
-    Task<bool> ExisteCodigoAsync(
-        int codigo,
+    Task<int> ObtenerSiguienteCodigoAsync(
         CancellationToken cancellationToken = default);
 
     Task<bool> ExisteNombreAsync(

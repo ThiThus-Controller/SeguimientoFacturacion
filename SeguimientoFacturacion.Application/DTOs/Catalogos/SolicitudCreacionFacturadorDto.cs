@@ -5,6 +5,5 @@ namespace SeguimientoFacturacion.Application.DTOs.Catalogos;
 /// </summary>
 public sealed record SolicitudCreacionFacturadorDto
 {
-    public required int Codigo { get; init; }
     public required string Nombre { get; init; }
 }

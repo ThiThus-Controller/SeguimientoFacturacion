@@ -26,8 +26,7 @@ public sealed class RepositorioFacturadoresEfCore :
     {
         return await _contexto.Facturadores
             .AsNoTracking()
-            .OrderBy(facturador => facturador.Nombre)
-            .ThenBy(facturador => facturador.Id)
+            .OrderBy(facturador => facturador.Id)
             .ToListAsync(cancellationToken);
     }
 
@@ -43,15 +42,21 @@ public sealed class RepositorioFacturadoresEfCore :
     }
 
     /// <inheritdoc />
-    public Task<bool> ExisteCodigoAsync(
-        int codigo,
+    public async Task<int> ObtenerSiguienteCodigoAsync(
         CancellationToken cancellationToken = default)
     {
-        return _contexto.Facturadores
+        var codigoMaximo = await _contexto.Facturadores
             .AsNoTracking()
-            .AnyAsync(
-                facturador => facturador.Id == codigo,
-                cancellationToken);
+            .Select(facturador => (int?)facturador.Id)
+            .MaxAsync(cancellationToken) ?? 0;
+
+        if (codigoMaximo == int.MaxValue)
+        {
+            throw new InvalidOperationException(
+                "No es posible generar otro código de facturador.");
+        }
+
+        return codigoMaximo + 1;
     }
 
     /// <inheritdoc />

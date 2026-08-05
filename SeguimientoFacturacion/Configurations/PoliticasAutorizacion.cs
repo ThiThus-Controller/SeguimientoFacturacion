@@ -48,6 +48,18 @@ public static class PoliticasAutorizacion
     public const string UsuariosRestablecerContrasena =
         PrefijoPermiso + PermisosSistema.Usuarios.RestablecerClave;
 
+    public const string FacturadoresConsultar =
+        PrefijoPermiso + PermisosSistema.Facturadores.Ver;
+
+    public const string FacturadoresCrear =
+        PrefijoPermiso + PermisosSistema.Facturadores.Crear;
+
+    public const string FacturadoresEditar =
+        PrefijoPermiso + PermisosSistema.Facturadores.Editar;
+
+    public const string FacturadoresCambiarEstado =
+        PrefijoPermiso + PermisosSistema.Facturadores.Inactivar;
+
     private static readonly string[] PermisosCreacionUsuarios =
     [
         PermisosSistema.Usuarios.Crear,

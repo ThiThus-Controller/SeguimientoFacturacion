@@ -14,6 +14,9 @@ public interface IServicioAdministracionFacturadores
         int codigo,
         CancellationToken cancellationToken = default);
 
+    Task<int> ObtenerSiguienteCodigoAsync(
+        CancellationToken cancellationToken = default);
+
     Task<FacturadorAdministracionDto> CrearAsync(
         SolicitudCreacionFacturadorDto solicitud,
         string actor,

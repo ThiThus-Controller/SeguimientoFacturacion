@@ -38,8 +38,7 @@ public sealed class ServicioAdministracionFacturadores :
             cancellationToken);
 
         return facturadores
-            .OrderBy(facturador => facturador.Nombre)
-            .ThenBy(facturador => facturador.Id)
+            .OrderBy(facturador => facturador.Id)
             .Select(Mapear)
             .ToArray();
     }
@@ -59,6 +58,14 @@ public sealed class ServicioAdministracionFacturadores :
     }
 
     /// <inheritdoc />
+    public Task<int> ObtenerSiguienteCodigoAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return _repositorio.ObtenerSiguienteCodigoAsync(
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<FacturadorAdministracionDto> CrearAsync(
         SolicitudCreacionFacturadorDto solicitud,
         string actor,
@@ -66,17 +73,11 @@ public sealed class ServicioAdministracionFacturadores :
     {
         ArgumentNullException.ThrowIfNull(solicitud);
 
-        ValidarCodigo(solicitud.Codigo);
         var actorNormalizado = ValidarActor(actor);
         var nombre = ValidarNombre(solicitud.Nombre);
 
-        if (await _repositorio.ExisteCodigoAsync(
-                solicitud.Codigo,
-                cancellationToken))
-        {
-            throw new InvalidOperationException(
-                "Ya existe un facturador con el código indicado.");
-        }
+        var codigo = await _repositorio.ObtenerSiguienteCodigoAsync(
+            cancellationToken);
 
         if (await _repositorio.ExisteNombreAsync(
                 nombre,
@@ -87,7 +88,7 @@ public sealed class ServicioAdministracionFacturadores :
         }
 
         var facturador = new Facturador(
-            solicitud.Codigo,
+            codigo,
             nombre);
 
         facturador.RegistrarCreacion(
