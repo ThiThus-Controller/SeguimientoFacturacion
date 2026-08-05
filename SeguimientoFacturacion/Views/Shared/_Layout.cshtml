@@ -1,4 +1,17 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Authorization
+@using SeguimientoFacturacion.Configurations
+@inject IAuthorizationService ServicioAutorizacion
+
+@{
+    var puedeImportar =
+        User.Identity?.IsAuthenticated == true &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.ImportacionesAcceder))
+        .Succeeded;
+}
+
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
@@ -50,6 +63,8 @@
                     d-sm-inline-flex
                     justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
                         <li class="nav-item">
                             <a class="nav-link text-dark"
                                asp-controller="Home"
@@ -58,13 +73,16 @@
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link text-dark"
-                               asp-controller="Importacion"
-                               asp-action="Index">
-                                Analizar importación
-                            </a>
-                        </li>
+                        @if (puedeImportar)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                   asp-controller="Importacion"
+                                   asp-action="Index">
+                                    Analizar importación
+                                </a>
+                            </li>
+                        }
 
                         <li class="nav-item">
                             <a class="nav-link text-dark"
@@ -73,6 +91,39 @@
                                 Privacidad
                             </a>
                         </li>
+                        }
+                    </ul>
+
+                    <ul class="navbar-nav align-items-sm-center">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <span class="navbar-text me-sm-3">
+                                    @User.Identity.Name
+                                </span>
+                            </li>
+
+                            <li class="nav-item">
+                                <form asp-controller="Cuenta"
+                                      asp-action="CerrarSesion"
+                                      method="post">
+                                    <button type="submit"
+                                            class="btn btn-link nav-link text-dark">
+                                        Cerrar sesión
+                                    </button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                   asp-controller="Cuenta"
+                                   asp-action="IniciarSesion">
+                                    Iniciar sesión
+                                </a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>

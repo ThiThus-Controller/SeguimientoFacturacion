@@ -13,6 +13,8 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(
     builder.Configuration);
 
+builder.Services.AddAutenticacionAplicacion();
+
 builder.Services.Configure<FormOptions>(
     options =>
     {
@@ -42,9 +44,12 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseRateLimiter();
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
+app.MapStaticAssets()
+    .AllowAnonymous();
 
 app.MapControllerRoute(
         name: "default",

@@ -20,6 +20,12 @@ public interface IProcesadorCredencialesUsuario
         CredencialUsuario credencial);
 
     /// <summary>
+    /// Ejecuta un trabajo criptográfico equivalente cuando el usuario
+    /// consultado no existe, reduciendo diferencias observables de tiempo.
+    /// </summary>
+    void SimularVerificacion(string contrasena);
+
+    /// <summary>
     /// Indica si la credencial debe recalcularse con la configuración
     /// criptográfica vigente después de una autenticación correcta.
     /// </summary>

@@ -90,6 +90,10 @@ public static class DependencyInjection
             IServicioInicializacionAdministrador,
             ServicioInicializacionAdministrador>();
 
+        services.AddTransient<
+            IServicioAutenticacionUsuario,
+            ServicioAutenticacionUsuario>();
+
         return services;
     }
 }

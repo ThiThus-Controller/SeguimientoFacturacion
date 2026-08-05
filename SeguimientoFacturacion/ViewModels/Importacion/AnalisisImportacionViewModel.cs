@@ -11,6 +11,16 @@ namespace SeguimientoFacturacion.ViewModels.Importacion;
 public sealed class AnalisisImportacionViewModel
 {
     /// <summary>
+    /// Obtiene o establece los procesos de importación que el usuario
+    /// autenticado tiene permitido ejecutar.
+    /// </summary>
+    public IReadOnlyCollection<TipoImportacion> TiposPermitidos
+    {
+        get;
+        set;
+    } = Array.Empty<TipoImportacion>();
+
+    /// <summary>
     /// Obtiene o establece el tipo de información
     /// que contiene el archivo.
     /// </summary>

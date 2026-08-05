@@ -11,6 +11,8 @@ namespace SeguimientoFacturacion.Infrastructure.Security;
 public sealed class ProcesadorCredencialesPbkdf2 :
     IProcesadorCredencialesUsuario
 {
+    private static readonly byte[] SaltVerificacionSimulada = new byte[32];
+    private static readonly byte[] HashVerificacionSimulada = new byte[32];
     public const string Algoritmo = "PBKDF2-HMAC-SHA256";
     public const int LongitudSaltBytes = 32;
     public const int LongitudHashBytes = 32;
@@ -104,6 +106,28 @@ public sealed class ProcesadorCredencialesPbkdf2 :
         {
             CryptographicOperations.ZeroMemory(salt);
             CryptographicOperations.ZeroMemory(hashEsperado);
+            CryptographicOperations.ZeroMemory(hashCalculado);
+        }
+    }
+
+    /// <inheritdoc />
+    public void SimularVerificacion(string contrasena)
+    {
+        ValidarContrasena(contrasena);
+
+        var hashCalculado = DerivarHash(
+            contrasena,
+            SaltVerificacionSimulada,
+            _iteraciones);
+
+        try
+        {
+            _ = CryptographicOperations.FixedTimeEquals(
+                hashCalculado,
+                HashVerificacionSimulada);
+        }
+        finally
+        {
             CryptographicOperations.ZeroMemory(hashCalculado);
         }
     }

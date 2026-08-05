@@ -1,3 +1,4 @@
+@using SeguimientoFacturacion.Domain.Constants
 @model SeguimientoFacturacion.ViewModels.Importacion.ConfirmacionLoteImportacionViewModel
 
 @{
@@ -70,12 +71,23 @@
         </div>
 
         <div class="mt-4">
-            <a asp-controller="Importacion"
-               asp-action="PrepararProcesamientoFacturas"
-               asp-route-loteId="@Model.LoteId"
-               class="btn btn-danger">
-                Continuar al procesamiento definitivo
-            </a>
+            @if (User.TienePermiso(
+                PermisosSistema.Facturas.Procesar))
+            {
+                <a asp-controller="Importacion"
+                   asp-action="PrepararProcesamientoFacturas"
+                   asp-route-loteId="@Model.LoteId"
+                   class="btn btn-danger">
+                    Continuar al procesamiento definitivo
+                </a>
+            }
+            else
+            {
+                <span class="text-secondary me-2">
+                    El lote debe ser procesado por un usuario
+                    autorizado.
+                </span>
+            }
 
             <a asp-controller="Importacion"
                asp-action="Index"
