@@ -5,6 +5,7 @@ using SeguimientoFacturacion.Application.Interfaces.Security;
 using SeguimientoFacturacion.Infrastructure;
 using SeguimientoFacturacion.Infrastructure.Configuration;
 using SeguimientoFacturacion.Infrastructure.Persistence;
+using SeguimientoFacturacion.Infrastructure.Repositories;
 using SeguimientoFacturacion.Infrastructure.Security;
 
 namespace SeguimientoFacturacion.Infrastructure.Tests.Configuration;
@@ -75,6 +76,10 @@ public sealed class DependencyInjectionTests
         Assert.Equal(
             "Microsoft.EntityFrameworkCore.SqlServer",
             contexto.Database.ProviderName);
+
+        Assert.IsType<RepositorioFacturadoresEfCore>(
+            scope.ServiceProvider.GetRequiredService<
+                IRepositorioFacturadores>());
     }
 
     [Fact]

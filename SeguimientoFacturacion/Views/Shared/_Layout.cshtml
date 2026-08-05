@@ -9,6 +9,20 @@
             User,
             PoliticasAutorizacion.ImportacionesAcceder))
         .Succeeded;
+
+    var puedeAdministrarUsuarios =
+        User.Identity?.IsAuthenticated == true &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.UsuariosConsultar))
+        .Succeeded;
+
+    var puedeAdministrarFacturadores =
+        User.Identity?.IsAuthenticated == true &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.FacturadoresConsultar))
+        .Succeeded;
 }
 
 <!DOCTYPE html>
@@ -80,6 +94,28 @@
                                    asp-controller="Importacion"
                                    asp-action="Index">
                                     Analizar importación
+                                </a>
+                            </li>
+                        }
+
+                        @if (puedeAdministrarUsuarios)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                   asp-controller="Usuarios"
+                                   asp-action="Index">
+                                    Usuarios
+                                </a>
+                            </li>
+                        }
+
+                        @if (puedeAdministrarFacturadores)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                   asp-controller="Facturadores"
+                                   asp-action="Index">
+                                    Facturadores
                                 </a>
                             </li>
                         }

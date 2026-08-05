@@ -1,0 +1,70 @@
+@model UsuarioRestablecerContrasenaViewModel
+
+@{
+    ViewData["Title"] = "Restablecer contraseña";
+}
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h1 class="h4 mb-0">Restablecer contraseña</h1>
+            </div>
+            <div class="card-body p-4">
+                <p>
+                    Usuario: <strong>@Model.NombreUsuario</strong>
+                </p>
+                <p class="text-muted small">
+                    Al guardar, todas las sesiones anteriores de esta
+                    cuenta quedarán invalidadas.
+                </p>
+
+                <form asp-action="RestablecerContrasena"
+                      asp-route-usuarioId="@Model.UsuarioId"
+                      method="post"
+                      autocomplete="off">
+                    <input asp-for="UsuarioId" type="hidden" />
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert alert-danger"
+                         role="alert">
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="NuevaContrasena"
+                               class="form-label"></label>
+                        <input asp-for="NuevaContrasena"
+                               class="form-control"
+                               autocomplete="new-password" />
+                        <span asp-validation-for="NuevaContrasena"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="ConfirmacionContrasena"
+                               class="form-label"></label>
+                        <input asp-for="ConfirmacionContrasena"
+                               class="form-control"
+                               autocomplete="new-password" />
+                        <span asp-validation-for="ConfirmacionContrasena"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a asp-action="Index"
+                           class="btn btn-outline-secondary">
+                            Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            Restablecer contraseña
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

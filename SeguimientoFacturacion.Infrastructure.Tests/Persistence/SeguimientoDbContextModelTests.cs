@@ -196,6 +196,27 @@ public sealed class SeguimientoDbContextModelTests
                 nameof(TipoDocumento.Sigla));
     }
 
+    [Fact]
+    public void Facturador_DebePersistirEstadoYAuditoria()
+    {
+        using var contexto = CrearContexto();
+
+        var entidad = contexto.Model.FindEntityType(typeof(Facturador));
+
+        Assert.NotNull(entidad);
+        Assert.False(entidad.FindProperty(nameof(Facturador.Activo))!.IsNullable);
+        Assert.False(
+            entidad.FindProperty(nameof(Facturador.FechaCreacionUtc))!
+                .IsNullable);
+        Assert.Equal(
+            100,
+            entidad.FindProperty(nameof(Facturador.CreadoPor))!
+                .GetMaxLength());
+        Assert.True(
+            entidad.FindProperty(nameof(Facturador.FechaModificacionUtc))!
+                .IsNullable);
+    }
+
     private static SeguimientoDbContext CrearContexto()
     {
         var options =

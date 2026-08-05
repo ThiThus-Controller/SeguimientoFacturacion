@@ -5,7 +5,7 @@ namespace SeguimientoFacturacion.Domain.Entities.Catalogos;
 /// <summary>
 /// Representa a una persona responsable de generar facturas.
 /// </summary>
-public sealed class Facturador : EntidadBase<int>
+public sealed class Facturador : EntidadAuditableBase<int>
 {
     /// <summary>
     /// Longitud máxima permitida para el nombre.
@@ -24,9 +24,21 @@ public sealed class Facturador : EntidadBase<int>
     public Facturador(
         int id,
         string nombre)
+        : this(id, nombre, activo: true)
+    {
+    }
+
+    /// <summary>
+    /// Reconstruye un facturador indicando su estado actual.
+    /// </summary>
+    public Facturador(
+        int id,
+        string nombre,
+        bool activo)
         : base(ValidarId(id))
     {
         Nombre = ValidarNombre(nombre);
+        Activo = activo;
     }
 
     /// <summary>
@@ -35,12 +47,33 @@ public sealed class Facturador : EntidadBase<int>
     public string Nombre { get; private set; } = string.Empty;
 
     /// <summary>
+    /// Indica si el facturador puede utilizarse en nuevas operaciones.
+    /// </summary>
+    public bool Activo { get; private set; }
+
+    /// <summary>
     /// Cambia el nombre del facturador.
     /// </summary>
     /// <param name="nombre">Nuevo nombre completo.</param>
     public void ActualizarNombre(string nombre)
     {
         Nombre = ValidarNombre(nombre);
+    }
+
+    /// <summary>
+    /// Habilita el facturador para nuevas operaciones.
+    /// </summary>
+    public void Activar()
+    {
+        Activo = true;
+    }
+
+    /// <summary>
+    /// Impide utilizar el facturador en nuevas operaciones sin eliminarlo.
+    /// </summary>
+    public void Desactivar()
+    {
+        Activo = false;
     }
 
     private static int ValidarId(int id)

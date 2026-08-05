@@ -1,0 +1,128 @@
+@model UsuarioFormularioViewModel
+
+<div asp-validation-summary="ModelOnly"
+     class="alert alert-danger"
+     role="alert">
+</div>
+
+@if (Model.Id.HasValue)
+{
+    <input asp-for="Id" type="hidden" />
+}
+
+<div class="row g-3">
+    <div class="col-12 col-md-6">
+        <label asp-for="NombreUsuario" class="form-label"></label>
+        <input asp-for="NombreUsuario"
+               class="form-control"
+               readonly="@Model.EsEdicion"
+               autocomplete="off" />
+        <span asp-validation-for="NombreUsuario"
+              class="text-danger"></span>
+    </div>
+
+    <div class="col-12 col-md-6">
+        <label asp-for="NombreCompleto" class="form-label"></label>
+        <input asp-for="NombreCompleto"
+               class="form-control"
+               autocomplete="off" />
+        <span asp-validation-for="NombreCompleto"
+              class="text-danger"></span>
+    </div>
+
+    @if (!Model.EsEdicion)
+    {
+        <div class="col-12 col-md-6">
+            <label asp-for="Contrasena" class="form-label"></label>
+            <input asp-for="Contrasena"
+                   class="form-control"
+                   autocomplete="new-password" />
+            <span asp-validation-for="Contrasena"
+                  class="text-danger"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="ConfirmacionContrasena"
+                   class="form-label"></label>
+            <input asp-for="ConfirmacionContrasena"
+                   class="form-control"
+                   autocomplete="new-password" />
+            <span asp-validation-for="ConfirmacionContrasena"
+                  class="text-danger"></span>
+        </div>
+    }
+</div>
+
+<hr class="my-4" />
+
+<fieldset>
+    <legend class="h5">Roles asignados</legend>
+    <p class="text-muted small">
+        Los roles aportan los permisos predeterminados del usuario.
+    </p>
+
+    <div class="row g-2">
+        @foreach (var rol in Enum.GetValues<RolUsuario>())
+        {
+            var seleccionado = Model.RolesSeleccionados.Contains(rol);
+
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="form-check border rounded p-3 ps-5 h-100">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           name="RolesSeleccionados"
+                           value="@rol"
+                           id="rol-@((int)rol)"
+                           checked="@seleccionado" />
+                    <label class="form-check-label"
+                           for="rol-@((int)rol)">
+                        @rol
+                    </label>
+                </div>
+            </div>
+        }
+    </div>
+</fieldset>
+
+<hr class="my-4" />
+
+<fieldset>
+    <legend class="h5">Excepciones de permisos</legend>
+    <p class="text-muted small">
+        “Según el rol” conserva la configuración predeterminada. Una
+        revocación individual prevalece sobre cualquier rol asignado.
+    </p>
+
+    <div class="table-responsive permisos-usuario-tabla">
+        <table class="table table-sm table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Módulo</th>
+                    <th>Acción</th>
+                    <th>Decisión particular</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (var indice = 0;
+                      indice < Model.Permisos.Count;
+                      indice++)
+                {
+                    <tr>
+                        <td>@Model.Permisos[indice].Modulo</td>
+                        <td>
+                            @Model.Permisos[indice].Accion
+                            <input asp-for="Permisos[indice].Codigo"
+                                   type="hidden" />
+                        </td>
+                        <td>
+                            <select asp-for="Permisos[indice].Estado"
+                                    asp-items="Html.GetEnumSelectList<EstadoAsignacionPermisoViewModel>()"
+                                    class="form-select form-select-sm">
+                            </select>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</fieldset>
