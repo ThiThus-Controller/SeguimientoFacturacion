@@ -53,6 +53,30 @@ public sealed class CatalogoTests
         Assert.True(facturador.Activo);
     }
 
+    [Fact]
+    public void CrearAseguradora_DebeNormalizarYQuedarActiva()
+    {
+        var aseguradora = new Aseguradora(
+            id: 23,
+            descripcion: " Aseguradora de prueba ");
+
+        Assert.Equal(23, aseguradora.Id);
+        Assert.Equal("Aseguradora de prueba", aseguradora.Descripcion);
+        Assert.True(aseguradora.Activo);
+    }
+
+    [Fact]
+    public void DesactivarYActivarAseguradora_DebeCambiarEstado()
+    {
+        var aseguradora = new Aseguradora(23, "Aseguradora");
+
+        aseguradora.Desactivar();
+        Assert.False(aseguradora.Activo);
+
+        aseguradora.Activar();
+        Assert.True(aseguradora.Activo);
+    }
+
     [Theory]
     [InlineData(TipoMovimientoCodigo.NotaCredito)]
     [InlineData(TipoMovimientoCodigo.Abono)]
