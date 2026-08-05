@@ -3,9 +3,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Application.Interfaces.Security;
 using SeguimientoFacturacion.Infrastructure.Configuration;
+using SeguimientoFacturacion.Infrastructure.Encryption;
 using SeguimientoFacturacion.Infrastructure.Persistence;
 using SeguimientoFacturacion.Infrastructure.Repositories;
+using SeguimientoFacturacion.Infrastructure.Security;
 using SeguimientoFacturacion.Infrastructure.Services.Importacion;
 
 namespace SeguimientoFacturacion.Infrastructure;
@@ -37,6 +40,22 @@ public static class DependencyInjection
                 $"No se configuró la conexión " +
                 $"'{NombresConexion.Seguimiento}'.");
         }
+
+        var configuracionSeguridadUsuarios =
+            ConfiguracionSeguridadUsuarios.Desde(configuration);
+
+        services.AddSingleton(configuracionSeguridadUsuarios);
+
+        services.AddSingleton<
+            IProcesadorCredencialesUsuario,
+            ProcesadorCredencialesPbkdf2>();
+
+        services.AddSingleton<
+            ProtectorArchivoUsuariosAesGcm>();
+
+        services.AddSingleton<
+            IRepositorioUsuarios,
+            RepositorioUsuariosArchivoCifrado>();
 
         services.AddDbContext<SeguimientoDbContext>(
             options =>

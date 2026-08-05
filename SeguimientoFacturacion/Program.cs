@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.Features;
 using SeguimientoFacturacion.Application;
 using SeguimientoFacturacion.Configurations;
 using SeguimientoFacturacion.Infrastructure;
+using SeguimientoFacturacion.Services.Seguridad;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,17 @@ builder.Services.Configure<FormOptions>(
     });
 
 var app = builder.Build();
+
+if (args.Contains(
+        ComandoInicializacionAdministrador.Argumento,
+        StringComparer.OrdinalIgnoreCase))
+{
+    Environment.ExitCode =
+        await ComandoInicializacionAdministrador.EjecutarAsync(
+            app.Services);
+
+    return;
+}
 
 if (!app.Environment.IsDevelopment())
 {

@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Application.Interfaces.Security;
 using SeguimientoFacturacion.Infrastructure;
 using SeguimientoFacturacion.Infrastructure.Configuration;
 using SeguimientoFacturacion.Infrastructure.Persistence;
+using SeguimientoFacturacion.Infrastructure.Security;
 
 namespace SeguimientoFacturacion.Infrastructure.Tests.Configuration;
 
@@ -73,5 +75,45 @@ public sealed class DependencyInjectionTests
         Assert.Equal(
             "Microsoft.EntityFrameworkCore.SqlServer",
             contexto.Database.ProviderName);
+    }
+
+    [Fact]
+    public void AddInfrastructure_ConClave_DebeRegistrarSeguridadUsuarios()
+    {
+        var services = new ServiceCollection();
+        var ruta = Path.Combine(
+            Path.GetTempPath(),
+            "SeguimientoFacturacion.Tests",
+            Guid.NewGuid().ToString("N"),
+            "usuarios.dat");
+
+        var valores = new Dictionary<string, string?>
+        {
+            [$"ConnectionStrings:{NombresConexion.Seguimiento}"] =
+                @"Server=(localdb)\MSSQLLocalDB;" +
+                "Database=SeguimientoPruebas;" +
+                "Trusted_Connection=True;" +
+                "TrustServerCertificate=True;",
+            [$"{ConfiguracionSeguridadUsuarios.Seccion}:RutaArchivo"] = ruta,
+            [$"{ConfiguracionSeguridadUsuarios.Seccion}:ClaveCifradoBase64"] =
+                Convert.ToBase64String(new byte[32]),
+            [$"{ConfiguracionSeguridadUsuarios.Seccion}:IdentificadorClave"] =
+                "tests-v1"
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(valores)
+            .Build();
+
+        services.AddInfrastructure(configuration);
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.IsType<ProcesadorCredencialesPbkdf2>(
+            provider.GetRequiredService<
+                IProcesadorCredencialesUsuario>());
+
+        Assert.IsType<RepositorioUsuariosArchivoCifrado>(
+            provider.GetRequiredService<IRepositorioUsuarios>());
     }
 }

@@ -1,5 +1,8 @@
-﻿using SeguimientoFacturacion.Domain.Common;
+using System.Collections.Frozen;
+using SeguimientoFacturacion.Domain.Common;
+using SeguimientoFacturacion.Domain.Constants;
 using SeguimientoFacturacion.Domain.Enums;
+using SeguimientoFacturacion.Domain.Specifications;
 using SeguimientoFacturacion.Domain.ValueObjects;
 
 namespace SeguimientoFacturacion.Domain.Entities;
@@ -19,13 +22,24 @@ public sealed class Usuario : EntidadAuditableBase<Guid>
     /// </summary>
     public const int NombreCompletoLongitudMaxima = 200;
 
+    private readonly HashSet<RolUsuario> _roles = [];
+
+    private readonly HashSet<string> _permisosConcedidos =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private readonly HashSet<string> _permisosRevocados =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly FrozenSet<string> SinPermisos =
+        Array.Empty<string>().ToFrozenSet(
+            StringComparer.OrdinalIgnoreCase);
+
     private Usuario()
     {
     }
 
     /// <summary>
-    /// Inicializa un nuevo usuario generando automáticamente
-    /// un identificador único.
+    /// Inicializa un usuario con un único rol predeterminado.
     /// </summary>
     public Usuario(
         string nombreUsuario,
@@ -36,16 +50,32 @@ public sealed class Usuario : EntidadAuditableBase<Guid>
             Guid.NewGuid(),
             nombreUsuario,
             nombreCompleto,
-            rol,
+            new[] { rol },
             credencial,
             activo: true)
     {
     }
 
     /// <summary>
-    /// Inicializa un usuario con un identificador conocido.
-    /// Este constructor podrá utilizarse al reconstruir usuarios
-    /// almacenados en usuarios.dat.
+    /// Inicializa un usuario con uno o varios roles.
+    /// </summary>
+    public Usuario(
+        string nombreUsuario,
+        string nombreCompleto,
+        IEnumerable<RolUsuario> roles,
+        CredencialUsuario credencial)
+        : this(
+            Guid.NewGuid(),
+            nombreUsuario,
+            nombreCompleto,
+            roles,
+            credencial,
+            activo: true)
+    {
+    }
+
+    /// <summary>
+    /// Reconstruye un usuario con un único rol conocido.
     /// </summary>
     public Usuario(
         Guid id,
@@ -54,16 +84,53 @@ public sealed class Usuario : EntidadAuditableBase<Guid>
         RolUsuario rol,
         CredencialUsuario credencial,
         bool activo)
+        : this(
+            id,
+            nombreUsuario,
+            nombreCompleto,
+            new[] { rol },
+            credencial,
+            activo)
+    {
+    }
+
+    /// <summary>
+    /// Reconstruye un usuario almacenado en usuarios.dat.
+    /// </summary>
+    public Usuario(
+        Guid id,
+        string nombreUsuario,
+        string nombreCompleto,
+        IEnumerable<RolUsuario> roles,
+        CredencialUsuario credencial,
+        bool activo,
+        IEnumerable<string>? permisosConcedidos = null,
+        IEnumerable<string>? permisosRevocados = null,
+        int versionSeguridad = 1)
         : base(ValidarId(id))
     {
         NombreUsuario = ValidarNombreUsuario(nombreUsuario);
         NombreCompleto = ValidarNombreCompleto(nombreCompleto);
-        Rol = ValidarRol(rol);
 
         ArgumentNullException.ThrowIfNull(credencial);
 
         Credencial = credencial;
         Activo = activo;
+        VersionSeguridad = ValidarVersionSeguridad(versionSeguridad);
+
+        CargarRoles(roles);
+        CargarPermisos(
+            permisosConcedidos,
+            _permisosConcedidos);
+        CargarPermisos(
+            permisosRevocados,
+            _permisosRevocados);
+
+        if (_permisosConcedidos.Overlaps(_permisosRevocados))
+        {
+            throw new ArgumentException(
+                "Un permiso no puede estar concedido y revocado al mismo tiempo.");
+        }
     }
 
     /// <summary>
@@ -72,8 +139,8 @@ public sealed class Usuario : EntidadAuditableBase<Guid>
     public string NombreUsuario { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Obtiene el nombre de usuario normalizado para búsquedas
-    /// y comparaciones sin distinguir mayúsculas.
+    /// Obtiene el nombre normalizado para búsquedas sin distinguir
+    /// mayúsculas y minúsculas.
     /// </summary>
     public string NombreUsuarioNormalizado =>
         NombreUsuario.ToUpperInvariant();
@@ -84,9 +151,34 @@ public sealed class Usuario : EntidadAuditableBase<Guid>
     public string NombreCompleto { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Obtiene el rol asignado al usuario.
+    /// Obtiene los roles asignados al usuario.
     /// </summary>
-    public RolUsuario Rol { get; private set; }
+    public IReadOnlySet<RolUsuario> Roles =>
+        _roles.ToFrozenSet();
+
+    /// <summary>
+    /// Obtiene los permisos particulares concedidos al usuario.
+    /// </summary>
+    public IReadOnlySet<string> PermisosConcedidos =>
+        _permisosConcedidos.ToFrozenSet(
+            StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Obtiene los permisos particulares revocados al usuario.
+    /// Una revocación prevalece sobre cualquier rol.
+    /// </summary>
+    public IReadOnlySet<string> PermisosRevocados =>
+        _permisosRevocados.ToFrozenSet(
+            StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Obtiene los permisos efectivos después de combinar roles,
+    /// concesiones y revocaciones particulares.
+    /// </summary>
+    public IReadOnlySet<string> PermisosEfectivos =>
+        Activo
+            ? CalcularPermisosEfectivos()
+            : SinPermisos;
 
     /// <summary>
     /// Indica si el usuario puede iniciar sesión.
@@ -100,6 +192,13 @@ public sealed class Usuario : EntidadAuditableBase<Guid>
     public CredencialUsuario Credencial { get; private set; } = null!;
 
     /// <summary>
+    /// Obtiene la versión de la configuración de seguridad.
+    /// Cambia cuando se modifican credenciales, roles, permisos
+    /// o el estado del usuario y permitirá invalidar sesiones.
+    /// </summary>
+    public int VersionSeguridad { get; private set; }
+
+    /// <summary>
     /// Cambia el nombre completo del usuario.
     /// </summary>
     public void ActualizarNombreCompleto(string nombreCompleto)
@@ -108,26 +207,116 @@ public sealed class Usuario : EntidadAuditableBase<Guid>
     }
 
     /// <summary>
-    /// Cambia el rol asignado al usuario.
+    /// Asigna un rol al usuario.
     /// </summary>
-    public void CambiarRol(RolUsuario rol)
+    public void AsignarRol(RolUsuario rol)
     {
-        Rol = ValidarRol(rol);
+        ValidarRol(rol);
+
+        if (_roles.Add(rol))
+        {
+            IncrementarVersionSeguridad();
+        }
     }
 
     /// <summary>
-    /// Reemplaza la credencial después de procesar
-    /// una nueva contraseña.
+    /// Revoca un rol asignado al usuario.
     /// </summary>
-    /// <param name="credencial">
-    /// Nueva credencial previamente generada mediante PBKDF2.
-    /// </param>
+    public void RevocarRol(RolUsuario rol)
+    {
+        ValidarRol(rol);
+
+        if (_roles.Remove(rol))
+        {
+            IncrementarVersionSeguridad();
+        }
+    }
+
+    /// <summary>
+    /// Concede un permiso directamente al usuario.
+    /// </summary>
+    public void ConcederPermiso(string permiso)
+    {
+        var permisoNormalizado =
+            PermisosSistema.Normalizar(permiso);
+
+        var cambioRealizado =
+            _permisosRevocados.Remove(permisoNormalizado);
+
+        cambioRealizado |=
+            _permisosConcedidos.Add(permisoNormalizado);
+
+        if (cambioRealizado)
+        {
+            IncrementarVersionSeguridad();
+        }
+    }
+
+    /// <summary>
+    /// Revoca un permiso directamente al usuario.
+    /// La revocación prevalece sobre los permisos heredados.
+    /// </summary>
+    public void RevocarPermiso(string permiso)
+    {
+        var permisoNormalizado =
+            PermisosSistema.Normalizar(permiso);
+
+        var cambioRealizado =
+            _permisosConcedidos.Remove(permisoNormalizado);
+
+        cambioRealizado |=
+            _permisosRevocados.Add(permisoNormalizado);
+
+        if (cambioRealizado)
+        {
+            IncrementarVersionSeguridad();
+        }
+    }
+
+    /// <summary>
+    /// Elimina una concesión o revocación particular y devuelve
+    /// la decisión al conjunto de roles del usuario.
+    /// </summary>
+    public void RestablecerPermisoAlRol(string permiso)
+    {
+        var permisoNormalizado =
+            PermisosSistema.Normalizar(permiso);
+
+        var cambioRealizado =
+            _permisosConcedidos.Remove(permisoNormalizado);
+
+        cambioRealizado |=
+            _permisosRevocados.Remove(permisoNormalizado);
+
+        if (cambioRealizado)
+        {
+            IncrementarVersionSeguridad();
+        }
+    }
+
+    /// <summary>
+    /// Determina si el usuario activo posee un permiso efectivo.
+    /// </summary>
+    public bool TienePermiso(string permiso)
+    {
+        var permisoNormalizado =
+            PermisosSistema.Normalizar(permiso);
+
+        return Activo &&
+            CalcularPermisosEfectivos()
+                .Contains(permisoNormalizado);
+    }
+
+    /// <summary>
+    /// Reemplaza la credencial después de procesar una nueva contraseña.
+    /// </summary>
     public void ReemplazarCredencial(
         CredencialUsuario credencial)
     {
         ArgumentNullException.ThrowIfNull(credencial);
 
         Credencial = credencial;
+        IncrementarVersionSeguridad();
     }
 
     /// <summary>
@@ -135,15 +324,67 @@ public sealed class Usuario : EntidadAuditableBase<Guid>
     /// </summary>
     public void Activar()
     {
-        Activo = true;
+        if (!Activo)
+        {
+            Activo = true;
+            IncrementarVersionSeguridad();
+        }
     }
 
     /// <summary>
-    /// Desactiva el usuario e impide que pueda iniciar sesión.
+    /// Desactiva el usuario e invalida sus permisos efectivos.
     /// </summary>
     public void Desactivar()
     {
-        Activo = false;
+        if (Activo)
+        {
+            Activo = false;
+            IncrementarVersionSeguridad();
+        }
+    }
+
+    private IReadOnlySet<string> CalcularPermisosEfectivos()
+    {
+        var resultado = new HashSet<string>(
+            PoliticaPermisosRolUsuario.ObtenerPermisos(_roles),
+            StringComparer.OrdinalIgnoreCase);
+
+        resultado.UnionWith(_permisosConcedidos);
+        resultado.ExceptWith(_permisosRevocados);
+
+        return resultado.ToFrozenSet(
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void CargarRoles(IEnumerable<RolUsuario> roles)
+    {
+        ArgumentNullException.ThrowIfNull(roles);
+
+        foreach (var rol in roles)
+        {
+            ValidarRol(rol);
+            _roles.Add(rol);
+        }
+    }
+
+    private static void CargarPermisos(
+        IEnumerable<string>? permisos,
+        ISet<string> destino)
+    {
+        if (permisos is null)
+        {
+            return;
+        }
+
+        foreach (var permiso in permisos)
+        {
+            destino.Add(PermisosSistema.Normalizar(permiso));
+        }
+    }
+
+    private void IncrementarVersionSeguridad()
+    {
+        VersionSeguridad = checked(VersionSeguridad + 1);
     }
 
     private static Guid ValidarId(Guid id)
@@ -211,16 +452,27 @@ public sealed class Usuario : EntidadAuditableBase<Guid>
         return nombreNormalizado;
     }
 
-    private static RolUsuario ValidarRol(RolUsuario rol)
+    private static void ValidarRol(RolUsuario rol)
     {
-        if (!Enum.IsDefined(typeof(RolUsuario), rol))
+        if (!Enum.IsDefined(rol))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(rol),
                 rol,
                 "El rol indicado no es válido.");
         }
+    }
 
-        return rol;
+    private static int ValidarVersionSeguridad(int versionSeguridad)
+    {
+        if (versionSeguridad <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(versionSeguridad),
+                versionSeguridad,
+                "La versión de seguridad debe ser mayor que cero.");
+        }
+
+        return versionSeguridad;
     }
 }
