@@ -35,6 +35,12 @@ public sealed class ImportacionController : Controller
     private readonly IServicioAnalisisStagingPagos
         _servicioPagos;
 
+    private readonly IServicioConfirmacionLoteImportacion
+        _servicioConfirmacion;
+
+    private readonly IServicioProcesamientoLoteFacturas
+        _servicioProcesamientoFacturas;
+
     private readonly ILogger<ImportacionController>
         _logger;
 
@@ -52,6 +58,10 @@ public sealed class ImportacionController : Controller
             servicioGlosas,
         IServicioAnalisisStagingPagos
             servicioPagos,
+        IServicioConfirmacionLoteImportacion
+            servicioConfirmacion,
+        IServicioProcesamientoLoteFacturas
+            servicioProcesamientoFacturas,
         ILogger<ImportacionController> logger)
     {
         ArgumentNullException.ThrowIfNull(
@@ -69,6 +79,12 @@ public sealed class ImportacionController : Controller
         ArgumentNullException.ThrowIfNull(
             servicioPagos);
 
+        ArgumentNullException.ThrowIfNull(
+            servicioConfirmacion);
+
+        ArgumentNullException.ThrowIfNull(
+            servicioProcesamientoFacturas);
+
         ArgumentNullException.ThrowIfNull(logger);
 
         _servicioRegistroLote =
@@ -78,6 +94,11 @@ public sealed class ImportacionController : Controller
         _servicioNotas = servicioNotas;
         _servicioGlosas = servicioGlosas;
         _servicioPagos = servicioPagos;
+        _servicioConfirmacion = servicioConfirmacion;
+
+        _servicioProcesamientoFacturas =
+            servicioProcesamientoFacturas;
+
         _logger = logger;
     }
 
@@ -216,6 +237,234 @@ public sealed class ImportacionController : Controller
                 "dañado.");
 
             return View("Index", modelo);
+        }
+    }
+
+    /// <summary>
+    /// Confirma un lote válido de facturas para autorizar
+    /// su posterior procesamiento definitivo.
+    /// </summary>
+    [HttpPost("confirmar-facturas")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfirmarFacturas(
+        Guid loteId,
+        CancellationToken cancellationToken)
+    {
+        if (loteId == Guid.Empty)
+        {
+            TempData["ErrorImportacion"] =
+                "El identificador del lote es obligatorio.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        var usuario = ObtenerUsuarioActual();
+
+        try
+        {
+            var resultado =
+                await _servicioConfirmacion
+                    .ConfirmarAsync(
+                        new
+                            SolicitudConfirmacionLoteImportacionDto
+                        {
+                            LoteId = loteId,
+                            Usuario = usuario
+                        },
+                        cancellationToken);
+
+            _logger.LogInformation(
+                "Lote {LoteId} confirmado por {Usuario}.",
+                resultado.LoteId,
+                usuario);
+
+            return View(
+                "Confirmacion",
+                new ConfirmacionLoteImportacionViewModel
+                {
+                    LoteId = resultado.LoteId,
+                    Estado = resultado.Estado,
+                    ConfirmadoPor =
+                        resultado.ConfirmadoPor,
+                    FechaConfirmacionUtc =
+                        resultado.FechaConfirmacionUtc
+                });
+        }
+        catch (OperationCanceledException)
+            when (HttpContext.RequestAborted
+                .IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception excepcion)
+            when (excepcion is
+                ExcepcionValidacionAplicacion or
+                ExcepcionLoteImportacionNoEncontrado or
+                ExcepcionLoteImportacionNoConfirmable or
+                ExcepcionLoteImportacionSinStaging)
+        {
+            _logger.LogWarning(
+                excepcion,
+                "No fue posible confirmar el lote {LoteId}. " +
+                "Usuario: {Usuario}.",
+                loteId,
+                usuario);
+
+            TempData["ErrorImportacion"] =
+                "El lote no puede confirmarse. Verifique que " +
+                "esté analizado, no tenga errores y conserve " +
+                "sus registros temporales.";
+
+            return RedirectToAction(nameof(Index));
+        }
+        catch (Exception excepcion)
+        {
+            _logger.LogError(
+                excepcion,
+                "Error inesperado al confirmar el lote " +
+                "{LoteId}. Identificador: {TraceIdentifier}.",
+                loteId,
+                HttpContext.TraceIdentifier);
+
+            TempData["ErrorImportacion"] =
+                "No fue posible confirmar el lote.";
+
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    /// <summary>
+    /// Muestra la autorización final para procesar
+    /// un lote confirmado de facturas.
+    /// </summary>
+    [HttpGet("facturas/{loteId:guid}/procesar")]
+    public IActionResult PrepararProcesamientoFacturas(
+        Guid loteId)
+    {
+        return View(
+            "ProcesarFacturas",
+            new ProcesamientoLoteFacturasViewModel
+            {
+                LoteId = loteId
+            });
+    }
+
+    /// <summary>
+    /// Procesa definitivamente un lote confirmado
+    /// de pacientes y facturas.
+    /// </summary>
+    [HttpPost("facturas/procesar")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ProcesarFacturas(
+        ProcesamientoLoteFacturasViewModel modelo,
+        CancellationToken cancellationToken)
+    {
+        if (modelo.LoteId == Guid.Empty)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                "El identificador del lote es obligatorio.");
+
+            return View("ProcesarFacturas", modelo);
+        }
+
+        var usuario = ObtenerUsuarioActual();
+
+        try
+        {
+            var resultado =
+                await _servicioProcesamientoFacturas
+                    .ProcesarAsync(
+                        new
+                            SolicitudProcesamientoLoteFacturasDto
+                        {
+                            LoteId = modelo.LoteId,
+                            Usuario = usuario
+                        },
+                        cancellationToken);
+
+            _logger.LogInformation(
+                "Lote {LoteId} procesado. Facturas: " +
+                "{TotalFacturas}. Pacientes nuevos: " +
+                "{TotalPacientes}. Usuario: {Usuario}.",
+                resultado.LoteId,
+                resultado.TotalFacturasImportadas,
+                resultado.TotalPacientesNuevos,
+                usuario);
+
+            return View(
+                "ProcesamientoFacturasCompletado",
+                new
+                    ResultadoProcesamientoLoteFacturasViewModel
+                {
+                    LoteId = resultado.LoteId,
+                    Estado = resultado.Estado,
+                    TotalPacientesNuevos =
+                        resultado.TotalPacientesNuevos,
+                    TotalPacientesExistentes =
+                        resultado.TotalPacientesExistentes,
+                    TotalFacturasImportadas =
+                        resultado.TotalFacturasImportadas,
+                    ProcesadoPor = resultado.ProcesadoPor,
+                    FechaFinalizacionUtc =
+                        resultado.FechaFinalizacionUtc
+                });
+        }
+        catch (OperationCanceledException)
+            when (HttpContext.RequestAborted
+                .IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (ExcepcionLoteFacturasNoProcesable excepcion)
+        {
+            _logger.LogWarning(
+                excepcion,
+                "El lote {LoteId} no pudo procesarse. " +
+                "Usuario: {Usuario}.",
+                modelo.LoteId,
+                usuario);
+
+            ModelState.AddModelError(
+                string.Empty,
+                excepcion.Motivo);
+
+            return View("ProcesarFacturas", modelo);
+        }
+        catch (Exception excepcion)
+            when (excepcion is
+                ExcepcionValidacionAplicacion or
+                ExcepcionLoteImportacionNoEncontrado)
+        {
+            _logger.LogWarning(
+                excepcion,
+                "Solicitud inválida para procesar el lote " +
+                "{LoteId}. Usuario: {Usuario}.",
+                modelo.LoteId,
+                usuario);
+
+            ModelState.AddModelError(
+                string.Empty,
+                "El lote solicitado no puede procesarse.");
+
+            return View("ProcesarFacturas", modelo);
+        }
+        catch (Exception excepcion)
+        {
+            _logger.LogError(
+                excepcion,
+                "Error inesperado al procesar el lote " +
+                "{LoteId}. Identificador: " +
+                "{TraceIdentifier}.",
+                modelo.LoteId,
+                HttpContext.TraceIdentifier);
+
+            ModelState.AddModelError(
+                string.Empty,
+                "No fue posible completar la importación. " +
+                "No se confirmaron cambios parciales.");
+
+            return View("ProcesarFacturas", modelo);
         }
     }
 
