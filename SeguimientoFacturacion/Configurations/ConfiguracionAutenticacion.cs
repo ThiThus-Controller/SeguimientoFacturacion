@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
+using SeguimientoFacturacion.Autorizacion;
 using SeguimientoFacturacion.Services.Seguridad;
 
 namespace SeguimientoFacturacion.Configurations;
@@ -19,6 +20,9 @@ public static class ConfiguracionAutenticacion
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddScoped<EventosCookieAutenticacion>();
+        services.AddSingleton<
+            IAuthorizationHandler,
+            ManejadorRequisitoPermisos>();
 
         services.AddAntiforgery(
             options =>
@@ -62,6 +66,8 @@ public static class ConfiguracionAutenticacion
                     new AuthorizationPolicyBuilder()
                         .RequireAuthenticatedUser()
                         .Build();
+
+                PoliticasAutorizacion.Registrar(options);
             });
 
         services.AddRateLimiter(

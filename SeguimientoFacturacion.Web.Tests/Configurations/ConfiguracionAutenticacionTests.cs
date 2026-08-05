@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using SeguimientoFacturacion.Autorizacion;
 using SeguimientoFacturacion.Configurations;
 
 namespace SeguimientoFacturacion.Web.Tests.Configurations;
@@ -81,5 +83,23 @@ public sealed class ConfiguracionAutenticacionTests
         Assert.Equal(
             CookieSecurePolicy.Always,
             opciones.Cookie.SecurePolicy);
+    }
+
+    [Fact]
+    public void AddAutenticacionAplicacion_DebeRegistrarManejadorPermisos()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddAutenticacionAplicacion();
+
+        using var provider = services.BuildServiceProvider();
+
+        var manejadores = provider
+            .GetServices<IAuthorizationHandler>();
+
+        Assert.Contains(
+            manejadores,
+            manejador =>
+                manejador is ManejadorRequisitoPermisos);
     }
 }

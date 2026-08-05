@@ -1,4 +1,5 @@
 ﻿@using SeguimientoFacturacion.Application.DTOs.Importacion
+@using SeguimientoFacturacion.Domain.Constants
 @using SeguimientoFacturacion.Domain.Enums
 @model SeguimientoFacturacion.ViewModels.Importacion.AnalisisImportacionViewModel
 
@@ -65,21 +66,37 @@
                                     Seleccione un proceso
                                 </option>
 
-                                <option value="@((int)TipoImportacion.Facturas)">
-                                    Facturas y pacientes
-                                </option>
+                                @if (Model.TiposPermitidos.Contains(
+                                    TipoImportacion.Facturas))
+                                {
+                                    <option value="@((int)TipoImportacion.Facturas)">
+                                        Facturas y pacientes
+                                    </option>
+                                }
 
-                                <option value="@((int)TipoImportacion.NotasFactura)">
-                                    Notas crédito y débito
-                                </option>
+                                @if (Model.TiposPermitidos.Contains(
+                                    TipoImportacion.NotasFactura))
+                                {
+                                    <option value="@((int)TipoImportacion.NotasFactura)">
+                                        Notas crédito y débito
+                                    </option>
+                                }
 
-                                <option value="@((int)TipoImportacion.Glosas)">
-                                    Glosas y respuestas
-                                </option>
+                                @if (Model.TiposPermitidos.Contains(
+                                    TipoImportacion.Glosas))
+                                {
+                                    <option value="@((int)TipoImportacion.Glosas)">
+                                        Glosas y respuestas
+                                    </option>
+                                }
 
-                                <option value="@((int)TipoImportacion.Pagos)">
-                                    Pagos y aplicaciones
-                                </option>
+                                @if (Model.TiposPermitidos.Contains(
+                                    TipoImportacion.Pagos))
+                                {
+                                    <option value="@((int)TipoImportacion.Pagos)">
+                                        Pagos y aplicaciones
+                                    </option>
+                                }
                             </select>
 
                             <span asp-validation-for="Tipo"
@@ -139,7 +156,9 @@
             </div>
 
             @if (resultado.PuedeConfirmarse &&
-                resultado.Tipo == TipoImportacion.Facturas)
+                resultado.Tipo == TipoImportacion.Facturas &&
+                User.TienePermiso(
+                    PermisosSistema.Facturas.Confirmar))
             {
                 <div class="alert alert-warning"
                      role="alert">

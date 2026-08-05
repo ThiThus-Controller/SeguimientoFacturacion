@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SeguimientoFacturacion.Application
     .Common.Exceptions;
@@ -41,6 +42,9 @@ public sealed class ImportacionController : Controller
     private readonly IServicioProcesamientoLoteFacturas
         _servicioProcesamientoFacturas;
 
+    private readonly IAuthorizationService
+        _servicioAutorizacion;
+
     private readonly ILogger<ImportacionController>
         _logger;
 
@@ -62,6 +66,7 @@ public sealed class ImportacionController : Controller
             servicioConfirmacion,
         IServicioProcesamientoLoteFacturas
             servicioProcesamientoFacturas,
+        IAuthorizationService servicioAutorizacion,
         ILogger<ImportacionController> logger)
     {
         ArgumentNullException.ThrowIfNull(
@@ -85,6 +90,9 @@ public sealed class ImportacionController : Controller
         ArgumentNullException.ThrowIfNull(
             servicioProcesamientoFacturas);
 
+        ArgumentNullException.ThrowIfNull(
+            servicioAutorizacion);
+
         ArgumentNullException.ThrowIfNull(logger);
 
         _servicioRegistroLote =
@@ -99,6 +107,7 @@ public sealed class ImportacionController : Controller
         _servicioProcesamientoFacturas =
             servicioProcesamientoFacturas;
 
+        _servicioAutorizacion = servicioAutorizacion;
         _logger = logger;
     }
 
@@ -106,10 +115,16 @@ public sealed class ImportacionController : Controller
     /// Muestra la pantalla principal de importación.
     /// </summary>
     [HttpGet("")]
-    public IActionResult Index()
+    [Authorize(
+        Policy = PoliticasAutorizacion.ImportacionesAcceder)]
+    public async Task<IActionResult> Index()
     {
         return View(
-            new AnalisisImportacionViewModel());
+            new AnalisisImportacionViewModel
+            {
+                TiposPermitidos =
+                    await ObtenerTiposImportacionPermitidosAsync()
+            });
     }
 
     /// <summary>
@@ -117,6 +132,8 @@ public sealed class ImportacionController : Controller
     /// el archivo modular seleccionado.
     /// </summary>
     [HttpPost("analizar")]
+    [Authorize(
+        Policy = PoliticasAutorizacion.ImportacionesAcceder)]
     [ValidateAntiForgeryToken]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(
@@ -128,7 +145,30 @@ public sealed class ImportacionController : Controller
         AnalisisImportacionViewModel modelo,
         CancellationToken cancellationToken)
     {
+        modelo.TiposPermitidos =
+            await ObtenerTiposImportacionPermitidosAsync();
+
         ValidarTipoImportacion(modelo.Tipo);
+
+        if (modelo.Tipo is { } tipoAutorizado &&
+            tipoAutorizado is
+                TipoImportacion.Facturas or
+                TipoImportacion.NotasFactura or
+                TipoImportacion.Glosas or
+                TipoImportacion.Pagos)
+        {
+            var autorizacion =
+                await _servicioAutorizacion.AuthorizeAsync(
+                    User,
+                    PoliticasAutorizacion.ParaAnalisis(
+                        tipoAutorizado));
+
+            if (!autorizacion.Succeeded)
+            {
+                return Forbid();
+            }
+        }
+
         ValidarArchivoWeb(modelo.Archivo);
 
         if (!ModelState.IsValid)
@@ -195,7 +235,8 @@ public sealed class ImportacionController : Controller
                 new AnalisisImportacionViewModel
                 {
                     Tipo = tipo,
-                    Resultado = resultado
+                    Resultado = resultado,
+                    TiposPermitidos = modelo.TiposPermitidos
                 });
         }
         catch (ExcepcionValidacionAplicacion excepcion)
@@ -245,6 +286,8 @@ public sealed class ImportacionController : Controller
     /// su posterior procesamiento definitivo.
     /// </summary>
     [HttpPost("confirmar-facturas")]
+    [Authorize(
+        Policy = PoliticasAutorizacion.ConfirmarFacturas)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ConfirmarFacturas(
         Guid loteId,
@@ -338,6 +381,8 @@ public sealed class ImportacionController : Controller
     /// un lote confirmado de facturas.
     /// </summary>
     [HttpGet("facturas/{loteId:guid}/procesar")]
+    [Authorize(
+        Policy = PoliticasAutorizacion.ProcesarFacturas)]
     public IActionResult PrepararProcesamientoFacturas(
         Guid loteId)
     {
@@ -354,6 +399,8 @@ public sealed class ImportacionController : Controller
     /// de pacientes y facturas.
     /// </summary>
     [HttpPost("facturas/procesar")]
+    [Authorize(
+        Policy = PoliticasAutorizacion.ProcesarFacturas)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ProcesarFacturas(
         ProcesamientoLoteFacturasViewModel modelo,
@@ -466,6 +513,35 @@ public sealed class ImportacionController : Controller
 
             return View("ProcesarFacturas", modelo);
         }
+    }
+
+    private async Task<IReadOnlyCollection<TipoImportacion>>
+        ObtenerTiposImportacionPermitidosAsync()
+    {
+        var tipos = new[]
+        {
+            TipoImportacion.Facturas,
+            TipoImportacion.NotasFactura,
+            TipoImportacion.Glosas,
+            TipoImportacion.Pagos
+        };
+
+        var permitidos = new List<TipoImportacion>(tipos.Length);
+
+        foreach (var tipo in tipos)
+        {
+            var resultado =
+                await _servicioAutorizacion.AuthorizeAsync(
+                    User,
+                    PoliticasAutorizacion.ParaAnalisis(tipo));
+
+            if (resultado.Succeeded)
+            {
+                permitidos.Add(tipo);
+            }
+        }
+
+        return permitidos;
     }
 
     private async Task<
