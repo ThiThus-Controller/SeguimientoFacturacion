@@ -3,6 +3,7 @@ using ClosedXML.Excel;
 using SeguimientoFacturacion.Application.Common.Importacion;
 using SeguimientoFacturacion.Application.DTOs.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
+using SeguimientoFacturacion.Domain.Constants;
 
 namespace SeguimientoFacturacion.Infrastructure.Services.Importacion;
 
@@ -14,8 +15,6 @@ public sealed class
     PreparadorFacturasModularClosedXml :
     IPreparadorImportacionFacturacion
 {
-    private const int EstadoAnuladaId = 5;
-
     private readonly
         LectorFacturasModularValidadoClosedXml
         _lectorValidado;
@@ -170,7 +169,7 @@ public sealed class
                 "estado");
 
         var fechaRadicacion =
-            estadoId == EstadoAnuladaId
+            estadoId == CodigosEstadoFactura.Anulada
                 ? null
                 : ObtenerFechaOpcional(
                     hoja,
