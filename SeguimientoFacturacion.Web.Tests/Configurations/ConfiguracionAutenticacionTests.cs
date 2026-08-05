@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SeguimientoFacturacion.Autorizacion;
 using SeguimientoFacturacion.Configurations;
+using SeguimientoFacturacion.Services.Seguridad;
 
 namespace SeguimientoFacturacion.Web.Tests.Configurations;
 
@@ -101,5 +102,21 @@ public sealed class ConfiguracionAutenticacionTests
             manejadores,
             manejador =>
                 manejador is ManejadorRequisitoPermisos);
+    }
+
+    [Fact]
+    public void AddAutenticacionAplicacion_DebeRegistrarUsuarioActual()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddAutenticacionAplicacion();
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        var contexto = scope.ServiceProvider
+            .GetRequiredService<IContextoUsuarioActual>();
+
+        Assert.IsType<ContextoUsuarioActualHttp>(contexto);
     }
 }
