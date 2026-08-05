@@ -93,6 +93,38 @@ public sealed class PoliticasAutorizacionTests
             alternativa);
     }
 
+    [Theory]
+    [InlineData(
+        PoliticasAutorizacion.UsuariosCrear,
+        PermisosSistema.Usuarios.Crear)]
+    [InlineData(
+        PoliticasAutorizacion.UsuariosEditar,
+        PermisosSistema.Usuarios.Editar)]
+    public void Registrar_AdministracionUsuarios_DebeExigirTresPermisos(
+        string nombrePolitica,
+        string permisoOperacion)
+    {
+        var options = new AuthorizationOptions();
+        PoliticasAutorizacion.Registrar(options);
+
+        var politica = options.GetPolicy(nombrePolitica);
+
+        Assert.NotNull(politica);
+
+        var requisito = Assert.Single(
+            politica.Requirements.OfType<RequisitoPermisos>());
+        var alternativa = Assert.Single(requisito.Alternativas);
+
+        Assert.Equal(3, alternativa.Count);
+        Assert.Contains(permisoOperacion, alternativa);
+        Assert.Contains(
+            PermisosSistema.Usuarios.AsignarRoles,
+            alternativa);
+        Assert.Contains(
+            PermisosSistema.Usuarios.AsignarPermisos,
+            alternativa);
+    }
+
     [Fact]
     public void ParaAnalisis_Catalogos_DebeRechazarlo()
     {

@@ -9,6 +9,13 @@
             User,
             PoliticasAutorizacion.ImportacionesAcceder))
         .Succeeded;
+
+    var puedeAdministrarUsuarios =
+        User.Identity?.IsAuthenticated == true &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.UsuariosConsultar))
+        .Succeeded;
 }
 
 <!DOCTYPE html>
@@ -80,6 +87,17 @@
                                    asp-controller="Importacion"
                                    asp-action="Index">
                                     Analizar importación
+                                </a>
+                            </li>
+                        }
+
+                        @if (puedeAdministrarUsuarios)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                   asp-controller="Usuarios"
+                                   asp-action="Index">
+                                    Usuarios
                                 </a>
                             </li>
                         }

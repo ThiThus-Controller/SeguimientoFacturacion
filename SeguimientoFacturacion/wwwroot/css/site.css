@@ -32,6 +32,17 @@ body {
   display: none;
 }
 
+.permisos-usuario-tabla {
+  max-height: 34rem;
+  overflow-y: auto;
+}
+
+.permisos-usuario-tabla thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;

@@ -33,6 +33,35 @@ public static class PoliticasAutorizacion
     public const string ProcesarFacturas =
         PrefijoPermiso + PermisosSistema.Facturas.Procesar;
 
+    public const string UsuariosConsultar =
+        PrefijoPermiso + PermisosSistema.Usuarios.Ver;
+
+    public const string UsuariosCrear =
+        "Usuarios.CrearConAcceso";
+
+    public const string UsuariosEditar =
+        "Usuarios.EditarAcceso";
+
+    public const string UsuariosCambiarEstado =
+        PrefijoPermiso + PermisosSistema.Usuarios.Inactivar;
+
+    public const string UsuariosRestablecerContrasena =
+        PrefijoPermiso + PermisosSistema.Usuarios.RestablecerClave;
+
+    private static readonly string[] PermisosCreacionUsuarios =
+    [
+        PermisosSistema.Usuarios.Crear,
+        PermisosSistema.Usuarios.AsignarRoles,
+        PermisosSistema.Usuarios.AsignarPermisos
+    ];
+
+    private static readonly string[] PermisosEdicionUsuarios =
+    [
+        PermisosSistema.Usuarios.Editar,
+        PermisosSistema.Usuarios.AsignarRoles,
+        PermisosSistema.Usuarios.AsignarPermisos
+    ];
+
     private static readonly string[] PermisosFacturas =
     [
         PermisosSistema.Facturas.Importar,
@@ -130,6 +159,18 @@ public static class PoliticasAutorizacion
                     PermisosGlosas,
                     PermisosPagos
                 }));
+
+        AgregarPolitica(
+            options,
+            UsuariosCrear,
+            RequisitoPermisos.ExigirTodos(
+                PermisosCreacionUsuarios));
+
+        AgregarPolitica(
+            options,
+            UsuariosEditar,
+            RequisitoPermisos.ExigirTodos(
+                PermisosEdicionUsuarios));
     }
 
     private static void AgregarPolitica(
