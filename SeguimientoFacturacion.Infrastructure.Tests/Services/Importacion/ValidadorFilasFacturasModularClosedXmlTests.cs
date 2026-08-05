@@ -109,7 +109,7 @@ public sealed class
 
     [Fact]
     public async Task
-        Validar_CatalogoRepetidoNoMapeado_DebeContarloUnaVez()
+        Validar_CatalogoRepetidoNoMapeado_DebeReportarCadaFila()
     {
         await using var archivo =
             CrearArchivo(
@@ -140,11 +140,27 @@ public sealed class
         Assert.False(resultado.EsValido);
         Assert.Equal(1, resultado.CatalogosNoMapeados);
 
-        Assert.Single(
-            resultado.Inconsistencias,
+        var erroresCatalogo =
+            resultado.Inconsistencias
+                .Where(
+                    inconsistencia =>
+                        inconsistencia.Codigo ==
+                        "CATALOGO_ASEGURADORA_NO_MAPEADO")
+                .OrderBy(
+                    inconsistencia =>
+                        inconsistencia.Fila)
+                .ToArray();
+
+        Assert.Equal(2, erroresCatalogo.Length);
+        Assert.Equal(2, erroresCatalogo[0].Fila);
+        Assert.Equal(3, erroresCatalogo[1].Fila);
+
+        Assert.All(
+            erroresCatalogo,
             inconsistencia =>
-                inconsistencia.Codigo ==
-                "CATALOGO_ASEGURADORA_NO_MAPEADO");
+                Assert.Equal(
+                    "ASEGURADORA NO CATALOGADA",
+                    inconsistencia.ValorPresentado));
     }
 
     [Fact]

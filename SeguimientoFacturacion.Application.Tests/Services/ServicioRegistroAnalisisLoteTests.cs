@@ -46,7 +46,9 @@ public sealed class ServicioRegistroAnalisisLoteTests
                     CrearInconsistencia(
                         fila: 2,
                         codigo: "FACTURA_REQUERIDA",
-                        severidad: SeveridadDto.Error),
+                        severidad: SeveridadDto.Error,
+                        valorPresentado:
+                            "ASEGURADORA NO CATALOGADA"),
                     CrearInconsistencia(
                         fila: 2,
                         codigo: "VALOR_INVALIDO",
@@ -83,6 +85,11 @@ public sealed class ServicioRegistroAnalisisLoteTests
             SeveridadImportacion.Error,
             repositorio.InconsistenciasAgregadas[0]
                 .Severidad);
+
+        Assert.Equal(
+            "ASEGURADORA NO CATALOGADA",
+            repositorio.InconsistenciasAgregadas[0]
+                .ValorPresentado);
 
         Assert.Equal(
             SeveridadImportacion.Advertencia,
@@ -165,6 +172,47 @@ public sealed class ServicioRegistroAnalisisLoteTests
     }
 
     [Fact]
+    public async Task
+        Registrar_ConDatoSensible_NoDebePersistirValorPresentado()
+    {
+        var lote = CrearLote();
+
+        var repositorio =
+            new RepositorioImportacionesFalso(lote);
+
+        var servicio = CrearServicio(
+            repositorio,
+            new UnidadTrabajoFalsa());
+
+        var resultadoAnalisis =
+            new ResultadoAnalisisImportacionDto
+            {
+                NombreArchivo = "Facturas.xlsx",
+                TotalFilasAnalizadas = 1,
+                Inconsistencias =
+                [
+                    CrearInconsistencia(
+                        fila: 2,
+                        codigo: "DOCUMENTO_INVALIDO",
+                        severidad: SeveridadDto.Error,
+                        valorPresentado: "123456789",
+                        esDatoSensible: true)
+                ]
+            };
+
+        await servicio.RegistrarAsync(
+            lote.Id,
+            resultadoAnalisis,
+            "analista");
+
+        var inconsistencia = Assert.Single(
+            repositorio.InconsistenciasAgregadas);
+
+        Assert.True(inconsistencia.EsDatoSensible);
+        Assert.Null(inconsistencia.ValorPresentado);
+    }
+
+    [Fact]
     public async Task Registrar_ConLoteInexistente_DebeLanzarExcepcion()
     {
         var repositorio =
@@ -224,9 +272,11 @@ public sealed class ServicioRegistroAnalisisLoteTests
 
     private static InconsistenciaImportacionDto
         CrearInconsistencia(
-            int? fila,
-            string codigo,
-            SeveridadDto severidad)
+        int? fila,
+        string codigo,
+        SeveridadDto severidad,
+        string? valorPresentado = null,
+        bool esDatoSensible = false)
     {
         return new InconsistenciaImportacionDto
         {
@@ -234,6 +284,8 @@ public sealed class ServicioRegistroAnalisisLoteTests
             Columna = "FACTURA",
             Codigo = codigo,
             Mensaje = "Inconsistencia de prueba.",
+            ValorPresentado = valorPresentado,
+            EsDatoSensible = esDatoSensible,
             Severidad = severidad
         };
     }

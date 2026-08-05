@@ -1,0 +1,574 @@
+diff --git a/SeguimientoFacturacion.Application.Tests/Services/ServicioRegistroAnalisisLoteTests.cs b/SeguimientoFacturacion.Application.Tests/Services/ServicioRegistroAnalisisLoteTests.cs
+index 2d9017f..6cecf5c 100644
+--- a/SeguimientoFacturacion.Application.Tests/Services/ServicioRegistroAnalisisLoteTests.cs
++++ b/SeguimientoFacturacion.Application.Tests/Services/ServicioRegistroAnalisisLoteTests.cs
+@@ -46,7 +46,9 @@ public sealed class ServicioRegistroAnalisisLoteTests
+                     CrearInconsistencia(
+                         fila: 2,
+                         codigo: "FACTURA_REQUERIDA",
+-                        severidad: SeveridadDto.Error),
++                        severidad: SeveridadDto.Error,
++                        valorPresentado:
++                            "ASEGURADORA NO CATALOGADA"),
+                     CrearInconsistencia(
+                         fila: 2,
+                         codigo: "VALOR_INVALIDO",
+@@ -84,6 +86,11 @@ public sealed class ServicioRegistroAnalisisLoteTests
+             repositorio.InconsistenciasAgregadas[0]
+                 .Severidad);
+ 
++        Assert.Equal(
++            "ASEGURADORA NO CATALOGADA",
++            repositorio.InconsistenciasAgregadas[0]
++                .ValorPresentado);
++
+         Assert.Equal(
+             SeveridadImportacion.Advertencia,
+             repositorio.InconsistenciasAgregadas[2]
+@@ -164,6 +171,47 @@ public sealed class ServicioRegistroAnalisisLoteTests
+         Assert.False(lote.PuedeConfirmarse);
+     }
+ 
++    [Fact]
++    public async Task
++        Registrar_ConDatoSensible_NoDebePersistirValorPresentado()
++    {
++        var lote = CrearLote();
++
++        var repositorio =
++            new RepositorioImportacionesFalso(lote);
++
++        var servicio = CrearServicio(
++            repositorio,
++            new UnidadTrabajoFalsa());
++
++        var resultadoAnalisis =
++            new ResultadoAnalisisImportacionDto
++            {
++                NombreArchivo = "Facturas.xlsx",
++                TotalFilasAnalizadas = 1,
++                Inconsistencias =
++                [
++                    CrearInconsistencia(
++                        fila: 2,
++                        codigo: "DOCUMENTO_INVALIDO",
++                        severidad: SeveridadDto.Error,
++                        valorPresentado: "123456789",
++                        esDatoSensible: true)
++                ]
++            };
++
++        await servicio.RegistrarAsync(
++            lote.Id,
++            resultadoAnalisis,
++            "analista");
++
++        var inconsistencia = Assert.Single(
++            repositorio.InconsistenciasAgregadas);
++
++        Assert.True(inconsistencia.EsDatoSensible);
++        Assert.Null(inconsistencia.ValorPresentado);
++    }
++
+     [Fact]
+     public async Task Registrar_ConLoteInexistente_DebeLanzarExcepcion()
+     {
+@@ -224,9 +272,11 @@ public sealed class ServicioRegistroAnalisisLoteTests
+ 
+     private static InconsistenciaImportacionDto
+         CrearInconsistencia(
+-            int? fila,
+-            string codigo,
+-            SeveridadDto severidad)
++        int? fila,
++        string codigo,
++        SeveridadDto severidad,
++        string? valorPresentado = null,
++        bool esDatoSensible = false)
+     {
+         return new InconsistenciaImportacionDto
+         {
+@@ -234,6 +284,8 @@ public sealed class ServicioRegistroAnalisisLoteTests
+             Columna = "FACTURA",
+             Codigo = codigo,
+             Mensaje = "Inconsistencia de prueba.",
++            ValorPresentado = valorPresentado,
++            EsDatoSensible = esDatoSensible,
+             Severidad = severidad
+         };
+     }
+@@ -370,4 +422,4 @@ public sealed class ServicioRegistroAnalisisLoteTests
+             return Task.FromResult(resultado);
+         }
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/SeguimientoFacturacion.Application/DTOs/Importacion/InconsistenciaImportacionDto.cs b/SeguimientoFacturacion.Application/DTOs/Importacion/InconsistenciaImportacionDto.cs
+index 19342fd..df385c9 100644
+--- a/SeguimientoFacturacion.Application/DTOs/Importacion/InconsistenciaImportacionDto.cs
++++ b/SeguimientoFacturacion.Application/DTOs/Importacion/InconsistenciaImportacionDto.cs
+@@ -29,6 +29,18 @@ public sealed record InconsistenciaImportacionDto
+     /// </summary>
+     public required string Mensaje { get; init; }
+ 
++    /// <summary>
++    /// Obtiene el valor sanitizado que puede mostrarse
++    /// para facilitar la corrección del archivo.
++    /// </summary>
++    public string? ValorPresentado { get; init; }
++
++    /// <summary>
++    /// Indica si la inconsistencia corresponde a información
++    /// que no debe persistirse ni mostrarse sin protección.
++    /// </summary>
++    public bool EsDatoSensible { get; init; }
++
+     /// <summary>
+     /// Obtiene la severidad de la inconsistencia.
+     /// </summary>
+@@ -37,4 +49,4 @@ public sealed record InconsistenciaImportacionDto
+         get;
+         init;
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/SeguimientoFacturacion.Application/Services/ServicioRegistroAnalisisLote.cs b/SeguimientoFacturacion.Application/Services/ServicioRegistroAnalisisLote.cs
+index 9ebb16e..ee7ce21 100644
+--- a/SeguimientoFacturacion.Application/Services/ServicioRegistroAnalisisLote.cs
++++ b/SeguimientoFacturacion.Application/Services/ServicioRegistroAnalisisLote.cs
+@@ -178,7 +178,14 @@ public sealed class ServicioRegistroAnalisisLote :
+                         codigo: inconsistencia.Codigo,
+                         mensaje: inconsistencia.Mensaje,
+                         numeroFila: inconsistencia.Fila,
+-                        columna: inconsistencia.Columna))
++                        columna: inconsistencia.Columna,
++                        valorPresentado:
++                            inconsistencia.EsDatoSensible
++                                ? null
++                                : inconsistencia
++                                    .ValorPresentado,
++                        esDatoSensible:
++                            inconsistencia.EsDatoSensible))
+             .ToList();
+     }
+ 
+@@ -278,4 +285,4 @@ public sealed class ServicioRegistroAnalisisLote :
+                 "al archivo registrado en el lote.");
+         }
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/SeguimientoFacturacion.Infrastructure.Tests/Services/Importacion/ValidadorFilasFacturasModularClosedXmlTests.cs b/SeguimientoFacturacion.Infrastructure.Tests/Services/Importacion/ValidadorFilasFacturasModularClosedXmlTests.cs
+index 48cd357..14c9a01 100644
+--- a/SeguimientoFacturacion.Infrastructure.Tests/Services/Importacion/ValidadorFilasFacturasModularClosedXmlTests.cs
++++ b/SeguimientoFacturacion.Infrastructure.Tests/Services/Importacion/ValidadorFilasFacturasModularClosedXmlTests.cs
+@@ -109,7 +109,7 @@ public sealed class
+ 
+     [Fact]
+     public async Task
+-        Validar_CatalogoRepetidoNoMapeado_DebeContarloUnaVez()
++        Validar_CatalogoRepetidoNoMapeado_DebeReportarCadaFila()
+     {
+         await using var archivo =
+             CrearArchivo(
+@@ -140,11 +140,27 @@ public sealed class
+         Assert.False(resultado.EsValido);
+         Assert.Equal(1, resultado.CatalogosNoMapeados);
+ 
+-        Assert.Single(
+-            resultado.Inconsistencias,
++        var erroresCatalogo =
++            resultado.Inconsistencias
++                .Where(
++                    inconsistencia =>
++                        inconsistencia.Codigo ==
++                        "CATALOGO_ASEGURADORA_NO_MAPEADO")
++                .OrderBy(
++                    inconsistencia =>
++                        inconsistencia.Fila)
++                .ToArray();
++
++        Assert.Equal(2, erroresCatalogo.Length);
++        Assert.Equal(2, erroresCatalogo[0].Fila);
++        Assert.Equal(3, erroresCatalogo[1].Fila);
++
++        Assert.All(
++            erroresCatalogo,
+             inconsistencia =>
+-                inconsistencia.Codigo ==
+-                "CATALOGO_ASEGURADORA_NO_MAPEADO");
++                Assert.Equal(
++                    "ASEGURADORA NO CATALOGADA",
++                    inconsistencia.ValorPresentado));
+     }
+ 
+     [Fact]
+@@ -358,4 +374,4 @@ public sealed class
+         hoja.Cell(fila, 15).Value = "PENDIENTE";
+         hoja.Cell(fila, 16).Value = "ANA PEREZ";
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorFilasFacturasModularClosedXml.cs b/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorFilasFacturasModularClosedXml.cs
+index 3925bca..fe4b092 100644
+--- a/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorFilasFacturasModularClosedXml.cs
++++ b/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorFilasFacturasModularClosedXml.cs
+@@ -827,16 +827,17 @@ public sealed class
+         var clave =
+             $"{codigo}:{valorNormalizado}";
+ 
+-        if (catalogosNoMapeados.Add(clave))
+-        {
+-            AgregarError(
+-                inconsistencias,
+-                fila,
+-                columna,
+-                codigo,
+-                "El valor utilizado no existe en el " +
+-                "catálogo normalizado.");
+-        }
++        catalogosNoMapeados.Add(clave);
++
++        AgregarError(
++            inconsistencias,
++            fila,
++            columna,
++            codigo,
++            "El valor utilizado no existe en el " +
++            "catálogo normalizado.",
++            SanitizadorValorPresentadoImportacion
++                .Sanitizar(valor));
+ 
+         return null;
+     }
+@@ -1133,7 +1134,8 @@ public sealed class
+         int fila,
+         string columna,
+         string codigo,
+-        string mensaje)
++        string mensaje,
++        string? valorPresentado = null)
+     {
+         inconsistencias.Add(
+             new InconsistenciaImportacionDto
+@@ -1142,6 +1144,7 @@ public sealed class
+                 Columna = columna,
+                 Codigo = codigo,
+                 Mensaje = mensaje,
++                ValorPresentado = valorPresentado,
+ 
+                 Severidad =
+                     SeveridadInconsistenciaImportacion
+@@ -1156,4 +1159,4 @@ public sealed class
+         IReadOnlyDictionary<string, int> Costos,
+         IReadOnlyDictionary<string, int> Estados,
+         IReadOnlyDictionary<string, int> Facturadores);
+-}
+\ No newline at end of file
++}
+diff --git a/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorGlosasModularClosedXml.cs b/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorGlosasModularClosedXml.cs
+index a0a9358..361fab1 100644
+--- a/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorGlosasModularClosedXml.cs
++++ b/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorGlosasModularClosedXml.cs
+@@ -517,15 +517,16 @@ public sealed class
+             return identificador;
+         }
+ 
+-        if (noMapeados.Add(normalizado))
+-        {
+-            AgregarError(
+-                inconsistencias,
+-                fila,
+-                "ASEGURADORA",
+-                "CATALOGO_ASEGURADORA_NO_MAPEADO",
+-                "La aseguradora no existe en el catálogo.");
+-        }
++        noMapeados.Add(normalizado);
++
++        AgregarError(
++            inconsistencias,
++            fila,
++            "ASEGURADORA",
++            "CATALOGO_ASEGURADORA_NO_MAPEADO",
++            "La aseguradora no existe en el catálogo.",
++            SanitizadorValorPresentadoImportacion
++                .Sanitizar(valor));
+ 
+         return null;
+     }
+@@ -901,7 +902,8 @@ public sealed class
+         int fila,
+         string columna,
+         string codigo,
+-        string mensaje)
++        string mensaje,
++        string? valorPresentado = null)
+     {
+         inconsistencias.Add(
+             new InconsistenciaImportacionDto
+@@ -910,6 +912,7 @@ public sealed class
+                 Columna = columna,
+                 Codigo = codigo,
+                 Mensaje = mensaje,
++                ValorPresentado = valorPresentado,
+ 
+                 Severidad =
+                     SeveridadInconsistenciaImportacion
+@@ -924,4 +927,4 @@ public sealed class
+         DateOnly? FechaGlosa,
+         decimal? ValorGlosa,
+         DateOnly? FechaRespuesta);
+-}
+\ No newline at end of file
++}
+diff --git a/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorNotasFacturaModularClosedXml.cs b/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorNotasFacturaModularClosedXml.cs
+index edae381..078df3a 100644
+--- a/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorNotasFacturaModularClosedXml.cs
++++ b/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorNotasFacturaModularClosedXml.cs
+@@ -568,15 +568,16 @@ public sealed class
+             return identificador;
+         }
+ 
+-        if (noMapeados.Add(normalizado))
+-        {
+-            AgregarError(
+-                inconsistencias,
+-                fila,
+-                "ASEGURADORA",
+-                "CATALOGO_ASEGURADORA_NO_MAPEADO",
+-                "La aseguradora no existe en el catálogo.");
+-        }
++        noMapeados.Add(normalizado);
++
++        AgregarError(
++            inconsistencias,
++            fila,
++            "ASEGURADORA",
++            "CATALOGO_ASEGURADORA_NO_MAPEADO",
++            "La aseguradora no existe en el catálogo.",
++            SanitizadorValorPresentadoImportacion
++                .Sanitizar(valor));
+ 
+         return null;
+     }
+@@ -827,7 +828,8 @@ public sealed class
+         int fila,
+         string columna,
+         string codigo,
+-        string mensaje)
++        string mensaje,
++        string? valorPresentado = null)
+     {
+         inconsistencias.Add(
+             new InconsistenciaImportacionDto
+@@ -836,6 +838,7 @@ public sealed class
+                 Columna = columna,
+                 Codigo = codigo,
+                 Mensaje = mensaje,
++                ValorPresentado = valorPresentado,
+ 
+                 Severidad =
+                     SeveridadInconsistenciaImportacion
+@@ -850,4 +853,4 @@ public sealed class
+         TipoNotaFactura? Tipo,
+         DateOnly? FechaNota,
+         decimal? ValorNota);
+-}
+\ No newline at end of file
++}
+diff --git a/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorPagosModularClosedXml.cs b/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorPagosModularClosedXml.cs
+index d50f470..f916240 100644
+--- a/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorPagosModularClosedXml.cs
++++ b/SeguimientoFacturacion.Infrastructure/Services/Importacion/ValidadorPagosModularClosedXml.cs
+@@ -916,15 +916,16 @@ public sealed class ValidadorPagosModularClosedXml :
+             return identificador;
+         }
+ 
+-        if (noMapeados.Add(normalizado))
+-        {
+-            AgregarError(
+-                inconsistencias,
+-                fila,
+-                "ASEGURADORA",
+-                "CATALOGO_ASEGURADORA_NO_MAPEADO",
+-                "La aseguradora no existe en el catálogo.");
+-        }
++        noMapeados.Add(normalizado);
++
++        AgregarError(
++            inconsistencias,
++            fila,
++            "ASEGURADORA",
++            "CATALOGO_ASEGURADORA_NO_MAPEADO",
++            "La aseguradora no existe en el catálogo.",
++            SanitizadorValorPresentadoImportacion
++                .Sanitizar(valor));
+ 
+         return null;
+     }
+@@ -1348,7 +1349,8 @@ public sealed class ValidadorPagosModularClosedXml :
+         int fila,
+         string columna,
+         string codigo,
+-        string mensaje)
++        string mensaje,
++        string? valorPresentado = null)
+     {
+         inconsistencias.Add(
+             new InconsistenciaImportacionDto
+@@ -1357,6 +1359,7 @@ public sealed class ValidadorPagosModularClosedXml :
+                 Columna = columna,
+                 Codigo = codigo,
+                 Mensaje = mensaje,
++                ValorPresentado = valorPresentado,
+ 
+                 Severidad =
+                     SeveridadInconsistenciaImportacion
+@@ -1379,4 +1382,4 @@ public sealed class ValidadorPagosModularClosedXml :
+         decimal? ValorAplicado,
+         decimal? ValorCruzadoAplicado,
+         string? Notas);
+-}
+\ No newline at end of file
++}
+diff --git a/SeguimientoFacturacion/Views/Importacion/Index.cshtml b/SeguimientoFacturacion/Views/Importacion/Index.cshtml
+index c59da1e..02fefd0 100644
+--- a/SeguimientoFacturacion/Views/Importacion/Index.cshtml
++++ b/SeguimientoFacturacion/Views/Importacion/Index.cshtml
+@@ -287,6 +287,9 @@
+                                         <th scope="col">
+                                             Columna
+                                         </th>
++                                        <th scope="col">
++                                            Valor presentado
++                                        </th>
+                                         <th scope="col">
+                                             Mensaje
+                                         </th>
+@@ -341,6 +344,12 @@
+                                                     ?? "—")
+                                             </td>
+ 
++                                            <td>
++                                                @(inconsistencia
++                                                    .ValorPresentado
++                                                    ?? "—")
++                                            </td>
++
+                                             <td>
+                                                 @inconsistencia.Mensaje
+                                             </td>
+@@ -354,4 +363,4 @@
+             </div>
+         }
+     </div>
+-</div>
+\ No newline at end of file
++</div>
+diff --git a/SeguimientoFacturacion.Application/Common/Importacion/SanitizadorValorPresentadoImportacion.cs b/SeguimientoFacturacion.Application/Common/Importacion/SanitizadorValorPresentadoImportacion.cs
+new file mode 100644
+index 0000000..6f494d2
+--- /dev/null
++++ b/SeguimientoFacturacion.Application/Common/Importacion/SanitizadorValorPresentadoImportacion.cs
+@@ -0,0 +1,48 @@
++namespace SeguimientoFacturacion.Application.Common.Importacion;
++
++/// <summary>
++/// Prepara valores no sensibles que pueden mostrarse
++/// en el diagnóstico de una importación.
++/// </summary>
++public static class SanitizadorValorPresentadoImportacion
++{
++    /// <summary>
++    /// Longitud máxima utilizada en la interfaz de diagnóstico.
++    /// </summary>
++    public const int LongitudMaxima = 200;
++
++    /// <summary>
++    /// Elimina caracteres de control, normaliza espacios
++    /// y limita el texto que puede presentarse al usuario.
++    /// </summary>
++    public static string? Sanitizar(string? valor)
++    {
++        if (string.IsNullOrWhiteSpace(valor))
++        {
++            return null;
++        }
++
++        var caracteres = valor
++            .Trim()
++            .Select(
++                caracter =>
++                    char.IsControl(caracter)
++                        ? ' '
++                        : caracter)
++            .ToArray();
++
++        var normalizado = string.Join(
++            ' ',
++            new string(caracteres).Split(
++                (char[]?)null,
++                StringSplitOptions.RemoveEmptyEntries));
++
++        if (normalizado.Length <= LongitudMaxima)
++        {
++            return normalizado;
++        }
++
++        return normalizado[..(LongitudMaxima - 3)] +
++            "...";
++    }
++}
+diff --git a/SeguimientoFacturacion.Application.Tests/Common/Importacion/SanitizadorValorPresentadoImportacionTests.cs b/SeguimientoFacturacion.Application.Tests/Common/Importacion/SanitizadorValorPresentadoImportacionTests.cs
+new file mode 100644
+index 0000000..05070c0
+--- /dev/null
++++ b/SeguimientoFacturacion.Application.Tests/Common/Importacion/SanitizadorValorPresentadoImportacionTests.cs
+@@ -0,0 +1,42 @@
++using SeguimientoFacturacion.Application.Common.Importacion;
++
++namespace SeguimientoFacturacion.Application.Tests
++    .Common.Importacion;
++
++public sealed class
++    SanitizadorValorPresentadoImportacionTests
++{
++    [Fact]
++    public void Sanitizar_TextoConControles_DebeNormalizarlo()
++    {
++        var resultado =
++            SanitizadorValorPresentadoImportacion
++                .Sanitizar("  NUEVA\tEPS\r\nNO MAPEADA  ");
++
++        Assert.Equal(
++            "NUEVA EPS NO MAPEADA",
++            resultado);
++    }
++
++    [Fact]
++    public void Sanitizar_TextoExtenso_DebeLimitarlo()
++    {
++        var valor = new string(
++            'A',
++            SanitizadorValorPresentadoImportacion
++                .LongitudMaxima + 20);
++
++        var resultado =
++            SanitizadorValorPresentadoImportacion
++                .Sanitizar(valor);
++
++        Assert.NotNull(resultado);
++
++        Assert.Equal(
++            SanitizadorValorPresentadoImportacion
++                .LongitudMaxima,
++            resultado.Length);
++
++        Assert.EndsWith("...", resultado);
++    }
++}
+

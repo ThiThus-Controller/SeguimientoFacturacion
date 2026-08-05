@@ -30,6 +30,18 @@ public sealed record InconsistenciaImportacionDto
     public required string Mensaje { get; init; }
 
     /// <summary>
+    /// Obtiene el valor sanitizado que puede mostrarse
+    /// para facilitar la corrección del archivo.
+    /// </summary>
+    public string? ValorPresentado { get; init; }
+
+    /// <summary>
+    /// Indica si la inconsistencia corresponde a información
+    /// que no debe persistirse ni mostrarse sin protección.
+    /// </summary>
+    public bool EsDatoSensible { get; init; }
+
+    /// <summary>
     /// Obtiene la severidad de la inconsistencia.
     /// </summary>
     public SeveridadInconsistenciaImportacion Severidad

@@ -827,16 +827,17 @@ public sealed class
         var clave =
             $"{codigo}:{valorNormalizado}";
 
-        if (catalogosNoMapeados.Add(clave))
-        {
-            AgregarError(
-                inconsistencias,
-                fila,
-                columna,
-                codigo,
-                "El valor utilizado no existe en el " +
-                "catálogo normalizado.");
-        }
+        catalogosNoMapeados.Add(clave);
+
+        AgregarError(
+            inconsistencias,
+            fila,
+            columna,
+            codigo,
+            "El valor utilizado no existe en el " +
+            "catálogo normalizado.",
+            SanitizadorValorPresentadoImportacion
+                .Sanitizar(valor));
 
         return null;
     }
@@ -1133,7 +1134,8 @@ public sealed class
         int fila,
         string columna,
         string codigo,
-        string mensaje)
+        string mensaje,
+        string? valorPresentado = null)
     {
         inconsistencias.Add(
             new InconsistenciaImportacionDto
@@ -1142,6 +1144,7 @@ public sealed class
                 Columna = columna,
                 Codigo = codigo,
                 Mensaje = mensaje,
+                ValorPresentado = valorPresentado,
 
                 Severidad =
                     SeveridadInconsistenciaImportacion

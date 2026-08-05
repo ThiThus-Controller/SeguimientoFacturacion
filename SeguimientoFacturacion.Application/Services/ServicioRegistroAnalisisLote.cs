@@ -178,7 +178,14 @@ public sealed class ServicioRegistroAnalisisLote :
                         codigo: inconsistencia.Codigo,
                         mensaje: inconsistencia.Mensaje,
                         numeroFila: inconsistencia.Fila,
-                        columna: inconsistencia.Columna))
+                        columna: inconsistencia.Columna,
+                        valorPresentado:
+                            inconsistencia.EsDatoSensible
+                                ? null
+                                : inconsistencia
+                                    .ValorPresentado,
+                        esDatoSensible:
+                            inconsistencia.EsDatoSensible))
             .ToList();
     }
 

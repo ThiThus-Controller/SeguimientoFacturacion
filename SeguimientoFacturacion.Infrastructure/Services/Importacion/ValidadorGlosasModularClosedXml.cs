@@ -517,15 +517,16 @@ public sealed class
             return identificador;
         }
 
-        if (noMapeados.Add(normalizado))
-        {
-            AgregarError(
-                inconsistencias,
-                fila,
-                "ASEGURADORA",
-                "CATALOGO_ASEGURADORA_NO_MAPEADO",
-                "La aseguradora no existe en el catálogo.");
-        }
+        noMapeados.Add(normalizado);
+
+        AgregarError(
+            inconsistencias,
+            fila,
+            "ASEGURADORA",
+            "CATALOGO_ASEGURADORA_NO_MAPEADO",
+            "La aseguradora no existe en el catálogo.",
+            SanitizadorValorPresentadoImportacion
+                .Sanitizar(valor));
 
         return null;
     }
@@ -901,7 +902,8 @@ public sealed class
         int fila,
         string columna,
         string codigo,
-        string mensaje)
+        string mensaje,
+        string? valorPresentado = null)
     {
         inconsistencias.Add(
             new InconsistenciaImportacionDto
@@ -910,6 +912,7 @@ public sealed class
                 Columna = columna,
                 Codigo = codigo,
                 Mensaje = mensaje,
+                ValorPresentado = valorPresentado,
 
                 Severidad =
                     SeveridadInconsistenciaImportacion
