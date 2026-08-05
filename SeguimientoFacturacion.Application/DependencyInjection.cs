@@ -94,6 +94,10 @@ public static class DependencyInjection
             IServicioAutenticacionUsuario,
             ServicioAutenticacionUsuario>();
 
+        services.AddTransient<
+            IServicioAdministracionUsuarios,
+            ServicioAdministracionUsuarios>();
+
         return services;
     }
 }
