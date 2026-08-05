@@ -20,9 +20,9 @@
 
         <div class="alert alert-warning" role="alert">
             <strong>Importante:</strong>
-            confirmar el lote no traslada todavía las facturas
-            ni los pacientes a las tablas definitivas. Ese
-            procesamiento se habilitará en el siguiente paso.
+            confirmar el lote no traslada todavía sus registros
+            a las tablas definitivas. El traslado exige una segunda
+            autorización de procesamiento.
         </div>
 
         <div class="card shadow-sm">
@@ -40,6 +40,14 @@
 
                     <dd class="col-sm-7">
                         <code>@Model.LoteId</code>
+                    </dd>
+
+                    <dt class="col-sm-5">
+                        Tipo
+                    </dt>
+
+                    <dd class="col-sm-7">
+                        @Model.TipoDescripcion
                     </dd>
 
                     <dt class="col-sm-5">
@@ -71,8 +79,9 @@
         </div>
 
         <div class="mt-4">
-            @if (User.TienePermiso(
-                PermisosSistema.Facturas.Procesar))
+            @if (Model.Tipo == TipoImportacion.Facturas &&
+                User.TienePermiso(
+                    PermisosSistema.Facturas.Procesar))
             {
                 <a asp-controller="Importacion"
                    asp-action="PrepararProcesamientoFacturas"
@@ -80,6 +89,13 @@
                    class="btn btn-danger">
                     Continuar al procesamiento definitivo
                 </a>
+            }
+            else if (Model.Tipo != TipoImportacion.Facturas)
+            {
+                <span class="text-secondary me-2">
+                    El lote quedó listo para su procesamiento
+                    definitivo en el módulo correspondiente.
+                </span>
             }
             else
             {

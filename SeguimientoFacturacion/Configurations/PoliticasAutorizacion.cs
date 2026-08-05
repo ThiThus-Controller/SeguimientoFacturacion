@@ -30,6 +30,15 @@ public static class PoliticasAutorizacion
     public const string ConfirmarFacturas =
         PrefijoPermiso + PermisosSistema.Facturas.Confirmar;
 
+    public const string ConfirmarNotasFactura =
+        "Importaciones.Confirmar.NotasFactura";
+
+    public const string ConfirmarGlosas =
+        PrefijoPermiso + PermisosSistema.Glosas.Confirmar;
+
+    public const string ConfirmarPagos =
+        PrefijoPermiso + PermisosSistema.Pagos.Confirmar;
+
     public const string ProcesarFacturas =
         PrefijoPermiso + PermisosSistema.Facturas.Procesar;
 
@@ -59,6 +68,18 @@ public static class PoliticasAutorizacion
 
     public const string FacturadoresCambiarEstado =
         PrefijoPermiso + PermisosSistema.Facturadores.Inactivar;
+
+    public const string AseguradorasConsultar =
+        PrefijoPermiso + PermisosSistema.Aseguradoras.Ver;
+
+    public const string AseguradorasCrear =
+        PrefijoPermiso + PermisosSistema.Aseguradoras.Crear;
+
+    public const string AseguradorasEditar =
+        PrefijoPermiso + PermisosSistema.Aseguradoras.Editar;
+
+    public const string AseguradorasCambiarEstado =
+        PrefijoPermiso + PermisosSistema.Aseguradoras.Inactivar;
 
     private static readonly string[] PermisosCreacionUsuarios =
     [
@@ -98,6 +119,12 @@ public static class PoliticasAutorizacion
         PermisosSistema.AplicacionesPago.Crear
     ];
 
+    private static readonly string[] PermisosConfirmacionNotas =
+    [
+        PermisosSistema.NotasCredito.Confirmar,
+        PermisosSistema.NotasDebito.Confirmar
+    ];
+
     /// <summary>
     /// Obtiene el nombre estable de la política de un permiso individual.
     /// </summary>
@@ -121,6 +148,24 @@ public static class PoliticasAutorizacion
                 nameof(tipo),
                 tipo,
                 "El tipo no tiene una política de importación modular.")
+        };
+    }
+
+    /// <summary>
+    /// Obtiene la política de confirmación para el tipo indicado.
+    /// </summary>
+    public static string ParaConfirmacion(TipoImportacion tipo)
+    {
+        return tipo switch
+        {
+            TipoImportacion.Facturas => ConfirmarFacturas,
+            TipoImportacion.NotasFactura => ConfirmarNotasFactura,
+            TipoImportacion.Glosas => ConfirmarGlosas,
+            TipoImportacion.Pagos => ConfirmarPagos,
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(tipo),
+                tipo,
+                "El tipo no tiene una política de confirmación modular.")
         };
     }
 
@@ -159,6 +204,12 @@ public static class PoliticasAutorizacion
             options,
             AnalizarPagos,
             RequisitoPermisos.ExigirTodos(PermisosPagos));
+
+        AgregarPolitica(
+            options,
+            ConfirmarNotasFactura,
+            RequisitoPermisos.ExigirTodos(
+                PermisosConfirmacionNotas));
 
         AgregarPolitica(
             options,

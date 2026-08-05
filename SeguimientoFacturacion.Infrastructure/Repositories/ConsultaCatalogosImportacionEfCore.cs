@@ -31,6 +31,7 @@ public sealed class ConsultaCatalogosImportacionEfCore :
     {
         var aseguradoras = await _contexto.Aseguradoras
             .AsNoTracking()
+            .Where(catalogo => catalogo.Activo)
             .OrderBy(catalogo => catalogo.Id)
             .Select(
                 catalogo =>
@@ -93,6 +94,7 @@ public sealed class ConsultaCatalogosImportacionEfCore :
         var facturadores =
             await _contexto.Facturadores
                 .AsNoTracking()
+                .Where(catalogo => catalogo.Activo)
                 .OrderBy(catalogo => catalogo.Id)
                 .Select(
                     catalogo =>

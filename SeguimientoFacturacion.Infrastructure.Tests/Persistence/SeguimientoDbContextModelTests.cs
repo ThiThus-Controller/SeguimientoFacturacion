@@ -217,6 +217,38 @@ public sealed class SeguimientoDbContextModelTests
                 .IsNullable);
     }
 
+    [Fact]
+    public void Aseguradora_DebePersistirEstadoAuditoriaEIndice()
+    {
+        using var contexto = CrearContexto();
+
+        var entidad = contexto.Model.FindEntityType(typeof(Aseguradora));
+
+        Assert.NotNull(entidad);
+        Assert.Equal("Aseguradoras", entidad.GetTableName());
+        Assert.Equal(100,
+            entidad.FindProperty(nameof(Aseguradora.Descripcion))!
+                .GetMaxLength());
+        Assert.False(
+            entidad.FindProperty(nameof(Aseguradora.Activo))!
+                .IsNullable);
+        Assert.False(
+            entidad.FindProperty(nameof(Aseguradora.FechaCreacionUtc))!
+                .IsNullable);
+        Assert.Equal(100,
+            entidad.FindProperty(nameof(Aseguradora.CreadoPor))!
+                .GetMaxLength());
+        Assert.True(
+            entidad.FindProperty(nameof(Aseguradora.FechaModificacionUtc))!
+                .IsNullable);
+        Assert.Contains(
+            entidad.GetIndexes(),
+            indice =>
+                indice.Properties.Count == 1 &&
+                indice.Properties[0].Name ==
+                nameof(Aseguradora.Descripcion));
+    }
+
     private static SeguimientoDbContext CrearContexto()
     {
         var options =

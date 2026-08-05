@@ -49,6 +49,52 @@ public sealed class PoliticasAutorizacionTests
             PoliticasAutorizacion.ParaAnalisis(tipo));
     }
 
+    [Theory]
+    [InlineData(
+        TipoImportacion.Facturas,
+        PoliticasAutorizacion.ConfirmarFacturas)]
+    [InlineData(
+        TipoImportacion.NotasFactura,
+        PoliticasAutorizacion.ConfirmarNotasFactura)]
+    [InlineData(
+        TipoImportacion.Glosas,
+        PoliticasAutorizacion.ConfirmarGlosas)]
+    [InlineData(
+        TipoImportacion.Pagos,
+        PoliticasAutorizacion.ConfirmarPagos)]
+    public void ParaConfirmacion_TipoSoportado_DebeResolverPolitica(
+        TipoImportacion tipo,
+        string politicaEsperada)
+    {
+        Assert.Equal(
+            politicaEsperada,
+            PoliticasAutorizacion.ParaConfirmacion(tipo));
+    }
+
+    [Fact]
+    public void Registrar_ConfirmarNotas_DebeExigirAmbosPermisos()
+    {
+        var options = new AuthorizationOptions();
+        PoliticasAutorizacion.Registrar(options);
+
+        var politica = options.GetPolicy(
+            PoliticasAutorizacion.ConfirmarNotasFactura);
+
+        Assert.NotNull(politica);
+
+        var requisito = Assert.Single(
+            politica.Requirements.OfType<RequisitoPermisos>());
+        var alternativa = Assert.Single(requisito.Alternativas);
+
+        Assert.Equal(2, alternativa.Count);
+        Assert.Contains(
+            PermisosSistema.NotasCredito.Confirmar,
+            alternativa);
+        Assert.Contains(
+            PermisosSistema.NotasDebito.Confirmar,
+            alternativa);
+    }
+
     [Fact]
     public void Registrar_AccesoImportaciones_DebeTenerCuatroAlternativas()
     {
@@ -156,6 +202,37 @@ public sealed class PoliticasAutorizacionTests
         Assert.Equal(new[] { permisoEsperado }, alternativa);
     }
 
+    [Theory]
+    [InlineData(
+        PoliticasAutorizacion.AseguradorasConsultar,
+        PermisosSistema.Aseguradoras.Ver)]
+    [InlineData(
+        PoliticasAutorizacion.AseguradorasCrear,
+        PermisosSistema.Aseguradoras.Crear)]
+    [InlineData(
+        PoliticasAutorizacion.AseguradorasEditar,
+        PermisosSistema.Aseguradoras.Editar)]
+    [InlineData(
+        PoliticasAutorizacion.AseguradorasCambiarEstado,
+        PermisosSistema.Aseguradoras.Inactivar)]
+    public void Registrar_AdministracionAseguradoras_DebeExigirPermiso(
+        string nombrePolitica,
+        string permisoEsperado)
+    {
+        var options = new AuthorizationOptions();
+        PoliticasAutorizacion.Registrar(options);
+
+        var politica = options.GetPolicy(nombrePolitica);
+
+        Assert.NotNull(politica);
+
+        var requisito = Assert.Single(
+            politica.Requirements.OfType<RequisitoPermisos>());
+
+        var alternativa = Assert.Single(requisito.Alternativas);
+        Assert.Equal(new[] { permisoEsperado }, alternativa);
+    }
+
     [Fact]
     public void ParaAnalisis_Catalogos_DebeRechazarlo()
     {
@@ -164,6 +241,16 @@ public sealed class PoliticasAutorizacionTests
             _ = PoliticasAutorizacion.ParaAnalisis(
                 TipoImportacion.Catalogos);
         };
+
+        Assert.Throws<ArgumentOutOfRangeException>(accion);
+    }
+
+    [Fact]
+    public void ParaConfirmacion_Catalogos_DebeRechazarlo()
+    {
+        Action accion = () =>
+            _ = PoliticasAutorizacion.ParaConfirmacion(
+                TipoImportacion.Catalogos);
 
         Assert.Throws<ArgumentOutOfRangeException>(accion);
     }

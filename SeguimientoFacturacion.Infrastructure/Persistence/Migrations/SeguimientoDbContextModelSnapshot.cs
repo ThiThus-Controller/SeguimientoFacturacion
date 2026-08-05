@@ -149,13 +149,42 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("int");
 
+                    b.Property<bool>("Activo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("CreadoPor")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("migracion-sistema");
+
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasMaxLength(100)
                         .IsUnicode(true)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<DateTimeOffset>("FechaCreacionUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<DateTimeOffset?>("FechaModificacionUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ModificadoPor")
+                        .HasMaxLength(100)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(100)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Descripcion")
+                        .HasDatabaseName("IX_Aseguradoras_Descripcion");
 
                     b.ToTable("Aseguradoras", "facturacion");
                 });

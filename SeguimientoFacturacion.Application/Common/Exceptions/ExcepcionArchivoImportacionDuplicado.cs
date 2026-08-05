@@ -1,4 +1,5 @@
-﻿using SeguimientoFacturacion.Domain.Enums;
+﻿using SeguimientoFacturacion.Application.DTOs.Importacion;
+using SeguimientoFacturacion.Domain.Enums;
 
 namespace SeguimientoFacturacion.Application.Common.Exceptions;
 
@@ -41,6 +42,29 @@ public sealed class ExcepcionArchivoImportacionDuplicado :
     }
 
     /// <summary>
+    /// Inicializa la excepción con el lote que puede
+    /// recuperarse desde la aplicación web.
+    /// </summary>
+    public ExcepcionArchivoImportacionDuplicado(
+        TipoImportacion tipo,
+        string hashArchivo,
+        LoteImportacionDuplicadoDto loteExistente)
+        : this(tipo, hashArchivo)
+    {
+        ArgumentNullException.ThrowIfNull(loteExistente);
+
+        if (loteExistente.Tipo != tipo)
+        {
+            throw new ArgumentException(
+                "El lote existente no corresponde al tipo " +
+                "de importación solicitado.",
+                nameof(loteExistente));
+        }
+
+        LoteExistente = loteExistente;
+    }
+
+    /// <summary>
     /// Obtiene el tipo de importación solicitado.
     /// </summary>
     public TipoImportacion Tipo { get; }
@@ -49,4 +73,12 @@ public sealed class ExcepcionArchivoImportacionDuplicado :
     /// Obtiene la huella del archivo duplicado.
     /// </summary>
     public string HashArchivo { get; }
+
+    /// <summary>
+    /// Obtiene el lote existente que originó el bloqueo.
+    /// </summary>
+    public LoteImportacionDuplicadoDto? LoteExistente
+    {
+        get;
+    }
 }

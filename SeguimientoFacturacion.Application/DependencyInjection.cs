@@ -102,6 +102,10 @@ public static class DependencyInjection
             IServicioAdministracionFacturadores,
             ServicioAdministracionFacturadores>();
 
+        services.AddTransient<
+            IServicioAdministracionAseguradoras,
+            ServicioAdministracionAseguradoras>();
+
         return services;
     }
 }

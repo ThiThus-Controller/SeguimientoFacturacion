@@ -3,6 +3,7 @@ using ClosedXML.Excel;
 using SeguimientoFacturacion.Application.Common.Importacion;
 using SeguimientoFacturacion.Application.DTOs.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
+using SeguimientoFacturacion.Domain.Constants;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Enums;
 
@@ -16,8 +17,6 @@ public sealed class
     ValidadorFilasFacturasModularClosedXml :
     IValidadorFilasFacturasModular
 {
-    private const int EstadoAnuladaId = 5;
-
     /// <inheritdoc />
     public async Task<ResultadoValidacionFilasFacturasDto>
         ValidarAsync(
@@ -357,7 +356,7 @@ public sealed class
             columnas["FECHA DE RADICACION"],
             fechaFacturaValida,
             fechaFactura,
-            estadoId == EstadoAnuladaId,
+            estadoId == CodigosEstadoFactura.Anulada,
             inconsistencias);
 
         ValidarFechaAdmision(

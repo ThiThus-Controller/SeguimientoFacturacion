@@ -1,4 +1,6 @@
-﻿namespace SeguimientoFacturacion.Application.DTOs.Importacion;
+﻿using SeguimientoFacturacion.Domain.Enums;
+
+namespace SeguimientoFacturacion.Application.DTOs.Importacion;
 
 /// <summary>
 /// Representa la solicitud para confirmar un lote
@@ -10,6 +12,11 @@ public sealed record SolicitudConfirmacionLoteImportacionDto
     /// Obtiene el identificador del lote que será confirmado.
     /// </summary>
     public Guid LoteId { get; init; }
+
+    /// <summary>
+    /// Obtiene el tipo que el usuario revisó y pretende confirmar.
+    /// </summary>
+    public TipoImportacion Tipo { get; init; }
 
     /// <summary>
     /// Obtiene el usuario responsable de confirmar el lote.

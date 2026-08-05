@@ -23,6 +23,13 @@
             User,
             PoliticasAutorizacion.FacturadoresConsultar))
         .Succeeded;
+
+    var puedeAdministrarAseguradoras =
+        User.Identity?.IsAuthenticated == true &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.AseguradorasConsultar))
+        .Succeeded;
 }
 
 <!DOCTYPE html>
@@ -116,6 +123,17 @@
                                    asp-controller="Facturadores"
                                    asp-action="Index">
                                     Facturadores
+                                </a>
+                            </li>
+                        }
+
+                        @if (puedeAdministrarAseguradoras)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                   asp-controller="Aseguradoras"
+                                   asp-action="Index">
+                                    Aseguradoras
                                 </a>
                             </li>
                         }

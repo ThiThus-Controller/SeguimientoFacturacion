@@ -17,6 +17,9 @@ public sealed class ServicioRegistroLoteImportacion :
     private readonly IRepositorioImportaciones
         _repositorioImportaciones;
 
+    private readonly IConsultaLoteImportacionDuplicado
+        _consultaLoteDuplicado;
+
     private readonly IUnidadTrabajo _unidadTrabajo;
 
     private readonly ICalculadorHashArchivo
@@ -32,6 +35,8 @@ public sealed class ServicioRegistroLoteImportacion :
     /// </summary>
     public ServicioRegistroLoteImportacion(
         IRepositorioImportaciones repositorioImportaciones,
+        IConsultaLoteImportacionDuplicado
+            consultaLoteDuplicado,
         IUnidadTrabajo unidadTrabajo,
         ICalculadorHashArchivo calculadorHashArchivo,
         IValidator<SolicitudRegistroLoteImportacionDto>
@@ -40,6 +45,9 @@ public sealed class ServicioRegistroLoteImportacion :
     {
         ArgumentNullException.ThrowIfNull(
             repositorioImportaciones);
+
+        ArgumentNullException.ThrowIfNull(
+            consultaLoteDuplicado);
 
         ArgumentNullException.ThrowIfNull(unidadTrabajo);
 
@@ -51,6 +59,8 @@ public sealed class ServicioRegistroLoteImportacion :
 
         _repositorioImportaciones =
             repositorioImportaciones;
+
+        _consultaLoteDuplicado = consultaLoteDuplicado;
 
         _unidadTrabajo = unidadTrabajo;
 
@@ -86,19 +96,20 @@ public sealed class ServicioRegistroLoteImportacion :
                     solicitud.Contenido,
                     cancellationToken);
 
-        var archivoExiste =
-            await _repositorioImportaciones
-                .ExisteArchivoAsync(
+        var loteExistente =
+            await _consultaLoteDuplicado
+                .ObtenerAsync(
                     solicitud.Tipo,
                     hashArchivo,
                     cancellationToken);
 
-        if (archivoExiste)
+        if (loteExistente is not null)
         {
             throw new
                 ExcepcionArchivoImportacionDuplicado(
                     solicitud.Tipo,
-                    hashArchivo);
+                    hashArchivo,
+                    loteExistente);
         }
 
         var lote = new LoteImportacion(

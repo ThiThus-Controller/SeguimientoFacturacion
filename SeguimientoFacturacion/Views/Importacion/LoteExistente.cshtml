@@ -1,0 +1,109 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@using SeguimientoFacturacion.Configurations
+@model SeguimientoFacturacion.ViewModels.Importacion.LoteImportacionExistenteViewModel
+@inject IAuthorizationService ServicioAutorizacion
+
+@{
+    ViewData["Title"] = "Lote existente";
+
+    var puedeConfirmar = Model.PuedeContinuarConfirmacion &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.ParaConfirmacion(Model.Tipo)))
+        .Succeeded;
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="alert alert-info" role="alert">
+            <h1 class="h4 alert-heading">
+                Archivo analizado anteriormente
+            </h1>
+
+            <p class="mb-0">
+                No se creó un lote duplicado. Puede continuar
+                desde el análisis existente.
+            </p>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h2 class="h5 mb-0">Información del lote</h2>
+            </div>
+
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Identificador</dt>
+                    <dd class="col-sm-7"><code>@Model.LoteId</code></dd>
+
+                    <dt class="col-sm-5">Archivo</dt>
+                    <dd class="col-sm-7">@Model.NombreArchivo</dd>
+
+                    <dt class="col-sm-5">Tipo</dt>
+                    <dd class="col-sm-7">@Model.TipoDescripcion</dd>
+
+                    <dt class="col-sm-5">Estado</dt>
+                    <dd class="col-sm-7">@Model.Estado</dd>
+
+                    <dt class="col-sm-5">Filas analizadas</dt>
+                    <dd class="col-sm-7">@Model.TotalFilas.ToString("N0")</dd>
+
+                    <dt class="col-sm-5">Errores</dt>
+                    <dd class="col-sm-7">@Model.TotalErrores.ToString("N0")</dd>
+
+                    <dt class="col-sm-5">Registrado en UTC</dt>
+                    <dd class="col-sm-7">
+                        @Model.FechaCreacionUtc.ToString(
+                            "yyyy-MM-dd HH:mm:ss 'UTC'")
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            @if (puedeConfirmar)
+            {
+                <form asp-controller="Importacion"
+                      asp-action="ConfirmarLote"
+                      method="post"
+                      class="d-inline"
+                      onsubmit="return confirm('¿Desea confirmar el lote analizado?');">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden"
+                           name="loteId"
+                           value="@Model.LoteId" />
+
+                    <input type="hidden"
+                           name="tipo"
+                           value="@((int)Model.Tipo)" />
+
+                    <button type="submit"
+                            class="btn btn-warning">
+                        Revisar y confirmar lote
+                    </button>
+                </form>
+            }
+            else if (Model.PuedeContinuarConfirmacion)
+            {
+                <span class="text-secondary me-2">
+                    El lote debe ser confirmado por un usuario
+                    autorizado.
+                </span>
+            }
+            else
+            {
+                <span class="text-secondary me-2">
+                    El lote ya avanzó a otro estado y no puede
+                    confirmarse nuevamente.
+                </span>
+            }
+
+            <a asp-controller="Importacion"
+               asp-action="Index"
+               class="btn btn-outline-primary ms-2">
+                Volver a importaciones
+            </a>
+        </div>
+    </div>
+</div>
