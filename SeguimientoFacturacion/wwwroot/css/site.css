@@ -19,6 +19,17 @@ html {
 
 body {
   margin-bottom: 60px;
+  background-color: #f8f9fa;
+}
+
+.login-card {
+  border: 0;
+  border-radius: 0.75rem;
+}
+
+.validation-summary-valid,
+.field-validation-valid {
+  display: none;
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {

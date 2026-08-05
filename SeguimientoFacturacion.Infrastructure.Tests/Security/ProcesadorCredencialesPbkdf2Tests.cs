@@ -80,6 +80,18 @@ public sealed class ProcesadorCredencialesPbkdf2Tests
         Assert.Throws<ArgumentException>(accion);
     }
 
+    [Fact]
+    public void SimularVerificacion_ConContrasena_DebeCompletar()
+    {
+        var procesador = CrearProcesador();
+
+        var excepcion = Record.Exception(
+            () => procesador.SimularVerificacion(
+                "Clave inexistente 2026!"));
+
+        Assert.Null(excepcion);
+    }
+
     private static ProcesadorCredencialesPbkdf2 CrearProcesador()
     {
         return new ProcesadorCredencialesPbkdf2(

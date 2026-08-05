@@ -188,6 +188,10 @@ public sealed class ServicioInicializacionAdministradorTests
             string contrasena,
             CredencialUsuario credencial) => true;
 
+        public void SimularVerificacion(string contrasena)
+        {
+        }
+
         public bool RequiereActualizacion(
             CredencialUsuario credencial) => false;
     }
