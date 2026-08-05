@@ -158,6 +158,14 @@ public sealed class ServicioRegistroLoteImportacionTests
             HashArchivo,
             excepcion.HashArchivo);
 
+        Assert.NotNull(excepcion.LoteExistente);
+        Assert.Equal(
+            repositorio.LoteDuplicadoId,
+            excepcion.LoteExistente.LoteId);
+        Assert.True(
+            excepcion.LoteExistente
+                .PuedeContinuarConfirmacion);
+
         Assert.Null(repositorio.LoteAgregado);
 
         Assert.Equal(
@@ -252,6 +260,7 @@ public sealed class ServicioRegistroLoteImportacionTests
     {
         return new ServicioRegistroLoteImportacion(
             repositorio,
+            repositorio,
             unidadTrabajo,
             calculadorHash,
             new
@@ -313,9 +322,12 @@ public sealed class ServicioRegistroLoteImportacionTests
     }
 
     private sealed class RepositorioImportacionesFalso :
-        IRepositorioImportaciones
+        IRepositorioImportaciones,
+        IConsultaLoteImportacionDuplicado
     {
         public bool ArchivoExiste { get; init; }
+
+        public Guid LoteDuplicadoId { get; } = Guid.NewGuid();
 
         public int NumeroConsultasExistencia
         {
@@ -353,6 +365,34 @@ public sealed class ServicioRegistroLoteImportacionTests
             NumeroConsultasExistencia++;
 
             return Task.FromResult(ArchivoExiste);
+        }
+
+        public Task<LoteImportacionDuplicadoDto?> ObtenerAsync(
+            TipoImportacion tipo,
+            string hashArchivo,
+            CancellationToken cancellationToken = default)
+        {
+            NumeroConsultasExistencia++;
+
+            if (!ArchivoExiste)
+            {
+                return Task.FromResult<
+                    LoteImportacionDuplicadoDto?>(null);
+            }
+
+            return Task.FromResult<
+                LoteImportacionDuplicadoDto?>(
+                    new LoteImportacionDuplicadoDto
+                    {
+                        LoteId = LoteDuplicadoId,
+                        Tipo = tipo,
+                        Estado = EstadoImportacion.Analizada,
+                        NombreArchivo = "Pagos.xlsx",
+                        TotalFilas = 20,
+                        TotalErrores = 0,
+                        FechaCreacionUtc =
+                            DateTimeOffset.UtcNow
+                    });
         }
 
         public Task AgregarInconsistenciasAsync(

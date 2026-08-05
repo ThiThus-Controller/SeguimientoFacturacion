@@ -258,8 +258,36 @@ public sealed class ImportacionController : Controller
 
             return View("Index", modelo);
         }
-        catch (ExcepcionArchivoImportacionDuplicado)
+        catch (ExcepcionArchivoImportacionDuplicado excepcion)
         {
+            if (excepcion.LoteExistente is { } loteExistente)
+            {
+                _logger.LogInformation(
+                    "Se recuperó el lote existente {LoteId} " +
+                    "para el archivo duplicado de tipo {Tipo}.",
+                    loteExistente.LoteId,
+                    loteExistente.Tipo);
+
+                return View(
+                    "LoteExistente",
+                    new LoteImportacionExistenteViewModel
+                    {
+                        LoteId = loteExistente.LoteId,
+                        Tipo = loteExistente.Tipo,
+                        Estado = loteExistente.Estado,
+                        NombreArchivo =
+                            loteExistente.NombreArchivo,
+                        TotalFilas = loteExistente.TotalFilas,
+                        TotalErrores =
+                            loteExistente.TotalErrores,
+                        FechaCreacionUtc =
+                            loteExistente.FechaCreacionUtc,
+                        PuedeContinuarConfirmacion =
+                            loteExistente
+                                .PuedeContinuarConfirmacion
+                    });
+            }
+
             ModelState.AddModelError(
                 nameof(modelo.Archivo),
                 "Este archivo ya fue registrado para el " +

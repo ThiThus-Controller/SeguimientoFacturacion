@@ -146,9 +146,18 @@ public sealed class RepositorioImportacionesEfCoreTests
                 .GetRequiredService<
                     IRepositorioImportaciones>();
 
+        var consultaDuplicados =
+            alcance.ServiceProvider
+                .GetRequiredService<
+                    IConsultaLoteImportacionDuplicado>();
+
         Assert.IsType<
             RepositorioImportacionesEfCore>(
                 servicio);
+
+        Assert.IsType<
+            ConsultaLoteImportacionDuplicadoEfCore>(
+                consultaDuplicados);
     }
 
     private static LoteImportacion CrearLote()

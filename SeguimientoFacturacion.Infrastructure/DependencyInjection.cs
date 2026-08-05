@@ -89,6 +89,10 @@ public static class DependencyInjection
             RepositorioImportacionesEfCore>();
 
         services.AddScoped<
+            IConsultaLoteImportacionDuplicado,
+            ConsultaLoteImportacionDuplicadoEfCore>();
+
+        services.AddScoped<
             IRepositorioFacturasTemporalesImportacion,
             RepositorioFacturasTemporalesImportacionEfCore>();
 
