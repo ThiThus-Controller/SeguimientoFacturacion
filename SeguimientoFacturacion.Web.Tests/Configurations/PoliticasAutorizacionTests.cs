@@ -156,6 +156,37 @@ public sealed class PoliticasAutorizacionTests
         Assert.Equal(new[] { permisoEsperado }, alternativa);
     }
 
+    [Theory]
+    [InlineData(
+        PoliticasAutorizacion.AseguradorasConsultar,
+        PermisosSistema.Aseguradoras.Ver)]
+    [InlineData(
+        PoliticasAutorizacion.AseguradorasCrear,
+        PermisosSistema.Aseguradoras.Crear)]
+    [InlineData(
+        PoliticasAutorizacion.AseguradorasEditar,
+        PermisosSistema.Aseguradoras.Editar)]
+    [InlineData(
+        PoliticasAutorizacion.AseguradorasCambiarEstado,
+        PermisosSistema.Aseguradoras.Inactivar)]
+    public void Registrar_AdministracionAseguradoras_DebeExigirPermiso(
+        string nombrePolitica,
+        string permisoEsperado)
+    {
+        var options = new AuthorizationOptions();
+        PoliticasAutorizacion.Registrar(options);
+
+        var politica = options.GetPolicy(nombrePolitica);
+
+        Assert.NotNull(politica);
+
+        var requisito = Assert.Single(
+            politica.Requirements.OfType<RequisitoPermisos>());
+
+        var alternativa = Assert.Single(requisito.Alternativas);
+        Assert.Equal(new[] { permisoEsperado }, alternativa);
+    }
+
     [Fact]
     public void ParaAnalisis_Catalogos_DebeRechazarlo()
     {

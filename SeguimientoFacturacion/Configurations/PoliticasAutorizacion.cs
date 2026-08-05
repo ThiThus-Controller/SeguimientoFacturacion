@@ -60,6 +60,18 @@ public static class PoliticasAutorizacion
     public const string FacturadoresCambiarEstado =
         PrefijoPermiso + PermisosSistema.Facturadores.Inactivar;
 
+    public const string AseguradorasConsultar =
+        PrefijoPermiso + PermisosSistema.Aseguradoras.Ver;
+
+    public const string AseguradorasCrear =
+        PrefijoPermiso + PermisosSistema.Aseguradoras.Crear;
+
+    public const string AseguradorasEditar =
+        PrefijoPermiso + PermisosSistema.Aseguradoras.Editar;
+
+    public const string AseguradorasCambiarEstado =
+        PrefijoPermiso + PermisosSistema.Aseguradoras.Inactivar;
+
     private static readonly string[] PermisosCreacionUsuarios =
     [
         PermisosSistema.Usuarios.Crear,

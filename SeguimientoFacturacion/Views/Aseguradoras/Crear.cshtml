@@ -1,0 +1,34 @@
+@model AseguradoraFormularioViewModel
+
+@{
+    ViewData["Title"] = "Crear aseguradora";
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">Crear aseguradora</h1>
+    <p class="text-muted mb-0">
+        Registre una entidad responsable del aseguramiento y pago de
+        facturas.
+    </p>
+</div>
+
+<form asp-action="Crear" method="post" autocomplete="off">
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <partial name="_FormularioAseguradora" model="Model" />
+        </div>
+        <div class="card-footer bg-white d-flex gap-2
+                    justify-content-end">
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+                Crear aseguradora
+            </button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
