@@ -1,0 +1,80 @@
+@model SeguimientoFacturacion.ViewModels.Importacion.ConfirmacionLoteImportacionViewModel
+
+@{
+    ViewData["Title"] = "Lote confirmado";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="alert alert-success" role="alert">
+            <h1 class="h4 alert-heading">
+                Lote confirmado correctamente
+            </h1>
+
+            <p class="mb-0">
+                El lote quedó autorizado para su procesamiento
+                definitivo.
+            </p>
+        </div>
+
+        <div class="alert alert-warning" role="alert">
+            <strong>Importante:</strong>
+            confirmar el lote no traslada todavía las facturas
+            ni los pacientes a las tablas definitivas. Ese
+            procesamiento se habilitará en el siguiente paso.
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h2 class="h5 mb-0">
+                    Información de la confirmación
+                </h2>
+            </div>
+
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">
+                        Identificador del lote
+                    </dt>
+
+                    <dd class="col-sm-7">
+                        <code>@Model.LoteId</code>
+                    </dd>
+
+                    <dt class="col-sm-5">
+                        Estado
+                    </dt>
+
+                    <dd class="col-sm-7">
+                        @Model.Estado
+                    </dd>
+
+                    <dt class="col-sm-5">
+                        Confirmado por
+                    </dt>
+
+                    <dd class="col-sm-7">
+                        @Model.ConfirmadoPor
+                    </dd>
+
+                    <dt class="col-sm-5">
+                        Fecha de confirmación UTC
+                    </dt>
+
+                    <dd class="col-sm-7">
+                        @Model.FechaConfirmacionUtc
+                            .ToString("yyyy-MM-dd HH:mm:ss 'UTC'")
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a asp-controller="Importacion"
+               asp-action="Index"
+               class="btn btn-outline-primary">
+                Volver a importaciones
+            </a>
+        </div>
+    </div>
+</div>
