@@ -58,6 +58,32 @@ public sealed class RepositorioUsuariosArchivoCifrado :
     }
 
     /// <inheritdoc />
+    public async Task<bool> CrearInicialSiVacioAsync(
+        Usuario usuario,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(usuario);
+
+        return await EjecutarConBloqueoAsync(
+            async token =>
+            {
+                var usuarios = await ListarInternoAsync(token);
+
+                if (usuarios.Count != 0)
+                {
+                    return false;
+                }
+
+                await GuardarInternoAsync(
+                    new[] { usuario },
+                    token);
+
+                return true;
+            },
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<Usuario?> ObtenerPorIdAsync(
         Guid usuarioId,
         CancellationToken cancellationToken = default)

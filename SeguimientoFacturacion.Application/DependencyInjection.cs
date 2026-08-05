@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Services;
+using SeguimientoFacturacion.Application.Interfaces.Security;
 using SeguimientoFacturacion.Application.Services;
 
 namespace SeguimientoFacturacion.Application;
@@ -84,6 +85,10 @@ public static class DependencyInjection
         services.AddTransient<
             IServicioProcesamientoLotePagos,
             ServicioProcesamientoLotePagos>();
+
+        services.AddTransient<
+            IServicioInicializacionAdministrador,
+            ServicioInicializacionAdministrador>();
 
         return services;
     }

@@ -30,6 +30,64 @@ public sealed class RepositorioUsuariosArchivoCifradoTests : IDisposable
     }
 
     [Fact]
+    public async Task CrearInicial_AlmacenVacio_DebeCrearArchivo()
+    {
+        using var contexto = CrearContexto();
+        var usuario = CrearUsuario("administrador");
+
+        var creado = await contexto.Repositorio
+            .CrearInicialSiVacioAsync(usuario);
+
+        Assert.True(creado);
+        Assert.True(File.Exists(contexto.RutaArchivo));
+
+        var almacenado = Assert.Single(
+            await contexto.Repositorio.ListarAsync());
+
+        Assert.Equal(usuario.Id, almacenado.Id);
+    }
+
+    [Fact]
+    public async Task CrearInicial_AlmacenConUsuario_NoDebeModificarArchivo()
+    {
+        using var contexto = CrearContexto();
+        var administrador = CrearUsuario("administrador");
+        await contexto.Repositorio.GuardarAsync(administrador);
+
+        var contenidoAnterior = await File.ReadAllBytesAsync(
+            contexto.RutaArchivo);
+
+        var creado = await contexto.Repositorio
+            .CrearInicialSiVacioAsync(
+                CrearUsuario("otro.administrador"));
+
+        var contenidoPosterior = await File.ReadAllBytesAsync(
+            contexto.RutaArchivo);
+
+        Assert.False(creado);
+        Assert.Equal(contenidoAnterior, contenidoPosterior);
+        Assert.Equal(
+            administrador.Id,
+            Assert.Single(
+                await contexto.Repositorio.ListarAsync()).Id);
+    }
+
+    [Fact]
+    public async Task CrearInicial_Concurrentemente_DebeAceptarSoloUno()
+    {
+        using var contexto = CrearContexto();
+
+        var resultados = await Task.WhenAll(
+            Enumerable.Range(1, 10)
+                .Select(indice =>
+                    contexto.Repositorio.CrearInicialSiVacioAsync(
+                        CrearUsuario($"administrador{indice}"))));
+
+        Assert.Equal(1, resultados.Count(resultado => resultado));
+        Assert.Single(await contexto.Repositorio.ListarAsync());
+    }
+
+    [Fact]
     public async Task GuardarYConsultar_DebeRestaurarUsuarioCompleto()
     {
         using var contexto = CrearContexto();

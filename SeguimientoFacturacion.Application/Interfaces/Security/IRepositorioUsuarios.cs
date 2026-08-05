@@ -9,6 +9,15 @@ namespace SeguimientoFacturacion.Application.Interfaces.Security;
 public interface IRepositorioUsuarios
 {
     /// <summary>
+    /// Crea el primer usuario únicamente cuando el almacén está vacío.
+    /// La comprobación y la escritura se ejecutan dentro del mismo bloqueo
+    /// exclusivo para impedir dos inicializaciones concurrentes.
+    /// </summary>
+    Task<bool> CrearInicialSiVacioAsync(
+        Usuario usuario,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Obtiene todos los usuarios almacenados.
     /// </summary>
     Task<IReadOnlyCollection<Usuario>> ListarAsync(
