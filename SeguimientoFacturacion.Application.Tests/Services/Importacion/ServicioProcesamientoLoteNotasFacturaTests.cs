@@ -5,6 +5,7 @@ using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
 using SeguimientoFacturacion.Application.Services;
 using SeguimientoFacturacion.Application.Validators.Importacion;
+using SeguimientoFacturacion.Domain.Constants;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Enums;
 
@@ -240,6 +241,71 @@ public sealed class
             excepcion.Motivo,
             StringComparison.OrdinalIgnoreCase);
 
+        Assert.False(repositorioTemporal.Eliminado);
+        Assert.Equal(0, unidadTrabajo.TotalGuardados);
+    }
+
+    [Theory]
+    [InlineData(
+        CodigosEstadoFactura.AnuladaHistorica,
+        TipoNotaFactura.Credito)]
+    [InlineData(
+        CodigosEstadoFactura.AnuladaHistorica,
+        TipoNotaFactura.Debito)]
+    [InlineData(
+        CodigosEstadoFactura.Anulada,
+        TipoNotaFactura.Credito)]
+    [InlineData(
+        CodigosEstadoFactura.Anulada,
+        TipoNotaFactura.Debito)]
+    public async Task
+        Procesar_ConFacturaAnulada_DebeRechazarNota(
+            int estadoId,
+            TipoNotaFactura tipoNota)
+    {
+        var lote = CrearLoteConfirmado(totalFilas: 1);
+
+        var repositorioTemporal =
+            new RepositorioTemporalPrueba(
+                [
+                    CrearRegistro(
+                        lote.Id,
+                        fila: 2,
+                        facturaId: "FV000001",
+                        numeroFactura: "000001",
+                        tipo: tipoNota)
+                ]);
+
+        var repositorioDefinitivo =
+            new RepositorioDefinitivoPrueba();
+
+        var unidadTrabajo =
+            new UnidadTrabajoPrueba();
+
+        var servicio = CrearServicio(
+            new RepositorioImportacionesPrueba(lote),
+            repositorioTemporal,
+            repositorioDefinitivo,
+            new ConsultaFacturasPrueba(
+                [
+                    CrearReferencia(
+                        "FV000001",
+                        estadoId: estadoId)
+                ]),
+            unidadTrabajo);
+
+        var excepcion =
+            await Assert.ThrowsAsync<
+                ExcepcionLoteNotasFacturaNoProcesable>(
+                () => servicio.ProcesarAsync(
+                    CrearSolicitud(lote.Id)));
+
+        Assert.Contains(
+            "anuladas",
+            excepcion.Motivo,
+            StringComparison.OrdinalIgnoreCase);
+
+        Assert.Empty(repositorioDefinitivo.Agregadas);
         Assert.False(repositorioTemporal.Eliminado);
         Assert.Equal(0, unidadTrabajo.TotalGuardados);
     }
@@ -507,12 +573,15 @@ public sealed class
         CrearReferencia(
             string facturaId,
             int aseguradoraId = 1,
-            DateOnly? fechaFactura = null)
+            DateOnly? fechaFactura = null,
+            int estadoId =
+                CodigosEstadoFactura.Activa)
     {
         return new ReferenciaFacturaImportacionDto
         {
             FacturaId = facturaId,
             AseguradoraId = aseguradoraId,
+            EstadoId = estadoId,
 
             FechaFactura =
                 fechaFactura ??

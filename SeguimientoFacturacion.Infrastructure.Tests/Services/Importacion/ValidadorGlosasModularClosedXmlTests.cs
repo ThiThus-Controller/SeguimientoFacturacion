@@ -5,6 +5,7 @@ using SeguimientoFacturacion.Application.Common.Importacion;
 using SeguimientoFacturacion.Application.DTOs.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Domain.Constants;
 using SeguimientoFacturacion.Infrastructure.Configuration;
 using SeguimientoFacturacion.Infrastructure.Services.Importacion;
 
@@ -180,6 +181,51 @@ public sealed class
             inconsistencia =>
                 inconsistencia.Codigo ==
                 "FACTURA_NO_EXISTE");
+    }
+
+    [Theory]
+    [InlineData(
+        CodigosEstadoFactura.AnuladaHistorica)]
+    [InlineData(
+        CodigosEstadoFactura.Anulada)]
+    public async Task
+        Validar_FacturaAnulada_DebeRechazarGlosa(
+            int estadoId)
+    {
+        await using var archivo =
+            CrearArchivo(
+                hoja =>
+                    EscribirFila(
+                        hoja,
+                        fila: 2,
+                        numeroFactura: "000001",
+                        valor: 100000m,
+                        fechaGlosa:
+                            new DateTime(2026, 2, 1)));
+
+        var resultado =
+            await CrearValidador(
+                    new ConsultaFacturasControlada(
+                    [
+                        CrearReferenciaFactura(
+                            "FE000001",
+                            aseguradoraId: 1,
+                            fechaFactura:
+                                new DateOnly(2026, 1, 10),
+                            estadoId: estadoId)
+                    ]))
+                .ValidarAsync(
+                    CrearSolicitud(archivo));
+
+        Assert.False(resultado.EsValido);
+
+        Assert.Contains(
+            resultado.Inconsistencias,
+            inconsistencia =>
+                inconsistencia.Codigo ==
+                "FACTURA_ANULADA_NO_PERMITE_GLOSA" &&
+                inconsistencia.Fila == 2 &&
+                inconsistencia.Columna == "FE");
     }
 
     [Fact]
@@ -378,13 +424,16 @@ public sealed class
         CrearReferenciaFactura(
             string facturaId,
             int aseguradoraId,
-            DateOnly fechaFactura)
+            DateOnly fechaFactura,
+            int estadoId =
+                CodigosEstadoFactura.Activa)
     {
         return new ReferenciaFacturaImportacionDto
         {
             FacturaId = facturaId,
             AseguradoraId = aseguradoraId,
-            FechaFactura = fechaFactura
+            FechaFactura = fechaFactura,
+            EstadoId = estadoId
         };
     }
 

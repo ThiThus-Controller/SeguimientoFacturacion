@@ -4,6 +4,7 @@ using SeguimientoFacturacion.Application.Common.Importacion;
 using SeguimientoFacturacion.Application.DTOs.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Domain.Constants;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Enums;
 
@@ -668,6 +669,20 @@ public sealed class
                     "FE",
                     "FACTURA_NO_EXISTE",
                     "La factura relacionada no existe.");
+
+                continue;
+            }
+
+            if (CodigosEstadoFactura.EsAnulada(
+                    factura.EstadoId))
+            {
+                AgregarError(
+                    inconsistencias,
+                    fila.NumeroFila,
+                    "FE",
+                    "FACTURA_ANULADA_NO_PERMITE_GLOSA",
+                    "La factura relacionada se encuentra " +
+                    "anulada y no permite registrar glosas.");
 
                 continue;
             }
