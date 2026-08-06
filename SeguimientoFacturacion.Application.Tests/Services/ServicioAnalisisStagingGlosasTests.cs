@@ -541,7 +541,12 @@ public sealed class ServicioAnalisisStagingGlosasTests
             ValorGlosa = valor,
 
             FechaRespuesta =
-                fechaRespuesta
+                fechaRespuesta,
+
+            Estado =
+                fechaRespuesta.HasValue
+                    ? EstadoGlosa.Respondida
+                    : EstadoGlosa.Abierta
         };
     }
 

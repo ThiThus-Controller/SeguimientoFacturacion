@@ -11,6 +11,22 @@
             User,
             PoliticasAutorizacion.ParaConfirmacion(Model.Tipo)))
         .Succeeded;
+
+    var puedeProcesarNotas =
+        Model.PuedeContinuarProcesamiento &&
+        Model.Tipo == TipoImportacion.NotasFactura &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.ProcesarNotasFactura))
+        .Succeeded;
+
+    var puedeProcesarGlosas =
+        Model.PuedeContinuarProcesamiento &&
+        Model.Tipo == TipoImportacion.Glosas &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.ProcesarGlosas))
+        .Succeeded;
 }
 
 <div class="row justify-content-center">
@@ -53,8 +69,8 @@
 
                     <dt class="col-sm-5">Registrado en UTC</dt>
                     <dd class="col-sm-7">
-                        @Model.FechaCreacionUtc.ToString(
-                            "yyyy-MM-dd HH:mm:ss 'UTC'")
+                        @(Model.FechaCreacionUtc.ToString(
+                            "yyyy-MM-dd HH:mm:ss 'UTC'"))
                     </dd>
                 </dl>
             </div>
@@ -83,6 +99,33 @@
                         Revisar y confirmar lote
                     </button>
                 </form>
+            }
+            else if (puedeProcesarNotas)
+            {
+                <a asp-controller="Importacion"
+                   asp-action="PrepararProcesamientoNotasFactura"
+                   asp-route-loteId="@Model.LoteId"
+                   class="btn btn-danger">
+                    Continuar al procesamiento definitivo
+                </a>
+            }
+            else if (puedeProcesarGlosas)
+            {
+                <a asp-controller="Importacion"
+                   asp-action="PrepararProcesamientoGlosas"
+                   asp-route-loteId="@Model.LoteId"
+                   class="btn btn-danger">
+                    Continuar al procesamiento definitivo
+                </a>
+            }
+            else if (Model.PuedeContinuarProcesamiento &&
+                (Model.Tipo == TipoImportacion.NotasFactura ||
+                    Model.Tipo == TipoImportacion.Glosas))
+            {
+                <span class="text-secondary me-2">
+                    El lote debe ser procesado por un usuario
+                    autorizado.
+                </span>
             }
             else if (Model.PuedeContinuarConfirmacion)
             {

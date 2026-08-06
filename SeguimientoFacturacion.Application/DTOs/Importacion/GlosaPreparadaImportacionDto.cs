@@ -1,4 +1,6 @@
-﻿namespace SeguimientoFacturacion.Application.DTOs.Importacion;
+﻿using SeguimientoFacturacion.Domain.Enums;
+
+namespace SeguimientoFacturacion.Application.DTOs.Importacion;
 
 /// <summary>
 /// Representa una glosa preparada desde una plantilla
@@ -51,6 +53,17 @@ public sealed class GlosaPreparadaImportacionDto
     /// informada en el archivo.
     /// </summary>
     public DateOnly? FechaRespuesta { get; init; }
+
+    /// <summary>
+    /// Obtiene el estado de gestión informado para la glosa.
+    /// </summary>
+    public EstadoGlosa Estado { get; init; } =
+        EstadoGlosa.Abierta;
+
+    /// <summary>
+    /// Obtiene el valor aceptado por la institución.
+    /// </summary>
+    public decimal ValorAceptado { get; init; }
 
     /// <summary>
     /// Indica si la glosa contiene una respuesta.

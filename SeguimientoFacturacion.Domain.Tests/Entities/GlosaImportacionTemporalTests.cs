@@ -1,4 +1,5 @@
 ﻿using SeguimientoFacturacion.Domain.Entities;
+using SeguimientoFacturacion.Domain.Enums;
 
 namespace SeguimientoFacturacion.Domain.Tests.Entities;
 
@@ -71,6 +72,14 @@ public sealed class
 
         Assert.False(
             registro.TieneRespuesta);
+
+        Assert.Equal(
+            EstadoGlosa.Abierta,
+            registro.Estado);
+
+        Assert.Equal(
+            decimal.Zero,
+            registro.ValorAceptado);
     }
 
     [Fact]
@@ -90,6 +99,46 @@ public sealed class
 
         Assert.True(
             registro.TieneRespuesta);
+
+        Assert.Equal(
+            EstadoGlosa.Respondida,
+            registro.Estado);
+    }
+
+    [Fact]
+    public void
+        Crear_GlosaAceptada_DebeConservarResolucion()
+    {
+        var registro =
+            CrearRegistro(
+                fechaRespuesta:
+                    new DateOnly(2026, 7, 20),
+                estado:
+                    EstadoGlosa.Aceptada,
+                valorAceptado: 60000m);
+
+        Assert.Equal(
+            EstadoGlosa.Aceptada,
+            registro.Estado);
+
+        Assert.Equal(
+            60000m,
+            registro.ValorAceptado);
+    }
+
+    [Fact]
+    public void
+        Crear_AceptadaSinRespuesta_DebeLanzarExcepcion()
+    {
+        void Accion()
+        {
+            _ = CrearRegistro(
+                estado:
+                    EstadoGlosa.Aceptada,
+                valorAceptado: 60000m);
+        }
+
+        Assert.Throws<ArgumentException>(Accion);
     }
 
     [Fact]
@@ -141,7 +190,9 @@ public sealed class
             string identificadorFe = "FE000001",
             DateOnly? fechaGlosa = null,
             decimal valorGlosa = 100000m,
-            DateOnly? fechaRespuesta = null)
+            DateOnly? fechaRespuesta = null,
+            EstadoGlosa? estado = null,
+            decimal valorAceptado = decimal.Zero)
     {
         return new GlosaImportacionTemporal(
             loteImportacionId: Guid.NewGuid(),
@@ -155,6 +206,8 @@ public sealed class
                 fechaGlosa ??
                 new DateOnly(2026, 7, 15),
             valorGlosa: valorGlosa,
-            fechaRespuesta: fechaRespuesta);
+            fechaRespuesta: fechaRespuesta,
+            estado: estado,
+            valorAceptado: valorAceptado);
     }
 }

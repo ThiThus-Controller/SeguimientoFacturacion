@@ -1,14 +1,12 @@
-﻿using SeguimientoFacturacion.Domain.Enums;
+using SeguimientoFacturacion.Domain.Enums;
 
-namespace SeguimientoFacturacion.Application
-    .DTOs.Importacion;
+namespace SeguimientoFacturacion.ViewModels.Importacion;
 
 /// <summary>
-/// Contiene el resultado del procesamiento definitivo
-/// de un lote de glosas.
+/// Representa el resultado web del procesamiento
+/// definitivo de glosas y sus respuestas.
 /// </summary>
-public sealed record
-    ResultadoProcesamientoLoteGlosasDto
+public sealed class ResultadoProcesamientoLoteGlosasViewModel
 {
     /// <summary>
     /// Obtiene el identificador del lote procesado.
@@ -21,54 +19,52 @@ public sealed record
     public EstadoImportacion Estado { get; init; }
 
     /// <summary>
-    /// Obtiene el total de glosas encontradas en staging.
+    /// Obtiene el total inicial de glosas en staging.
     /// </summary>
     public int TotalGlosasStaging { get; init; }
 
     /// <summary>
-    /// Obtiene la cantidad de glosas nuevas importadas.
+    /// Obtiene el total de glosas nuevas importadas.
     /// </summary>
     public int TotalGlosasImportadas { get; init; }
 
     /// <summary>
-    /// Obtiene la cantidad de glosas omitidas porque
-    /// ya existían en la tabla definitiva.
+    /// Obtiene el total de glosas ya existentes omitidas.
     /// </summary>
     public int TotalGlosasOmitidas { get; init; }
 
     /// <summary>
-    /// Obtiene la cantidad de glosas abiertas importadas.
+    /// Obtiene el total de glosas abiertas importadas.
     /// </summary>
     public int TotalGlosasAbiertasImportadas { get; init; }
 
     /// <summary>
-    /// Obtiene la cantidad de glosas respondidas importadas.
+    /// Obtiene el total de glosas respondidas importadas.
     /// </summary>
     public int TotalGlosasRespondidasImportadas { get; init; }
 
     /// <summary>
-    /// Obtiene la cantidad de glosas aceptadas importadas.
+    /// Obtiene el total de glosas aceptadas importadas.
     /// </summary>
     public int TotalGlosasAceptadasImportadas { get; init; }
 
     /// <summary>
-    /// Obtiene la cantidad de glosas levantadas importadas.
+    /// Obtiene el total de glosas levantadas importadas.
     /// </summary>
     public int TotalGlosasLevantadasImportadas { get; init; }
 
     /// <summary>
-    /// Obtiene la cantidad de glosas conciliadas importadas.
+    /// Obtiene el total de glosas conciliadas importadas.
     /// </summary>
     public int TotalGlosasConciliadasImportadas { get; init; }
 
     /// <summary>
-    /// Obtiene el valor total de las glosas nuevas
-    /// importadas.
+    /// Obtiene el valor total de las glosas nuevas.
     /// </summary>
     public decimal ValorTotalGlosadoImportado { get; init; }
 
     /// <summary>
-    /// Obtiene el valor aceptado total de las glosas nuevas.
+    /// Obtiene el valor aceptado total importado.
     /// </summary>
     public decimal ValorTotalAceptadoImportado { get; init; }
 

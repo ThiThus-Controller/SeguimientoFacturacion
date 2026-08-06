@@ -61,7 +61,9 @@ public sealed class
                 "ASEGURADORA",
                 "FECHA GLOSA",
                 "VALOR GLOSA",
-                "FECHA RTA GLOSA "
+                "FECHA RTA GLOSA ",
+                "ESTADO GLOSA",
+                "VALOR ACEPTADO"
             }
         ];
 
@@ -104,20 +106,20 @@ public sealed class
     }
 
     [Fact]
-    public void Glosas_DebeTenerSieteColumnas()
+    public void Glosas_DebeTenerNueveColumnas()
     {
         var encabezados =
             ContratosPlantillasImportacion
                 .Glosas
                 .EncabezadosRequeridos;
 
-        Assert.Equal(7, encabezados.Count);
+        Assert.Equal(9, encabezados.Count);
 
-        Assert.DoesNotContain(
+        Assert.Contains(
             "ESTADO GLOSA",
             encabezados);
 
-        Assert.DoesNotContain(
+        Assert.Contains(
             "VALOR ACEPTADO",
             encabezados);
     }

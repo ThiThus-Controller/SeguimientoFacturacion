@@ -264,10 +264,33 @@ public sealed class
                         glosa.Estado ==
                         EstadoGlosa.Respondida),
 
+            TotalGlosasAceptadasImportadas =
+                glosasNuevas.Count(
+                    glosa =>
+                        glosa.Estado ==
+                        EstadoGlosa.Aceptada),
+
+            TotalGlosasLevantadasImportadas =
+                glosasNuevas.Count(
+                    glosa =>
+                        glosa.Estado ==
+                        EstadoGlosa.Levantada),
+
+            TotalGlosasConciliadasImportadas =
+                glosasNuevas.Count(
+                    glosa =>
+                        glosa.Estado ==
+                        EstadoGlosa.Conciliada),
+
             ValorTotalGlosadoImportado =
                 glosasNuevas.Sum(
                     glosa =>
                         glosa.ValorGlosa),
+
+            ValorTotalAceptadoImportado =
+                glosasNuevas.Sum(
+                    glosa =>
+                        glosa.ValorAceptado),
 
             ProcesadoPor =
                 usuarioNormalizado,
@@ -531,10 +554,29 @@ public sealed class
                     valorGlosa:
                         registro.ValorGlosa);
 
-            if (registro.FechaRespuesta.HasValue)
+            switch (registro.Estado)
             {
-                glosa.RegistrarRespuesta(
-                    registro.FechaRespuesta.Value);
+                case EstadoGlosa.Abierta:
+                    break;
+
+                case EstadoGlosa.Respondida:
+                    glosa.RegistrarRespuesta(
+                        registro.FechaRespuesta!.Value);
+                    break;
+
+                case EstadoGlosa.Aceptada:
+                case EstadoGlosa.Levantada:
+                case EstadoGlosa.Conciliada:
+                    glosa.Resolver(
+                        registro.Estado,
+                        registro.FechaRespuesta!.Value,
+                        registro.ValorAceptado);
+                    break;
+
+                default:
+                    throw new InvalidOperationException(
+                        "El staging contiene un estado de " +
+                        "glosa no soportado.");
             }
 
             glosas.Add(glosa);

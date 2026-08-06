@@ -1,8 +1,25 @@
+@using Microsoft.AspNetCore.Authorization
+@using SeguimientoFacturacion.Configurations
 @using SeguimientoFacturacion.Domain.Constants
 @model SeguimientoFacturacion.ViewModels.Importacion.ConfirmacionLoteImportacionViewModel
+@inject IAuthorizationService ServicioAutorizacion
 
 @{
     ViewData["Title"] = "Lote confirmado";
+
+    var puedeProcesarNotas =
+        Model.Tipo == TipoImportacion.NotasFactura &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.ProcesarNotasFactura))
+        .Succeeded;
+
+    var puedeProcesarGlosas =
+        Model.Tipo == TipoImportacion.Glosas &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.ProcesarGlosas))
+        .Succeeded;
 }
 
 <div class="row justify-content-center">
@@ -88,6 +105,24 @@
                    asp-route-loteId="@Model.LoteId"
                    class="btn btn-danger">
                     Continuar al procesamiento definitivo
+                </a>
+            }
+            else if (puedeProcesarNotas)
+            {
+                <a asp-controller="Importacion"
+                   asp-action="PrepararProcesamientoNotasFactura"
+                   asp-route-loteId="@Model.LoteId"
+                   class="btn btn-danger">
+                    Procesar notas definitivamente
+                </a>
+            }
+            else if (puedeProcesarGlosas)
+            {
+                <a asp-controller="Importacion"
+                   asp-action="PrepararProcesamientoGlosas"
+                   asp-route-loteId="@Model.LoteId"
+                   class="btn btn-danger">
+                    Procesar glosas definitivamente
                 </a>
             }
             else if (Model.Tipo != TipoImportacion.Facturas)

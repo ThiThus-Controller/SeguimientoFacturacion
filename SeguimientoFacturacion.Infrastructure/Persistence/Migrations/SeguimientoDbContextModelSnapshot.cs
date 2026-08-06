@@ -639,6 +639,9 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                     b.Property<int>("AseguradoraId")
                         .HasColumnType("int");
 
+                    b.Property<int>("Estado")
+                        .HasColumnType("int");
+
                     b.Property<DateOnly>("FechaGlosa")
                         .HasColumnType("date");
 
@@ -679,6 +682,10 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("ValorAceptado")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("LoteImportacionId", "IdentificadorFe")
@@ -696,13 +703,19 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_GlosasTemporales_Aseguradora", "[AseguradoraId] > 0");
 
+                            t.HasCheckConstraint("CK_GlosasTemporales_Estado", "[Estado] IN (1, 2, 3, 4, 5)");
+
                             t.HasCheckConstraint("CK_GlosasTemporales_FE", "[IdentificadorFe] = [Prefijo] + [NumeroFactura]");
 
                             t.HasCheckConstraint("CK_GlosasTemporales_Fechas", "[FechaRespuesta] IS NULL OR [FechaRespuesta] >= [FechaGlosa]");
 
                             t.HasCheckConstraint("CK_GlosasTemporales_FilaOrigen", "[FilaOrigen] > 0");
 
+                            t.HasCheckConstraint("CK_GlosasTemporales_Resolucion", "([Estado] = 1 AND [FechaRespuesta] IS NULL AND [ValorAceptado] = 0) OR ([Estado] = 2 AND [FechaRespuesta] IS NOT NULL AND [ValorAceptado] = 0) OR ([Estado] = 3 AND [FechaRespuesta] IS NOT NULL AND [ValorAceptado] > 0) OR ([Estado] = 4 AND [FechaRespuesta] IS NOT NULL AND [ValorAceptado] = 0) OR ([Estado] = 5 AND [FechaRespuesta] IS NOT NULL)");
+
                             t.HasCheckConstraint("CK_GlosasTemporales_Valor", "[ValorGlosa] > 0");
+
+                            t.HasCheckConstraint("CK_GlosasTemporales_ValorAceptado", "[ValorAceptado] >= 0 AND [ValorAceptado] <= [ValorGlosa]");
                         });
                 });
 

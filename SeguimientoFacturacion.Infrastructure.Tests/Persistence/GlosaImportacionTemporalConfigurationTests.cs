@@ -63,6 +63,24 @@ public sealed class
         Assert.NotNull(fechaRespuesta);
         Assert.True(fechaRespuesta.IsNullable);
 
+        var estado =
+            entidad.FindProperty(
+                nameof(
+                    GlosaImportacionTemporal.Estado));
+
+        Assert.NotNull(estado);
+        Assert.False(estado.IsNullable);
+
+        var valorAceptado =
+            entidad.FindProperty(
+                nameof(
+                    GlosaImportacionTemporal
+                        .ValorAceptado));
+
+        Assert.NotNull(valorAceptado);
+        Assert.Equal(18, valorAceptado.GetPrecision());
+        Assert.Equal(2, valorAceptado.GetScale());
+
         Assert.Null(
             entidad.FindProperty(
                 nameof(
@@ -226,6 +244,18 @@ public sealed class
 
         Assert.Contains(
             "CK_GlosasTemporales_Fechas",
+            restricciones);
+
+        Assert.Contains(
+            "CK_GlosasTemporales_Estado",
+            restricciones);
+
+        Assert.Contains(
+            "CK_GlosasTemporales_ValorAceptado",
+            restricciones);
+
+        Assert.Contains(
+            "CK_GlosasTemporales_Resolucion",
             restricciones);
     }
 

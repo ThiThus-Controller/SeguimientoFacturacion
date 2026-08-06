@@ -213,14 +213,6 @@ public sealed class
         int numeroFila,
         IReadOnlyDictionary<string, int> columnas)
     {
-        var identificadorFe =
-            NormalizarIdentificador(
-                ObtenerTextoRequerido(
-                    hoja,
-                    numeroFila,
-                    columnas,
-                    "FE"));
-
         var prefijo =
             NormalizarIdentificador(
                 ObtenerTextoRequerido(
@@ -236,6 +228,15 @@ public sealed class
                     numeroFila,
                     columnas,
                     "FACTURA"));
+
+        var identificadorFe =
+            NormalizarIdentificador(
+                ObtenerIdentificadorFe(
+                    hoja,
+                    numeroFila,
+                    columnas,
+                    prefijo,
+                    numeroFactura));
 
         var fechaGlosa =
             ObtenerFechaRequerida(
@@ -258,6 +259,20 @@ public sealed class
                 columnas,
                 "FECHA RTA GLOSA");
 
+        var estado =
+            ObtenerEstadoGlosa(
+                hoja,
+                numeroFila,
+                columnas);
+
+        var valorAceptado =
+            ObtenerDecimalOpcional(
+                hoja,
+                numeroFila,
+                columnas,
+                "VALOR ACEPTADO") ??
+            decimal.Zero;
+
         return new FilaGlosaPreparacion(
             HojaOrigen: hoja.Name,
             NumeroFila: numeroFila,
@@ -266,7 +281,9 @@ public sealed class
             NumeroFactura: numeroFactura,
             FechaGlosa: fechaGlosa,
             ValorGlosa: valorGlosa,
-            FechaRespuesta: fechaRespuesta);
+            FechaRespuesta: fechaRespuesta,
+            Estado: estado,
+            ValorAceptado: valorAceptado);
     }
 
     private static IReadOnlyCollection<
@@ -325,7 +342,13 @@ public sealed class
                         fila.ValorGlosa,
 
                     FechaRespuesta =
-                        fila.FechaRespuesta
+                        fila.FechaRespuesta,
+
+                    Estado =
+                        fila.Estado,
+
+                    ValorAceptado =
+                        fila.ValorAceptado
                 });
         }
 
@@ -376,6 +399,67 @@ public sealed class
         }
 
         return valor;
+    }
+
+    private static string ObtenerIdentificadorFe(
+        IXLWorksheet hoja,
+        int fila,
+        IReadOnlyDictionary<string, int> columnas,
+        string prefijo,
+        string numeroFactura)
+    {
+        var celda =
+            hoja.Cell(fila, columnas["FE"]);
+
+        var valor =
+            celda.CachedValue
+                .ToString()
+                .Trim();
+
+        if (!string.IsNullOrWhiteSpace(valor))
+        {
+            return valor;
+        }
+
+        if (!string.IsNullOrWhiteSpace(
+                celda.FormulaA1))
+        {
+            return $"{prefijo}{numeroFactura}";
+        }
+
+        throw new InvalidOperationException(
+            "La columna FE se encuentra vacía después " +
+            "de validar el archivo.");
+    }
+
+    private static EstadoGlosa ObtenerEstadoGlosa(
+        IXLWorksheet hoja,
+        int fila,
+        IReadOnlyDictionary<string, int> columnas)
+    {
+        var texto =
+            ObtenerTextoRequerido(
+                hoja,
+                fila,
+                columnas,
+                "ESTADO GLOSA");
+
+        var normalizado =
+            NormalizadorEncabezadoImportacion
+                .Normalizar(texto);
+
+        return normalizado switch
+        {
+            "1" or "ABIERTA" => EstadoGlosa.Abierta,
+            "2" or "RESPONDIDA" => EstadoGlosa.Respondida,
+            "3" or "ACEPTADA" => EstadoGlosa.Aceptada,
+            "4" or "LEVANTADA" => EstadoGlosa.Levantada,
+            "5" or "CONCILIADA" => EstadoGlosa.Conciliada,
+
+            _ => throw new InvalidOperationException(
+                "El estado de la glosa no pudo convertirse " +
+                "después de validar el archivo.")
+        };
     }
 
     private static DateOnly ObtenerFechaRequerida(
@@ -444,6 +528,37 @@ public sealed class
             hoja.Cell(
                 fila,
                 columnas[nombreColumna]);
+
+        if (IntentarObtenerDecimal(
+                celda,
+                out var valor))
+        {
+            return valor;
+        }
+
+        throw new InvalidOperationException(
+            $"La columna {nombreColumna} no pudo " +
+            "convertirse después de validar el archivo.");
+    }
+
+    private static decimal? ObtenerDecimalOpcional(
+        IXLWorksheet hoja,
+        int fila,
+        IReadOnlyDictionary<string, int> columnas,
+        string nombreColumna)
+    {
+        var celda =
+            hoja.Cell(
+                fila,
+                columnas[nombreColumna]);
+
+        if (string.IsNullOrWhiteSpace(
+                celda.CachedValue
+                    .ToString()
+                    .Trim()))
+        {
+            return null;
+        }
 
         if (IntentarObtenerDecimal(
                 celda,
@@ -603,5 +718,7 @@ public sealed class
         string NumeroFactura,
         DateOnly FechaGlosa,
         decimal ValorGlosa,
-        DateOnly? FechaRespuesta);
+        DateOnly? FechaRespuesta,
+        EstadoGlosa Estado,
+        decimal ValorAceptado);
 }

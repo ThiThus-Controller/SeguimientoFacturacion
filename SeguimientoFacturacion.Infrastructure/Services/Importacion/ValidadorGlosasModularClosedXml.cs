@@ -235,6 +235,12 @@ public sealed class
                 columnas,
                 "FACTURA");
 
+        fe = ResolverIdentificadorFe(
+            hoja.Cell(fila, columnas["FE"]),
+            fe,
+            prefijo,
+            factura);
+
         var aseguradora =
             ObtenerTexto(
                 hoja,
@@ -336,6 +342,23 @@ public sealed class
                 fila,
                 inconsistencias);
 
+        var estado =
+            ObtenerEstadoGlosa(
+                hoja.Cell(
+                    fila,
+                    columnas["ESTADO GLOSA"]),
+                fila,
+                inconsistencias);
+
+        var valorAceptado =
+            ObtenerValorAceptado(
+                hoja.Cell(
+                    fila,
+                    columnas["VALOR ACEPTADO"]),
+                fila,
+                out var valorAceptadoInformado,
+                inconsistencias);
+
         if (fechaGlosa.HasValue &&
             fechaRespuesta.HasValue &&
             fechaRespuesta.Value <
@@ -349,6 +372,15 @@ public sealed class
                 "La fecha de respuesta no puede ser " +
                 "anterior a la fecha de la glosa.");
         }
+
+        ValidarResolucion(
+            estado,
+            fechaRespuesta,
+            valorGlosa,
+            valorAceptado,
+            valorAceptadoInformado,
+            fila,
+            inconsistencias);
 
         RegistrarClaveGlosa(
             fe,
@@ -374,7 +406,218 @@ public sealed class
                 valorGlosa,
 
             FechaRespuesta:
-                fechaRespuesta);
+                fechaRespuesta,
+
+            Estado:
+                estado,
+
+            ValorAceptado:
+                valorAceptado);
+    }
+
+    private static string ResolverIdentificadorFe(
+        IXLCell celda,
+        string valor,
+        string prefijo,
+        string numeroFactura)
+    {
+        if (!string.IsNullOrWhiteSpace(valor) ||
+            string.IsNullOrWhiteSpace(celda.FormulaA1) ||
+            string.IsNullOrWhiteSpace(prefijo) ||
+            string.IsNullOrWhiteSpace(numeroFactura))
+        {
+            return valor;
+        }
+
+        return $"{prefijo.Trim()}{numeroFactura.Trim()}";
+    }
+
+    private static EstadoGlosa? ObtenerEstadoGlosa(
+        IXLCell celda,
+        int fila,
+        ICollection<InconsistenciaImportacionDto>
+            inconsistencias)
+    {
+        var texto =
+            celda.CachedValue.ToString().Trim();
+
+        if (string.IsNullOrWhiteSpace(texto))
+        {
+            AgregarError(
+                inconsistencias,
+                fila,
+                "ESTADO GLOSA",
+                "ESTADO_GLOSA_REQUERIDO",
+                "El estado de la glosa es obligatorio.");
+
+            return null;
+        }
+
+        var normalizado =
+            NormalizadorEncabezadoImportacion
+                .Normalizar(texto);
+
+        var estado = normalizado switch
+        {
+            "1" or "ABIERTA" => EstadoGlosa.Abierta,
+            "2" or "RESPONDIDA" => EstadoGlosa.Respondida,
+            "3" or "ACEPTADA" => EstadoGlosa.Aceptada,
+            "4" or "LEVANTADA" => EstadoGlosa.Levantada,
+            "5" or "CONCILIADA" => EstadoGlosa.Conciliada,
+            _ => (EstadoGlosa?)null
+        };
+
+        if (!estado.HasValue)
+        {
+            AgregarError(
+                inconsistencias,
+                fila,
+                "ESTADO GLOSA",
+                "ESTADO_GLOSA_INVALIDO",
+                "El estado debe ser ABIERTA, RESPONDIDA, " +
+                "ACEPTADA, LEVANTADA o CONCILIADA.",
+                SanitizadorValorPresentadoImportacion
+                    .Sanitizar(texto));
+        }
+
+        return estado;
+    }
+
+    private static decimal? ObtenerValorAceptado(
+        IXLCell celda,
+        int fila,
+        out bool valorInformado,
+        ICollection<InconsistenciaImportacionDto>
+            inconsistencias)
+    {
+        var texto =
+            celda.CachedValue.ToString().Trim();
+
+        valorInformado =
+            !string.IsNullOrWhiteSpace(texto);
+
+        if (!valorInformado)
+        {
+            return null;
+        }
+
+        if (IntentarObtenerDecimal(celda, out var valor))
+        {
+            return valor;
+        }
+
+        AgregarError(
+            inconsistencias,
+            fila,
+            "VALOR ACEPTADO",
+            "VALOR_ACEPTADO_INVALIDO",
+            "El valor aceptado no es numérico.",
+            SanitizadorValorPresentadoImportacion
+                .Sanitizar(texto));
+
+        return null;
+    }
+
+    private static void ValidarResolucion(
+        EstadoGlosa? estado,
+        DateOnly? fechaRespuesta,
+        decimal? valorGlosa,
+        decimal? valorAceptado,
+        bool valorAceptadoInformado,
+        int fila,
+        ICollection<InconsistenciaImportacionDto>
+            inconsistencias)
+    {
+        if (!estado.HasValue)
+        {
+            return;
+        }
+
+        var requiereRespuesta =
+            estado.Value != EstadoGlosa.Abierta;
+
+        if (requiereRespuesta &&
+            !fechaRespuesta.HasValue)
+        {
+            AgregarError(
+                inconsistencias,
+                fila,
+                "FECHA RTA GLOSA",
+                "FECHA_RESPUESTA_REQUERIDA_ESTADO",
+                "El estado informado requiere fecha de " +
+                "respuesta.");
+        }
+
+        if (!requiereRespuesta &&
+            fechaRespuesta.HasValue)
+        {
+            AgregarError(
+                inconsistencias,
+                fila,
+                "FECHA RTA GLOSA",
+                "FECHA_RESPUESTA_NO_PERMITIDA_ESTADO",
+                "Una glosa abierta no puede tener fecha " +
+                "de respuesta.");
+        }
+
+        if (estado.Value == EstadoGlosa.Aceptada &&
+            !valorAceptadoInformado)
+        {
+            AgregarError(
+                inconsistencias,
+                fila,
+                "VALOR ACEPTADO",
+                "VALOR_ACEPTADO_REQUERIDO",
+                "Una glosa aceptada debe informar el valor " +
+                "aceptado.");
+
+            return;
+        }
+
+        if (!valorAceptado.HasValue)
+        {
+            return;
+        }
+
+        if (valorAceptado.Value < decimal.Zero ||
+            valorGlosa.HasValue &&
+            valorAceptado.Value > valorGlosa.Value)
+        {
+            AgregarError(
+                inconsistencias,
+                fila,
+                "VALOR ACEPTADO",
+                "VALOR_ACEPTADO_FUERA_RANGO",
+                "El valor aceptado debe estar entre cero y " +
+                "el valor de la glosa.");
+        }
+
+        if (estado.Value == EstadoGlosa.Aceptada &&
+            valorAceptado.Value <= decimal.Zero)
+        {
+            AgregarError(
+                inconsistencias,
+                fila,
+                "VALOR ACEPTADO",
+                "VALOR_ACEPTADO_NO_POSITIVO",
+                "Una glosa aceptada debe tener un valor " +
+                "aceptado mayor que cero.");
+        }
+
+        if ((estado.Value is
+                EstadoGlosa.Abierta or
+                EstadoGlosa.Respondida or
+                EstadoGlosa.Levantada) &&
+            valorAceptado.Value != decimal.Zero)
+        {
+            AgregarError(
+                inconsistencias,
+                fila,
+                "VALOR ACEPTADO",
+                "VALOR_ACEPTADO_NO_PERMITIDO_ESTADO",
+                "El estado informado no permite un valor " +
+                "aceptado diferente de cero.");
+        }
     }
 
     private static void ValidarReferencias(
@@ -926,5 +1169,7 @@ public sealed class
         int? AseguradoraId,
         DateOnly? FechaGlosa,
         decimal? ValorGlosa,
-        DateOnly? FechaRespuesta);
+        DateOnly? FechaRespuesta,
+        EstadoGlosa? Estado,
+        decimal? ValorAceptado);
 }
