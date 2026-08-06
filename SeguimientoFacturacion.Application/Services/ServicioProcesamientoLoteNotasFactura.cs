@@ -3,6 +3,7 @@ using SeguimientoFacturacion.Application.Common.Exceptions;
 using SeguimientoFacturacion.Application.DTOs.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Domain.Constants;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Enums;
 
@@ -427,6 +428,32 @@ public sealed class
                     "Una o más facturas relacionadas ya " +
                     "no existen en la tabla definitiva.",
                     facturasInexistentes);
+        }
+
+        var facturasAnuladas =
+            registrosTemporales
+                .Where(
+                    registro =>
+                        CodigosEstadoFactura.EsAnulada(
+                            indiceReferencias[
+                                registro.IdentificadorFe]
+                                .EstadoId))
+                .Select(
+                    registro =>
+                        registro.IdentificadorFe)
+                .Distinct(
+                    StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+        if (facturasAnuladas.Length > 0)
+        {
+            throw new
+                ExcepcionLoteNotasFacturaNoProcesable(
+                    loteId,
+                    "Una o más facturas relacionadas se " +
+                    "encuentran anuladas y no permiten " +
+                    "registrar notas.",
+                    facturasAnuladas);
         }
 
         var aseguradorasInconsistentes =

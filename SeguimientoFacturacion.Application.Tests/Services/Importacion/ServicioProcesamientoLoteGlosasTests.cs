@@ -10,6 +10,7 @@ using SeguimientoFacturacion.Application
 using SeguimientoFacturacion.Application.Services;
 using SeguimientoFacturacion.Application
     .Validators.Importacion;
+using SeguimientoFacturacion.Domain.Constants;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Enums;
 
@@ -347,6 +348,72 @@ public sealed class
             unidadTrabajo.TotalGuardados);
     }
 
+    [Theory]
+    [InlineData(
+        CodigosEstadoFactura.AnuladaHistorica)]
+    [InlineData(
+        CodigosEstadoFactura.Anulada)]
+    public async Task
+        Procesar_ConFacturaAnulada_DebeRechazarGlosa(
+            int estadoId)
+    {
+        var lote =
+            CrearLoteConfirmado(
+                totalFilas: 1);
+
+        var repositorioTemporal =
+            new RepositorioTemporalPrueba(
+                [
+                    CrearRegistro(
+                        lote.Id,
+                        fila: 2,
+                        facturaId: "FV000001",
+                        numeroFactura: "000001",
+                        valor: 100000m)
+                ]);
+
+        var repositorioDefinitivo =
+            new RepositorioDefinitivoPrueba();
+
+        var unidadTrabajo =
+            new UnidadTrabajoPrueba();
+
+        var servicio =
+            CrearServicio(
+                new RepositorioImportacionesPrueba(lote),
+                repositorioTemporal,
+                repositorioDefinitivo,
+                new ConsultaFacturasPrueba(
+                    [
+                        CrearReferencia(
+                            "FV000001",
+                            estadoId: estadoId)
+                    ]),
+                unidadTrabajo);
+
+        var excepcion =
+            await Assert.ThrowsAsync<
+                ExcepcionLoteGlosasNoProcesable>(
+                () =>
+                    servicio.ProcesarAsync(
+                        CrearSolicitud(lote.Id)));
+
+        Assert.Contains(
+            "anuladas",
+            excepcion.Motivo,
+            StringComparison.OrdinalIgnoreCase);
+
+        Assert.Empty(
+            repositorioDefinitivo.Agregadas);
+
+        Assert.False(
+            repositorioTemporal.Eliminado);
+
+        Assert.Equal(
+            0,
+            unidadTrabajo.TotalGuardados);
+    }
+
     [Fact]
     public async Task
         Procesar_ConAseguradoraDiferente_DebeRechazar()
@@ -659,12 +726,15 @@ public sealed class
         CrearReferencia(
             string facturaId,
             int aseguradoraId = 1,
-            DateOnly? fechaFactura = null)
+            DateOnly? fechaFactura = null,
+            int estadoId =
+                CodigosEstadoFactura.Activa)
     {
         return new ReferenciaFacturaImportacionDto
         {
             FacturaId = facturaId,
             AseguradoraId = aseguradoraId,
+            EstadoId = estadoId,
 
             FechaFactura =
                 fechaFactura ??
