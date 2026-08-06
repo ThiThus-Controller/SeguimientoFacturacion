@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using SeguimientoFacturacion.Application
     .Common.Exceptions;
@@ -61,6 +62,9 @@ public sealed class ImportacionController : Controller
     private readonly ILogger<ImportacionController>
         _logger;
 
+    private readonly IWebHostEnvironment
+        _entornoWeb;
+
     /// <summary>
     /// Inicializa el controlador de importaciones.
     /// </summary>
@@ -87,6 +91,7 @@ public sealed class ImportacionController : Controller
             servicioProcesamientoPagos,
         IAuthorizationService servicioAutorizacion,
         IContextoUsuarioActual contextoUsuarioActual,
+        IWebHostEnvironment entornoWeb,
         ILogger<ImportacionController> logger)
     {
         ArgumentNullException.ThrowIfNull(
@@ -125,6 +130,8 @@ public sealed class ImportacionController : Controller
         ArgumentNullException.ThrowIfNull(
             contextoUsuarioActual);
 
+        ArgumentNullException.ThrowIfNull(entornoWeb);
+
         ArgumentNullException.ThrowIfNull(logger);
 
         _servicioRegistroLote =
@@ -150,6 +157,7 @@ public sealed class ImportacionController : Controller
 
         _servicioAutorizacion = servicioAutorizacion;
         _contextoUsuarioActual = contextoUsuarioActual;
+        _entornoWeb = entornoWeb;
         _logger = logger;
     }
 
@@ -167,6 +175,59 @@ public sealed class ImportacionController : Controller
                 TiposPermitidos =
                     await ObtenerTiposImportacionPermitidosAsync()
             });
+    }
+
+    /// <summary>
+    /// Descarga la plantilla oficial correspondiente al proceso modular.
+    /// </summary>
+    [HttpGet("plantillas/{tipo:int}")]
+    [Authorize(
+        Policy = PoliticasAutorizacion.ImportacionesAcceder)]
+    public async Task<IActionResult> DescargarPlantilla(
+        TipoImportacion tipo)
+    {
+        if (tipo is not (
+            TipoImportacion.Facturas or
+            TipoImportacion.NotasFactura or
+            TipoImportacion.Glosas or
+            TipoImportacion.Pagos))
+        {
+            return NotFound();
+        }
+
+        var autorizacion =
+            await _servicioAutorizacion.AuthorizeAsync(
+                User,
+                PoliticasAutorizacion.ParaAnalisis(tipo));
+
+        if (!autorizacion.Succeeded)
+        {
+            return Forbid();
+        }
+
+        var nombreArchivo =
+            PlantillasImportacion.ObtenerNombreArchivo(tipo);
+
+        var rutaArchivo = Path.Combine(
+            _entornoWeb.WebRootPath,
+            PlantillasImportacion.DirectorioPlantillas,
+            PlantillasImportacion.DirectorioImportacion,
+            nombreArchivo);
+
+        if (!System.IO.File.Exists(rutaArchivo))
+        {
+            _logger.LogError(
+                "No se encontró la plantilla {Plantilla} para {TipoImportacion}.",
+                nombreArchivo,
+                tipo);
+
+            return NotFound();
+        }
+
+        return PhysicalFile(
+            rutaArchivo,
+            PlantillasImportacion.TipoContenidoXlsx,
+            nombreArchivo);
     }
 
     /// <summary>
