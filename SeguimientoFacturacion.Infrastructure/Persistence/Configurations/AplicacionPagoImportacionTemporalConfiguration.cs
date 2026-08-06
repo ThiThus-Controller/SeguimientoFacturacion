@@ -36,10 +36,10 @@ internal sealed class
 
                 tableBuilder.HasCheckConstraint(
                     "CK_AplicacionesPagoTemporales_Valores",
-                    "[ValorAplicado] > 0 AND " +
-                    "[ValorCruzadoAplicado] >= 0 AND " +
-                    "[ValorCruzadoAplicado] <= " +
-                    "[ValorAplicado]");
+                    "[ValorRecibido] > 0 AND " +
+                    "[ValorAplicado] >= 0 AND " +
+                    "[ValorAnticipo] >= 0 AND " +
+                    "[ValorAplicado] + [ValorAnticipo] = [ValorRecibido]");
             });
 
         builder.HasKey(
@@ -94,6 +94,10 @@ internal sealed class
             .IsUnicode(false)
             .IsRequired();
 
+        builder.Property(registro => registro.ValorRecibido)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
         builder.Property(
                 registro =>
                     registro.ValorAplicado)
@@ -101,8 +105,7 @@ internal sealed class
             .IsRequired();
 
         builder.Property(
-                registro =>
-                    registro.ValorCruzadoAplicado)
+                registro => registro.ValorAnticipo)
             .HasPrecision(18, 2)
             .IsRequired();
 

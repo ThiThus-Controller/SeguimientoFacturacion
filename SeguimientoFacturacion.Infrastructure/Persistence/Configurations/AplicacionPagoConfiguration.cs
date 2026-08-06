@@ -25,10 +25,10 @@ internal sealed class AplicacionPagoConfiguration :
             {
                 tableBuilder.HasCheckConstraint(
                     "CK_AplicacionesPago_Valores",
-                    "[ValorAplicado] > 0 AND " +
-                    "[ValorCruzadoAplicado] >= 0 AND " +
-                    "[ValorCruzadoAplicado] <= " +
-                    "[ValorAplicado]");
+                    "[ValorRecibido] > 0 AND " +
+                    "[ValorAplicado] >= 0 AND " +
+                    "[ValorAnticipo] >= 0 AND " +
+                    "[ValorAplicado] + [ValorAnticipo] = [ValorRecibido]");
             });
 
         builder.HasKey(aplicacion => aplicacion.Id);
@@ -45,13 +45,15 @@ internal sealed class AplicacionPagoConfiguration :
             .IsUnicode(false)
             .IsRequired();
 
+        builder.Property(aplicacion => aplicacion.ValorRecibido)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
         builder.Property(aplicacion => aplicacion.ValorAplicado)
             .HasPrecision(18, 2)
             .IsRequired();
 
-        builder.Property(
-                aplicacion =>
-                    aplicacion.ValorCruzadoAplicado)
+        builder.Property(aplicacion => aplicacion.ValorAnticipo)
             .HasPrecision(18, 2)
             .IsRequired();
 

@@ -1,215 +1,60 @@
-﻿using SeguimientoFacturacion.Domain.Entities;
+using SeguimientoFacturacion.Domain.Entities;
 
 namespace SeguimientoFacturacion.Domain.Tests.Entities;
 
 public sealed class PagoTests
 {
     [Fact]
-    public void CrearPago_ConDatosValidos_DebeCalcularSaldos()
+    public void DistribuirPago_EntreCarteraYAnticipo_DebeConservarTotal()
     {
-        var pago = CrearPagoValido();
+        var pago = CrearPago(1000m);
+        pago.AgregarAplicacion(new AplicacionPago(
+            pago.Id, "FE1", 1000m, 700m, 300m));
 
-        Assert.NotEqual(
-            Guid.Empty,
-            pago.Id);
+        pago.ValidarDistribucionCompleta();
 
-        Assert.Equal(
-            "RC-2026-001",
-            pago.Recibo);
-
-        Assert.Equal(
-            1000m,
-            pago.SaldoFavor);
-
-        Assert.Equal(
-            900m,
-            pago.SaldoCruzadoPendiente);
-
-        Assert.Empty(pago.Aplicaciones);
+        Assert.Equal(1000m, pago.TotalRecibidoDistribuido);
+        Assert.Equal(700m, pago.TotalAplicado);
+        Assert.Equal(300m, pago.TotalAnticipo);
     }
 
     [Fact]
-    public void CrearPago_Descuadrado_DebeLanzarExcepcion()
+    public void AgregarDistribucion_Incompleta_DebeRechazarseAlConfirmar()
     {
-        var accion = () => new Pago(
-            aseguradoraId: 1,
-            fechaPago: new DateOnly(2026, 7, 28),
-            recibo: "RC-001",
-            valorPagado: 1000m,
-            valorCruzado: 800m,
-            retencion: 50m,
-            reteIca: 20m);
-
-        var excepcion = Assert.Throws<ArgumentException>(
-            accion);
-
-        Assert.Contains(
-            "debe ser igual",
-            excepcion.Message,
-            StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public void CrearPago_ConAseguradoraCero_DebeLanzarExcepcion()
-    {
-        var accion = () => new Pago(
-            aseguradoraId: 0,
-            fechaPago: new DateOnly(2026, 7, 28),
-            recibo: "RC-001",
-            valorPagado: 1000m,
-            valorCruzado: 900m,
-            retencion: 80m,
-            reteIca: 20m);
-
-        Assert.Throws<ArgumentOutOfRangeException>(
-            accion);
-    }
-
-    [Fact]
-    public void CrearAplicacion_ConDatosValidos_DebeNormalizarFactura()
-    {
-        var pagoId = Guid.NewGuid();
-
-        var aplicacion = new AplicacionPago(
-            pagoId: pagoId,
-            facturaId: "  fe4250  ",
-            valorAplicado: 600m,
-            valorCruzadoAplicado: 550m);
-
-        Assert.Equal(
-            pagoId,
-            aplicacion.PagoId);
-
-        Assert.Equal(
-            "FE4250",
-            aplicacion.FacturaId);
-
-        Assert.Equal(
-            600m,
-            aplicacion.ValorAplicado);
-
-        Assert.Equal(
-            550m,
-            aplicacion.ValorCruzadoAplicado);
-    }
-
-    [Fact]
-    public void CrearAplicacion_ConCruzadoSuperiorAlAplicado_DebeLanzarExcepcion()
-    {
-        var accion = () => new AplicacionPago(
-            pagoId: Guid.NewGuid(),
-            facturaId: "FE4250",
-            valorAplicado: 600m,
-            valorCruzadoAplicado: 601m);
-
-        Assert.Throws<ArgumentOutOfRangeException>(
-            accion);
-    }
-
-    [Fact]
-    public void AgregarAplicacion_DebeDisminuirSaldosDisponibles()
-    {
-        var pago = CrearPagoValido();
-
-        var aplicacion = new AplicacionPago(
-            pagoId: pago.Id,
-            facturaId: "FE4250",
-            valorAplicado: 600m,
-            valorCruzadoAplicado: 550m);
-
-        pago.AgregarAplicacion(aplicacion);
-
-        Assert.Single(pago.Aplicaciones);
-
-        Assert.Equal(
-            600m,
-            pago.TotalAplicado);
-
-        Assert.Equal(
-            550m,
-            pago.TotalCruzadoAplicado);
-
-        Assert.Equal(
-            400m,
-            pago.SaldoFavor);
-
-        Assert.Equal(
-            350m,
-            pago.SaldoCruzadoPendiente);
-    }
-
-    [Fact]
-    public void AgregarAplicacion_QueSuperaPago_DebeLanzarExcepcion()
-    {
-        var pago = CrearPagoValido();
-
-        var aplicacion = new AplicacionPago(
-            pagoId: pago.Id,
-            facturaId: "FE4250",
-            valorAplicado: 1001m,
-            valorCruzadoAplicado: 900m);
-
-        var accion = () =>
-            pago.AgregarAplicacion(aplicacion);
+        var pago = CrearPago(1000m);
+        pago.AgregarAplicacion(new AplicacionPago(
+            pago.Id, "FE1", 600m, 600m, 0m));
 
         Assert.Throws<InvalidOperationException>(
-            accion);
+            pago.ValidarDistribucionCompleta);
     }
 
     [Fact]
-    public void AgregarAplicacion_DeOtroPago_DebeLanzarExcepcion()
+    public void Aplicacion_CuandoPartesNoSumanRecibido_DebeFallar()
     {
-        var pago = CrearPagoValido();
+        Assert.Throws<ArgumentException>(() =>
+            new AplicacionPago(Guid.NewGuid(), "FE1", 1000m, 600m, 300m));
+    }
 
+    [Fact]
+    public void ReclasificarAplicado_DebeMoverValorAAnticipo()
+    {
         var aplicacion = new AplicacionPago(
-            pagoId: Guid.NewGuid(),
-            facturaId: "FE4250",
-            valorAplicado: 600m,
-            valorCruzadoAplicado: 550m);
+            Guid.NewGuid(), "FE1", 1000m, 800m, 200m);
 
-        var accion = () =>
-            pago.AgregarAplicacion(aplicacion);
+        aplicacion.ReclasificarComoAnticipo(300m);
 
-        Assert.Throws<InvalidOperationException>(
-            accion);
+        Assert.Equal(500m, aplicacion.ValorAplicado);
+        Assert.Equal(500m, aplicacion.ValorAnticipo);
+        Assert.Equal(1000m, aplicacion.ValorRecibido);
     }
 
-    [Fact]
-    public void AgregarDosAplicaciones_MismaFactura_DebeLanzarExcepcion()
-    {
-        var pago = CrearPagoValido();
-
-        pago.AgregarAplicacion(
-            new AplicacionPago(
-                pagoId: pago.Id,
-                facturaId: "FE4250",
-                valorAplicado: 400m,
-                valorCruzadoAplicado: 350m));
-
-        var segundaAplicacion = new AplicacionPago(
-            pagoId: pago.Id,
-            facturaId: "FE4250",
-            valorAplicado: 200m,
-            valorCruzadoAplicado: 150m);
-
-        var accion = () =>
-            pago.AgregarAplicacion(
-                segundaAplicacion);
-
-        Assert.Throws<InvalidOperationException>(
-            accion);
-    }
-
-    private static Pago CrearPagoValido()
-    {
-        return new Pago(
-            aseguradoraId: 1,
-            fechaPago: new DateOnly(2026, 7, 28),
-            recibo: "  rc-2026-001  ",
-            valorPagado: 1000m,
-            valorCruzado: 900m,
-            retencion: 80m,
-            reteIca: 20m,
-            notas: "Pago de prueba.");
-    }
+    private static Pago CrearPago(decimal valor) => new(
+        1,
+        new DateOnly(2026, 8, 6),
+        "RC-001",
+        valor,
+        80m,
+        20m,
+        "Prueba");
 }

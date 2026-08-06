@@ -35,17 +35,8 @@ internal sealed class
 
                 tableBuilder.HasCheckConstraint(
                     "CK_PagosTemporales_Valores",
-                    "[ValorCruzado] >= 0 AND " +
                     "[Retencion] >= 0 AND " +
-                    "[ReteIca] >= 0 AND " +
-                    "[SaldoFavorReportado] >= 0 AND " +
-                    "[SaldoCruzadoPendienteReportado] >= 0");
-
-                tableBuilder.HasCheckConstraint(
-                    "CK_PagosTemporales_Cuadre",
-                    "[ValorPagado] = " +
-                    "[ValorCruzado] + " +
-                    "[Retencion] + [ReteIca]");
+                    "[ReteIca] >= 0");
             });
 
         builder.HasKey(
@@ -90,12 +81,6 @@ internal sealed class
 
         builder.Property(
                 registro =>
-                    registro.ValorCruzado)
-            .HasPrecision(18, 2)
-            .IsRequired();
-
-        builder.Property(
-                registro =>
                     registro.Retencion)
             .HasPrecision(18, 2)
             .IsRequired();
@@ -103,19 +88,6 @@ internal sealed class
         builder.Property(
                 registro =>
                     registro.ReteIca)
-            .HasPrecision(18, 2)
-            .IsRequired();
-
-        builder.Property(
-                registro =>
-                    registro.SaldoFavorReportado)
-            .HasPrecision(18, 2)
-            .IsRequired();
-
-        builder.Property(
-                registro =>
-                    registro
-                        .SaldoCruzadoPendienteReportado)
             .HasPrecision(18, 2)
             .IsRequired();
 
@@ -131,22 +103,13 @@ internal sealed class
             registro =>
                 registro.TotalAplicado);
 
-        builder.Ignore(
-            registro =>
-                registro.TotalCruzadoAplicado);
+        builder.Ignore(registro => registro.TotalRecibidoDistribuido);
+
+        builder.Ignore(registro => registro.TotalAnticipo);
 
         builder.Ignore(
             registro =>
-                registro.SaldoFavorCalculado);
-
-        builder.Ignore(
-            registro =>
-                registro
-                    .SaldoCruzadoPendienteCalculado);
-
-        builder.Ignore(
-            registro =>
-                registro.EstaCuadrado);
+                registro.EstaDistribuido);
 
         builder.HasOne(
                 registro =>

@@ -77,13 +77,8 @@ public sealed class
                 "FACTURA",
                 "ASEGURADORA",
                 "VALOR PAGADO",
-                "VALOR CRUZADO",
                 "RETENCION",
                 "RETE ICA ",
-                "SALDO FAVOR",
-                "SALDO RETENCION",
-                "VR PAGADO",
-                "VR CRUZADO",
                 "FECHA DE PAGO",
                 "RECIBO",
                 "NOTAS"
@@ -139,40 +134,26 @@ public sealed class
     }
 
     [Fact]
-    public void Pagos_DebeTenerQuinceColumnas()
+    public void Pagos_DebeTenerDiezColumnas()
     {
         var encabezados =
             ContratosPlantillasImportacion
                 .Pagos
                 .EncabezadosRequeridos;
 
-        Assert.Equal(15, encabezados.Count);
+        Assert.Equal(10, encabezados.Count);
 
         Assert.Contains(
-            "SALDO RETENCION",
+            "VALOR PAGADO",
             encabezados);
 
         Assert.Contains(
-            "VR PAGADO",
+            "RETENCION",
             encabezados);
 
         Assert.Contains(
-            "VR CRUZADO",
+            "RETE ICA",
             encabezados);
-    }
-
-    [Fact]
-    public void Pagos_SaldoCruzadoPendiente_DebeResolverAlias()
-    {
-        var resultado =
-            ContratosPlantillasImportacion
-                .Pagos
-                .ResolverEncabezado(
-                    " SALDO CRUZADO PENDIENTE ");
-
-        Assert.Equal(
-            "SALDO RETENCION",
-            resultado);
     }
 
     [Fact]

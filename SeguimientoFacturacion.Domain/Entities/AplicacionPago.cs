@@ -1,10 +1,10 @@
-﻿using SeguimientoFacturacion.Domain.Common;
+using SeguimientoFacturacion.Domain.Common;
 
 namespace SeguimientoFacturacion.Domain.Entities;
 
 /// <summary>
-/// Representa la aplicación de una parte de un pago
-/// sobre una factura específica.
+/// Representa la distribución de una porción de pago
+/// entre aplicación a cartera y anticipo.
 /// </summary>
 public sealed class AplicacionPago :
     EntidadAuditableBase<Guid>
@@ -20,25 +20,33 @@ public sealed class AplicacionPago :
     }
 
     /// <summary>
-    /// Inicializa una aplicación de pago.
+    /// Inicializa una distribución de pago.
     /// </summary>
     public AplicacionPago(
         Guid pagoId,
         string facturaId,
+        decimal valorRecibido,
         decimal valorAplicado,
-        decimal valorCruzadoAplicado)
+        decimal valorAnticipo)
         : base(Guid.NewGuid())
     {
         PagoId = ValidarPagoId(pagoId);
         FacturaId = ValidarFacturaId(facturaId);
+        ValorRecibido = ValidarValorRecibido(
+            valorRecibido);
 
-        ValorAplicado = ValidarValorAplicado(
-            valorAplicado);
+        ValorAplicado = ValidarImporteNoNegativo(
+            valorAplicado,
+            nameof(valorAplicado));
 
-        ValorCruzadoAplicado =
-            ValidarValorCruzadoAplicado(
-                valorCruzadoAplicado,
-                ValorAplicado);
+        ValorAnticipo = ValidarImporteNoNegativo(
+            valorAnticipo,
+            nameof(valorAnticipo));
+
+        ValidarDistribucion(
+            ValorRecibido,
+            ValorAplicado,
+            ValorAnticipo);
     }
 
     /// <summary>
@@ -47,25 +55,25 @@ public sealed class AplicacionPago :
     public Guid PagoId { get; private set; }
 
     /// <summary>
-    /// Obtiene el identificador de la factura.
+    /// Obtiene el identificador de la factura presentada.
     /// </summary>
     public string FacturaId { get; private set; } =
         string.Empty;
 
     /// <summary>
-    /// Obtiene el valor bruto aplicado a la factura.
-    /// Este es el valor que disminuye el saldo de cartera.
+    /// Obtiene el valor recibido en la fila de origen.
+    /// </summary>
+    public decimal ValorRecibido { get; private set; }
+
+    /// <summary>
+    /// Obtiene la porción que disminuye la deuda.
     /// </summary>
     public decimal ValorAplicado { get; private set; }
 
     /// <summary>
-    /// Obtiene el valor neto cruzado o aplicado.
+    /// Obtiene la porción que se conserva como anticipo.
     /// </summary>
-    public decimal ValorCruzadoAplicado
-    {
-        get;
-        private set;
-    }
+    public decimal ValorAnticipo { get; private set; }
 
     /// <summary>
     /// Obtiene el pago asociado.
@@ -76,6 +84,25 @@ public sealed class AplicacionPago :
     /// Obtiene la factura asociada.
     /// </summary>
     public Factura? Factura { get; private set; }
+
+    /// <summary>
+    /// Reclasifica una porción aplicada como anticipo.
+    /// </summary>
+    public void ReclasificarComoAnticipo(decimal valor)
+    {
+        if (valor <= decimal.Zero ||
+            valor > ValorAplicado)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(valor),
+                valor,
+                "El valor a reclasificar debe ser mayor " +
+                "que cero y no superar lo aplicado.");
+        }
+
+        ValorAplicado -= valor;
+        ValorAnticipo += valor;
+    }
 
     private static Guid ValidarPagoId(Guid pagoId)
     {
@@ -107,49 +134,55 @@ public sealed class AplicacionPago :
             FacturaIdLongitudMaxima)
         {
             throw new ArgumentException(
-                $"El identificador de la factura no puede superar " +
-                $"los {FacturaIdLongitudMaxima} caracteres.",
+                $"El identificador de la factura no puede " +
+                $"superar los {FacturaIdLongitudMaxima} " +
+                "caracteres.",
                 nameof(facturaId));
         }
 
         return facturaIdNormalizado;
     }
 
-    private static decimal ValidarValorAplicado(
-        decimal valorAplicado)
+    private static decimal ValidarValorRecibido(
+        decimal valorRecibido)
     {
-        if (valorAplicado <= decimal.Zero)
+        if (valorRecibido <= decimal.Zero)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(valorAplicado),
-                valorAplicado,
-                "El valor aplicado debe ser mayor que cero.");
+                nameof(valorRecibido),
+                valorRecibido,
+                "El valor recibido debe ser mayor que cero.");
         }
 
-        return valorAplicado;
+        return valorRecibido;
     }
 
-    private static decimal ValidarValorCruzadoAplicado(
-        decimal valorCruzadoAplicado,
-        decimal valorAplicado)
+    private static decimal ValidarImporteNoNegativo(
+        decimal valor,
+        string nombreParametro)
     {
-        if (valorCruzadoAplicado < decimal.Zero)
+        if (valor < decimal.Zero)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(valorCruzadoAplicado),
-                valorCruzadoAplicado,
-                "El valor cruzado aplicado no puede ser negativo.");
+                nombreParametro,
+                valor,
+                "El importe no puede ser negativo.");
         }
 
-        if (valorCruzadoAplicado > valorAplicado)
+        return valor;
+    }
+
+    private static void ValidarDistribucion(
+        decimal valorRecibido,
+        decimal valorAplicado,
+        decimal valorAnticipo)
+    {
+        if (valorAplicado + valorAnticipo !=
+            valorRecibido)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(valorCruzadoAplicado),
-                valorCruzadoAplicado,
-                "El valor cruzado aplicado no puede superar " +
-                "el valor bruto aplicado.");
+            throw new ArgumentException(
+                "El valor aplicado más el anticipo debe " +
+                "coincidir con el valor recibido.");
         }
-
-        return valorCruzadoAplicado;
     }
 }

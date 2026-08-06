@@ -58,8 +58,8 @@ public sealed class ResumenSaldoFactura
     public decimal ValorGlosaPendiente { get; }
 
     /// <summary>
-    /// Obtiene el saldo de gestión después de separar
-    /// las glosas pendientes.
+    /// Obtiene el saldo disponible para gestión. Las glosas
+    /// pendientes no alteran este valor.
     /// </summary>
     public decimal SaldoDisponibleGestion { get; }
 }

@@ -212,7 +212,7 @@ public sealed class
             ValidarFilasAplicacionesDuplicadas(pago);
             ValidarFacturasAplicacionesDuplicadas(pago);
 
-            pago.ValidarCuadreAplicaciones();
+            pago.ValidarDistribucionCompleta();
         }
     }
 

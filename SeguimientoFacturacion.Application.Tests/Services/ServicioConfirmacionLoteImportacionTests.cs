@@ -460,11 +460,8 @@ public sealed class
                 new DateOnly(2026, 7, 20),
             recibo: "RC-001",
             valorPagado: 100000m,
-            valorCruzado: 100000m,
             retencion: decimal.Zero,
             reteIca: decimal.Zero,
-            saldoFavorReportado: 100000m,
-            saldoCruzadoPendienteReportado: 100000m,
             notas: null);
     }
 

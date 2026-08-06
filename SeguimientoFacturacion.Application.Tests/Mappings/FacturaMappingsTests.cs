@@ -29,8 +29,9 @@ public sealed class FacturaMappingsTests
         var aplicacionPago = new AplicacionPago(
             pagoId: Guid.NewGuid(),
             facturaId: factura.Id,
+            valorRecibido: 300m,
             valorAplicado: 300m,
-            valorCruzadoAplicado: 280m);
+            valorAnticipo: 0m);
 
         var glosa = new Glosa(
             facturaId: factura.Id,
@@ -84,7 +85,7 @@ public sealed class FacturaMappingsTests
             resultado.SaldoCartera);
 
         Assert.Equal(
-            450m,
+            550m,
             resultado.SaldoDisponibleGestion);
     }
 

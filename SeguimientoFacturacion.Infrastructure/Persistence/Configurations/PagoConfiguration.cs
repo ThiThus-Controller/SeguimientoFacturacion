@@ -29,15 +29,8 @@ internal sealed class PagoConfiguration :
 
                 tableBuilder.HasCheckConstraint(
                     "CK_Pagos_ValoresNoNegativos",
-                    "[ValorCruzado] >= 0 AND " +
                     "[Retencion] >= 0 AND " +
                     "[ReteIca] >= 0");
-
-                tableBuilder.HasCheckConstraint(
-                    "CK_Pagos_CuadreFinanciero",
-                    "[ValorPagado] = " +
-                    "[ValorCruzado] + " +
-                    "[Retencion] + [ReteIca]");
             });
 
         builder.HasKey(pago => pago.Id);
@@ -58,10 +51,6 @@ internal sealed class PagoConfiguration :
             .IsRequired();
 
         builder.Property(pago => pago.ValorPagado)
-            .HasPrecision(18, 2)
-            .IsRequired();
-
-        builder.Property(pago => pago.ValorCruzado)
             .HasPrecision(18, 2)
             .IsRequired();
 
@@ -93,10 +82,9 @@ internal sealed class PagoConfiguration :
             .HasMaxLength(UsuarioAuditoriaLongitudMaxima)
             .IsUnicode(false);
 
+        builder.Ignore(pago => pago.TotalRecibidoDistribuido);
         builder.Ignore(pago => pago.TotalAplicado);
-        builder.Ignore(pago => pago.TotalCruzadoAplicado);
-        builder.Ignore(pago => pago.SaldoFavor);
-        builder.Ignore(pago => pago.SaldoCruzadoPendiente);
+        builder.Ignore(pago => pago.TotalAnticipo);
 
         builder.HasOne(pago => pago.Aseguradora)
             .WithMany()

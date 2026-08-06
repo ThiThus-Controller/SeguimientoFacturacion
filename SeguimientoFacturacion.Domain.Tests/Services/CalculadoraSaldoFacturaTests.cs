@@ -115,8 +115,9 @@ public sealed class CalculadoraSaldoFacturaTests
         var aplicacion = new AplicacionPago(
             pagoId: Guid.NewGuid(),
             facturaId: factura.Id,
+            valorRecibido: 400m,
             valorAplicado: 400m,
-            valorCruzadoAplicado: 380m);
+            valorAnticipo: 0m);
 
         var resultado = _calculadora.Calcular(
             factura,
@@ -158,7 +159,7 @@ public sealed class CalculadoraSaldoFacturaTests
             resultado.ValorGlosaPendiente);
 
         Assert.Equal(
-            750m,
+            1000m,
             resultado.SaldoDisponibleGestion);
     }
 

@@ -9,6 +9,7 @@ using SeguimientoFacturacion.Application
     .Interfaces.Persistence;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Enums;
+using SeguimientoFacturacion.Domain.Services;
 
 namespace SeguimientoFacturacion.Application.Services;
 
@@ -42,6 +43,8 @@ public sealed class ServicioProcesamientoLotePagos :
 
     private readonly TimeProvider _timeProvider;
 
+    private readonly CalculadoraDistribucionPago _calculadora;
+
     /// <summary>
     /// Inicializa el servicio.
     /// </summary>
@@ -58,7 +61,8 @@ public sealed class ServicioProcesamientoLotePagos :
         IValidator<
             SolicitudProcesamientoLotePagosDto>
             validator,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        CalculadoraDistribucionPago? calculadora = null)
     {
         ArgumentNullException.ThrowIfNull(
             repositorioImportaciones);
@@ -96,6 +100,8 @@ public sealed class ServicioProcesamientoLotePagos :
         _unidadTrabajo = unidadTrabajo;
         _validator = validator;
         _timeProvider = timeProvider;
+        _calculadora = calculadora ??
+            new CalculadoraDistribucionPago();
     }
 
     /// <inheritdoc />
@@ -210,8 +216,10 @@ public sealed class ServicioProcesamientoLotePagos :
                                 pago.Recibo)))
                 .ToArray();
 
-        var pagosNuevos =
-            CrearPagos(registrosNuevos);
+        var pagosNuevos = CrearPagos(
+            registrosNuevos,
+            referenciasFacturas,
+            _calculadora);
 
         var usuarioNormalizado =
             solicitud.Usuario.Trim();
@@ -299,10 +307,10 @@ public sealed class ServicioProcesamientoLotePagos :
                     pago =>
                         pago.TotalAplicado),
 
-            ValorTotalCruzadoImportado =
+            ValorTotalAnticipoImportado =
                 pagosNuevos.Sum(
                     pago =>
-                        pago.ValorCruzado),
+                        pago.TotalAnticipo),
 
             ProcesadoPor =
                 usuarioNormalizado,
@@ -491,7 +499,7 @@ public sealed class ServicioProcesamientoLotePagos :
             pagos
                 .Where(
                     pago =>
-                        !pago.EstaCuadrado)
+                        !pago.EstaDistribuido)
                 .Select(
                     pago =>
                         pago.Recibo)
@@ -501,9 +509,8 @@ public sealed class ServicioProcesamientoLotePagos :
         {
             throw new ExcepcionLotePagosNoProcesable(
                 lote.Id,
-                "El staging contiene pagos cuyos saldos " +
-                "reportados no coinciden con sus " +
-                "aplicaciones.",
+                "El staging contiene pagos sin una " +
+                "distribución completa.",
                 pagosDescuadrados);
         }
     }
@@ -594,40 +601,26 @@ public sealed class ServicioProcesamientoLotePagos :
                 aseguradorasInconsistentes);
         }
 
-        var fechasInconsistentes =
-            aplicaciones
-                .Where(
-                    elemento =>
-                        elemento.Pago.FechaPago <
-                        indiceReferencias[
-                            elemento.Aplicacion
-                                .IdentificadorFe]
-                            .FechaFactura)
-                .Select(
-                    elemento =>
-                        elemento.Aplicacion
-                            .IdentificadorFe)
-                .Distinct(
-                    StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-        if (fechasInconsistentes.Length > 0)
-        {
-            throw new ExcepcionLotePagosNoProcesable(
-                loteId,
-                "La fecha de uno o más pagos es " +
-                "anterior a la fecha de la factura.",
-                fechasInconsistentes);
-        }
     }
 
     private static List<Pago> CrearPagos(
         IReadOnlyCollection<
-            PagoImportacionTemporal> registros)
+            PagoImportacionTemporal> registros,
+        IReadOnlyCollection<ReferenciaFacturaImportacionDto> referencias,
+        CalculadoraDistribucionPago calculadora)
     {
+        var indiceReferencias = referencias.ToDictionary(
+            referencia => referencia.FacturaId,
+            StringComparer.OrdinalIgnoreCase);
+
+        var aplicadoDuranteLote = new Dictionary<string, decimal>(
+            StringComparer.OrdinalIgnoreCase);
+
         List<Pago> pagos = [];
 
-        foreach (var registro in registros)
+        foreach (var registro in registros
+                     .OrderBy(x => x.FechaPago)
+                     .ThenBy(x => x.Aplicaciones.Min(a => a.FilaOrigen)))
         {
             var pago =
                 new Pago(
@@ -639,8 +632,6 @@ public sealed class ServicioProcesamientoLotePagos :
                         registro.Recibo,
                     valorPagado:
                         registro.ValorPagado,
-                    valorCruzado:
-                        registro.ValorCruzado,
                     retencion:
                         registro.Retencion,
                     reteIca:
@@ -649,24 +640,43 @@ public sealed class ServicioProcesamientoLotePagos :
                         registro.Notas);
 
             foreach (var aplicacionTemporal in
-                     registro.Aplicaciones)
+                     registro.Aplicaciones.OrderBy(x => x.FilaOrigen))
             {
+                var referencia =
+                    indiceReferencias[aplicacionTemporal.IdentificadorFe];
+
+                aplicadoDuranteLote.TryGetValue(
+                    referencia.FacturaId,
+                    out var aplicadoAdicional);
+
+                var distribucion = calculadora.Distribuir(
+                    referencia.EstadoId,
+                    referencia.ValorFactura,
+                    referencia.TotalNotasDebito,
+                    referencia.TotalNotasCredito,
+                    referencia.TotalPagosAplicados + aplicadoAdicional,
+                    aplicacionTemporal.ValorRecibido);
+
+                aplicadoDuranteLote[referencia.FacturaId] =
+                    aplicadoAdicional + distribucion.ValorAplicado;
+
                 var aplicacion =
                     new AplicacionPago(
                         pagoId: pago.Id,
                         facturaId:
                             aplicacionTemporal
                                 .IdentificadorFe,
+                        valorRecibido:
+                            aplicacionTemporal.ValorRecibido,
                         valorAplicado:
-                            aplicacionTemporal
-                                .ValorAplicado,
-                        valorCruzadoAplicado:
-                            aplicacionTemporal
-                                .ValorCruzadoAplicado);
+                            distribucion.ValorAplicado,
+                        valorAnticipo:
+                            distribucion.ValorAnticipo);
 
                 pago.AgregarAplicacion(aplicacion);
             }
 
+            pago.ValidarDistribucionCompleta();
             pagos.Add(pago);
         }
 

@@ -5,6 +5,7 @@ using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Services;
 using SeguimientoFacturacion.Application.Interfaces.Security;
 using SeguimientoFacturacion.Application.Services;
+using SeguimientoFacturacion.Domain.Services;
 
 namespace SeguimientoFacturacion.Application;
 
@@ -29,6 +30,8 @@ public static class DependencyInjection
 
         services.TryAddSingleton<TimeProvider>(
             TimeProvider.System);
+
+        services.TryAddSingleton<CalculadoraDistribucionPago>();
 
         services.AddTransient<
             IServicioConsultaFacturas,

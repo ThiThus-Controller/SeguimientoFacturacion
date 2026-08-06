@@ -1,0 +1,71 @@
+@model SeguimientoFacturacion.ViewModels.Importacion.ProcesamientoLotePagosViewModel
+
+@{
+    ViewData["Title"] = "Procesar pagos";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h1 class="h4 mb-0">
+                    Procesamiento definitivo de pagos
+                </h1>
+            </div>
+
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger"
+                     role="alert">
+                </div>
+
+                <p>
+                    Esta operación trasladará los pagos y sus
+                    aplicaciones desde staging hacia las tablas
+                    definitivas de cartera.
+                </p>
+
+                <p>
+                    Antes de guardar se verificarán nuevamente
+                    las facturas, sus aseguradoras, las fechas,
+                    los recibos y el cuadre de cada pago.
+                </p>
+
+                <dl class="row">
+                    <dt class="col-sm-5">
+                        Identificador del lote
+                    </dt>
+                    <dd class="col-sm-7">
+                        <code>@Model.LoteId</code>
+                    </dd>
+                </dl>
+
+                <div class="alert alert-warning" role="alert">
+                    <strong>Verificación requerida:</strong>
+                    confirme que existe una copia de seguridad
+                    reciente de la base de datos.
+                </div>
+
+                <form asp-controller="Importacion"
+                      asp-action="ProcesarPagos"
+                      method="post"
+                      onsubmit="return confirm('Esta operación importará definitivamente los pagos y sus aplicaciones. ¿Desea continuar?');">
+                    @Html.AntiForgeryToken()
+
+                    <input asp-for="LoteId" type="hidden" />
+
+                    <button type="submit"
+                            class="btn btn-danger">
+                        Procesar pagos definitivamente
+                    </button>
+
+                    <a asp-controller="Importacion"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary ms-2">
+                        Cancelar
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
