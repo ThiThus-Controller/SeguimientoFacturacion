@@ -59,7 +59,11 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("ValorCruzadoAplicado")
+                    b.Property<decimal>("ValorAnticipo")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ValorRecibido")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
@@ -74,7 +78,7 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
 
                     b.ToTable("AplicacionesPago", "cartera", t =>
                         {
-                            t.HasCheckConstraint("CK_AplicacionesPago_Valores", "[ValorAplicado] > 0 AND [ValorCruzadoAplicado] >= 0 AND [ValorCruzadoAplicado] <= [ValorAplicado]");
+                            t.HasCheckConstraint("CK_AplicacionesPago_Valores", "[ValorRecibido] > 0 AND [ValorAplicado] >= 0 AND [ValorAnticipo] >= 0 AND [ValorAplicado] + [ValorAnticipo] = [ValorRecibido]");
                         });
                 });
 
@@ -117,7 +121,11 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("ValorCruzadoAplicado")
+                    b.Property<decimal>("ValorAnticipo")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ValorRecibido")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
@@ -140,7 +148,7 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("CK_AplicacionesPagoTemporales_Fila", "[FilaOrigen] > 0");
 
-                            t.HasCheckConstraint("CK_AplicacionesPagoTemporales_Valores", "[ValorAplicado] > 0 AND [ValorCruzadoAplicado] >= 0 AND [ValorCruzadoAplicado] <= [ValorAplicado]");
+                            t.HasCheckConstraint("CK_AplicacionesPagoTemporales_Valores", "[ValorRecibido] > 0 AND [ValorAplicado] >= 0 AND [ValorAnticipo] >= 0 AND [ValorAplicado] + [ValorAnticipo] = [ValorRecibido]");
                         });
                 });
 
@@ -1200,10 +1208,6 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("ValorCruzado")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<decimal>("ValorPagado")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -1219,11 +1223,9 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
 
                     b.ToTable("Pagos", "cartera", t =>
                         {
-                            t.HasCheckConstraint("CK_Pagos_CuadreFinanciero", "[ValorPagado] = [ValorCruzado] + [Retencion] + [ReteIca]");
-
                             t.HasCheckConstraint("CK_Pagos_ValorPagado", "[ValorPagado] > 0");
 
-                            t.HasCheckConstraint("CK_Pagos_ValoresNoNegativos", "[ValorCruzado] >= 0 AND [Retencion] >= 0 AND [ReteIca] >= 0");
+                            t.HasCheckConstraint("CK_Pagos_ValoresNoNegativos", "[Retencion] >= 0 AND [ReteIca] >= 0");
                         });
                 });
 
@@ -1260,18 +1262,6 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("SaldoCruzadoPendienteReportado")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("SaldoFavorReportado")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("ValorCruzado")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<decimal>("ValorPagado")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -1289,11 +1279,9 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_PagosTemporales_Aseguradora", "[AseguradoraId] > 0");
 
-                            t.HasCheckConstraint("CK_PagosTemporales_Cuadre", "[ValorPagado] = [ValorCruzado] + [Retencion] + [ReteIca]");
-
                             t.HasCheckConstraint("CK_PagosTemporales_ValorPagado", "[ValorPagado] > 0");
 
-                            t.HasCheckConstraint("CK_PagosTemporales_Valores", "[ValorCruzado] >= 0 AND [Retencion] >= 0 AND [ReteIca] >= 0 AND [SaldoFavorReportado] >= 0 AND [SaldoCruzadoPendienteReportado] >= 0");
+                            t.HasCheckConstraint("CK_PagosTemporales_Valores", "[Retencion] >= 0 AND [ReteIca] >= 0");
                         });
                 });
 

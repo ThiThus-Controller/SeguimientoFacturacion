@@ -1,10 +1,11 @@
-﻿using SeguimientoFacturacion.Domain.Common;
+using SeguimientoFacturacion.Domain.Common;
 using SeguimientoFacturacion.Domain.Entities.Catalogos;
 
 namespace SeguimientoFacturacion.Domain.Entities;
 
 /// <summary>
-/// Representa un pago o recibo recibido de una aseguradora.
+/// Representa un recibo recibido de una aseguradora y
+/// distribuido entre cartera y anticipo.
 /// </summary>
 public sealed class Pago : EntidadAuditableBase<Guid>
 {
@@ -33,7 +34,6 @@ public sealed class Pago : EntidadAuditableBase<Guid>
         DateOnly fechaPago,
         string recibo,
         decimal valorPagado,
-        decimal valorCruzado,
         decimal retencion,
         decimal reteIca,
         string? notas = null)
@@ -44,13 +44,7 @@ public sealed class Pago : EntidadAuditableBase<Guid>
 
         FechaPago = ValidarFechaPago(fechaPago);
         Recibo = ValidarRecibo(recibo);
-
-        ValorPagado = ValidarValorPagado(
-            valorPagado);
-
-        ValorCruzado = ValidarImporteNoNegativo(
-            valorCruzado,
-            nameof(valorCruzado));
+        ValorPagado = ValidarValorPagado(valorPagado);
 
         Retencion = ValidarImporteNoNegativo(
             retencion,
@@ -59,12 +53,6 @@ public sealed class Pago : EntidadAuditableBase<Guid>
         ReteIca = ValidarImporteNoNegativo(
             reteIca,
             nameof(reteIca));
-
-        ValidarCuadreFinanciero(
-            ValorPagado,
-            ValorCruzado,
-            Retencion,
-            ReteIca);
 
         Notas = ValidarNotas(notas);
     }
@@ -86,17 +74,12 @@ public sealed class Pago : EntidadAuditableBase<Guid>
         string.Empty;
 
     /// <summary>
-    /// Obtiene el valor bruto del pago.
+    /// Obtiene el total recibido para el recibo.
     /// </summary>
     public decimal ValorPagado { get; private set; }
 
     /// <summary>
-    /// Obtiene el valor neto cruzado.
-    /// </summary>
-    public decimal ValorCruzado { get; private set; }
-
-    /// <summary>
-    /// Obtiene el valor de la retención.
+    /// Obtiene la retención informada.
     /// </summary>
     public decimal Retencion { get; private set; }
 
@@ -111,38 +94,31 @@ public sealed class Pago : EntidadAuditableBase<Guid>
     public string? Notas { get; private set; }
 
     /// <summary>
-    /// Obtiene las aplicaciones relacionadas con el pago.
+    /// Obtiene las distribuciones relacionadas.
     /// </summary>
     public IReadOnlyCollection<AplicacionPago> Aplicaciones =>
         _aplicaciones;
 
     /// <summary>
-    /// Obtiene el valor total aplicado a facturas.
+    /// Obtiene el valor distribuido entre las filas.
+    /// </summary>
+    public decimal TotalRecibidoDistribuido =>
+        _aplicaciones.Sum(
+            aplicacion => aplicacion.ValorRecibido);
+
+    /// <summary>
+    /// Obtiene el valor total aplicado a cartera.
     /// </summary>
     public decimal TotalAplicado =>
         _aplicaciones.Sum(
             aplicacion => aplicacion.ValorAplicado);
 
     /// <summary>
-    /// Obtiene el valor cruzado total aplicado.
+    /// Obtiene el total reconocido como anticipo.
     /// </summary>
-    public decimal TotalCruzadoAplicado =>
+    public decimal TotalAnticipo =>
         _aplicaciones.Sum(
-            aplicacion =>
-                aplicacion.ValorCruzadoAplicado);
-
-    /// <summary>
-    /// Obtiene el saldo bruto pendiente de aplicación.
-    /// </summary>
-    public decimal SaldoFavor =>
-        ValorPagado - TotalAplicado;
-
-    /// <summary>
-    /// Obtiene el valor cruzado pendiente de aplicación.
-    /// Este reemplaza el concepto ambiguo de saldo retención.
-    /// </summary>
-    public decimal SaldoCruzadoPendiente =>
-        ValorCruzado - TotalCruzadoAplicado;
+            aplicacion => aplicacion.ValorAnticipo);
 
     /// <summary>
     /// Obtiene la aseguradora asociada.
@@ -150,7 +126,7 @@ public sealed class Pago : EntidadAuditableBase<Guid>
     public Aseguradora? Aseguradora { get; private set; }
 
     /// <summary>
-    /// Agrega una aplicación al pago.
+    /// Agrega una distribución al pago.
     /// </summary>
     public void AgregarAplicacion(
         AplicacionPago aplicacion)
@@ -160,15 +136,14 @@ public sealed class Pago : EntidadAuditableBase<Guid>
         if (aplicacion.PagoId != Id)
         {
             throw new InvalidOperationException(
-                "La aplicación no pertenece a este pago.");
+                "La distribución no pertenece a este pago.");
         }
 
-        if (_aplicaciones.Contains(aplicacion) ||
-            _aplicaciones.Any(elemento =>
+        if (_aplicaciones.Any(elemento =>
                 elemento.Id == aplicacion.Id))
         {
             throw new InvalidOperationException(
-                "La aplicación ya se encuentra registrada.");
+                "La distribución ya se encuentra registrada.");
         }
 
         if (_aplicaciones.Any(elemento =>
@@ -178,28 +153,33 @@ public sealed class Pago : EntidadAuditableBase<Guid>
                     StringComparison.OrdinalIgnoreCase)))
         {
             throw new InvalidOperationException(
-                "El pago ya tiene una aplicación para " +
+                "El recibo ya tiene una distribución para " +
                 "la factura indicada.");
         }
 
-        if (TotalAplicado + aplicacion.ValorAplicado >
-            ValorPagado)
+        if (TotalRecibidoDistribuido +
+            aplicacion.ValorRecibido > ValorPagado)
         {
             throw new InvalidOperationException(
-                "El valor aplicado supera el saldo disponible " +
-                "del pago.");
-        }
-
-        if (TotalCruzadoAplicado +
-            aplicacion.ValorCruzadoAplicado >
-            ValorCruzado)
-        {
-            throw new InvalidOperationException(
-                "El valor cruzado aplicado supera el valor " +
-                "cruzado disponible.");
+                "La distribución supera el valor total " +
+                "recibido.");
         }
 
         _aplicaciones.Add(aplicacion);
+    }
+
+    /// <summary>
+    /// Verifica que todo el valor recibido esté distribuido.
+    /// </summary>
+    public void ValidarDistribucionCompleta()
+    {
+        if (_aplicaciones.Count == 0 ||
+            TotalRecibidoDistribuido != ValorPagado)
+        {
+            throw new InvalidOperationException(
+                "El valor recibido debe quedar completamente " +
+                "distribuido entre aplicación y anticipo.");
+        }
     }
 
     private static int ValidarAseguradoraId(
@@ -229,8 +209,7 @@ public sealed class Pago : EntidadAuditableBase<Guid>
         return fechaPago;
     }
 
-    private static string ValidarRecibo(
-        string recibo)
+    private static string ValidarRecibo(string recibo)
     {
         if (string.IsNullOrWhiteSpace(recibo))
         {
@@ -284,27 +263,7 @@ public sealed class Pago : EntidadAuditableBase<Guid>
         return valor;
     }
 
-    private static void ValidarCuadreFinanciero(
-        decimal valorPagado,
-        decimal valorCruzado,
-        decimal retencion,
-        decimal reteIca)
-    {
-        var valorCalculado =
-            valorCruzado +
-            retencion +
-            reteIca;
-
-        if (valorCalculado != valorPagado)
-        {
-            throw new ArgumentException(
-                "El valor pagado debe ser igual al valor " +
-                "cruzado más la retención y rete ICA.");
-        }
-    }
-
-    private static string? ValidarNotas(
-        string? notas)
+    private static string? ValidarNotas(string? notas)
     {
         if (string.IsNullOrWhiteSpace(notas))
         {

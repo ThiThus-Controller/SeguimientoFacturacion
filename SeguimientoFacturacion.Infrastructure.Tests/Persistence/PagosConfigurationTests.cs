@@ -43,7 +43,6 @@ public sealed class PagosConfigurationTests
         string[] propiedadesMonetarias =
         [
             nameof(Pago.ValorPagado),
-            nameof(Pago.ValorCruzado),
             nameof(Pago.Retencion),
             nameof(Pago.ReteIca)
         ];
@@ -65,15 +64,12 @@ public sealed class PagosConfigurationTests
 
         Assert.Null(
             entidad.FindProperty(
-                nameof(Pago.TotalCruzadoAplicado)));
+                nameof(Pago.TotalRecibidoDistribuido)));
 
         Assert.Null(
             entidad.FindProperty(
-                nameof(Pago.SaldoFavor)));
+                nameof(Pago.TotalAnticipo)));
 
-        Assert.Null(
-            entidad.FindProperty(
-                nameof(Pago.SaldoCruzadoPendiente)));
     }
 
     [Fact]
@@ -142,14 +138,21 @@ public sealed class PagosConfigurationTests
         Assert.Equal(18, valorAplicado.GetPrecision());
         Assert.Equal(2, valorAplicado.GetScale());
 
-        var valorCruzado =
+        var valorRecibido =
             entidad.FindProperty(
                 nameof(
-                    AplicacionPago.ValorCruzadoAplicado));
+                    AplicacionPago.ValorRecibido));
 
-        Assert.NotNull(valorCruzado);
-        Assert.Equal(18, valorCruzado.GetPrecision());
-        Assert.Equal(2, valorCruzado.GetScale());
+        Assert.NotNull(valorRecibido);
+        Assert.Equal(18, valorRecibido.GetPrecision());
+        Assert.Equal(2, valorRecibido.GetScale());
+
+        var valorAnticipo = entidad.FindProperty(
+            nameof(AplicacionPago.ValorAnticipo));
+
+        Assert.NotNull(valorAnticipo);
+        Assert.Equal(18, valorAnticipo.GetPrecision());
+        Assert.Equal(2, valorAnticipo.GetScale());
     }
 
     [Fact]

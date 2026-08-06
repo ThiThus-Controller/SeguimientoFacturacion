@@ -48,6 +48,9 @@ public static class PoliticasAutorizacion
     public const string ProcesarGlosas =
         PrefijoPermiso + PermisosSistema.Glosas.Procesar;
 
+    public const string ProcesarPagos =
+        PrefijoPermiso + PermisosSistema.Pagos.Procesar;
+
     public const string UsuariosConsultar =
         PrefijoPermiso + PermisosSistema.Usuarios.Ver;
 

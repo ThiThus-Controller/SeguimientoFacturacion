@@ -358,17 +358,6 @@ public sealed class ValidadorPagosModularClosedXml :
                 permiteVacio: false,
                 inconsistencias);
 
-        var valorCruzado =
-            ObtenerImporte(
-                hoja.Cell(
-                    fila,
-                    columnas["VALOR CRUZADO"]),
-                fila,
-                "VALOR CRUZADO",
-                debeSerPositivo: false,
-                permiteVacio: true,
-                inconsistencias);
-
         var retencion =
             ObtenerImporte(
                 hoja.Cell(
@@ -391,64 +380,6 @@ public sealed class ValidadorPagosModularClosedXml :
                 permiteVacio: true,
                 inconsistencias);
 
-        var saldoFavor =
-            ObtenerImporte(
-                hoja.Cell(
-                    fila,
-                    columnas["SALDO FAVOR"]),
-                fila,
-                "SALDO FAVOR",
-                debeSerPositivo: false,
-                permiteVacio: true,
-                inconsistencias);
-
-        var saldoCruzadoPendiente =
-            ObtenerImporte(
-                hoja.Cell(
-                    fila,
-                    columnas["SALDO RETENCION"]),
-                fila,
-                "SALDO RETENCION",
-                debeSerPositivo: false,
-                permiteVacio: true,
-                inconsistencias);
-
-        var valorAplicado =
-            ObtenerImporte(
-                hoja.Cell(
-                    fila,
-                    columnas["VR PAGADO"]),
-                fila,
-                "VR PAGADO",
-                debeSerPositivo: true,
-                permiteVacio: false,
-                inconsistencias);
-
-        var valorCruzadoAplicado =
-            ObtenerImporte(
-                hoja.Cell(
-                    fila,
-                    columnas["VR CRUZADO"]),
-                fila,
-                "VR CRUZADO",
-                debeSerPositivo: false,
-                permiteVacio: true,
-                inconsistencias);
-
-        if (valorAplicado.HasValue &&
-            valorCruzadoAplicado.HasValue &&
-            valorCruzadoAplicado.Value >
-            valorAplicado.Value)
-        {
-            AgregarError(
-                inconsistencias,
-                fila,
-                "VR CRUZADO",
-                "VR_CRUZADO_SUPERA_VR_PAGADO",
-                "El valor cruzado aplicado no puede " +
-                "superar el valor pagado aplicado.");
-        }
-
         return new FilaPago(
             NumeroFila: fila,
 
@@ -467,26 +398,11 @@ public sealed class ValidadorPagosModularClosedXml :
             ValorPagado:
                 valorPagado,
 
-            ValorCruzado:
-                valorCruzado,
-
             Retencion:
                 retencion,
 
             ReteIca:
                 reteIca,
-
-            SaldoFavor:
-                saldoFavor,
-
-            SaldoCruzadoPendiente:
-                saldoCruzadoPendiente,
-
-            ValorAplicado:
-                valorAplicado,
-
-            ValorCruzadoAplicado:
-                valorCruzadoAplicado,
 
             Notas:
                 NormalizarTextoOpcional(notas));
@@ -564,18 +480,6 @@ public sealed class ValidadorPagosModularClosedXml :
                     "a la aseguradora de la factura.");
             }
 
-            if (fila.FechaPago.HasValue &&
-                fila.FechaPago.Value <
-                factura.FechaFactura)
-            {
-                AgregarError(
-                    inconsistencias,
-                    fila.NumeroFila,
-                    "FECHA DE PAGO",
-                    "FECHA_PAGO_ANTERIOR_FACTURA",
-                    "La fecha del pago no puede ser " +
-                    "anterior a la fecha de la factura.");
-            }
         }
     }
 
@@ -609,17 +513,9 @@ public sealed class ValidadorPagosModularClosedXml :
                 filasPago,
                 inconsistencias);
 
-            var datosCoherentes =
-                ValidarDatosCompartidos(
-                    filasPago,
-                    inconsistencias);
-
-            if (datosCoherentes)
-            {
-                ValidarCuadreFinanciero(
-                    filasPago,
-                    inconsistencias);
-            }
+            ValidarDatosCompartidos(
+                filasPago,
+                inconsistencias);
         }
     }
 
@@ -639,54 +535,6 @@ public sealed class ValidadorPagosModularClosedXml :
                     fila.FechaPago,
                     fila.NumeroFila,
                     "FECHA DE PAGO",
-                    inconsistencias);
-
-            esCoherente &=
-                ValidarDatoCompartido(
-                    referencia.ValorPagado ==
-                    fila.ValorPagado,
-                    fila.NumeroFila,
-                    "VALOR PAGADO",
-                    inconsistencias);
-
-            esCoherente &=
-                ValidarDatoCompartido(
-                    referencia.ValorCruzado ==
-                    fila.ValorCruzado,
-                    fila.NumeroFila,
-                    "VALOR CRUZADO",
-                    inconsistencias);
-
-            esCoherente &=
-                ValidarDatoCompartido(
-                    referencia.Retencion ==
-                    fila.Retencion,
-                    fila.NumeroFila,
-                    "RETENCION",
-                    inconsistencias);
-
-            esCoherente &=
-                ValidarDatoCompartido(
-                    referencia.ReteIca ==
-                    fila.ReteIca,
-                    fila.NumeroFila,
-                    "RETE ICA",
-                    inconsistencias);
-
-            esCoherente &=
-                ValidarDatoCompartido(
-                    referencia.SaldoFavor ==
-                    fila.SaldoFavor,
-                    fila.NumeroFila,
-                    "SALDO FAVOR",
-                    inconsistencias);
-
-            esCoherente &=
-                ValidarDatoCompartido(
-                    referencia.SaldoCruzadoPendiente ==
-                    fila.SaldoCruzadoPendiente,
-                    fila.NumeroFila,
-                    "SALDO RETENCION",
                     inconsistencias);
 
             esCoherente &=
@@ -757,114 +605,6 @@ public sealed class ValidadorPagosModularClosedXml :
                     "El recibo contiene más de una " +
                     "aplicación para la misma factura.");
             }
-        }
-    }
-
-    private static void ValidarCuadreFinanciero(
-        IReadOnlyCollection<FilaPago> filas,
-        ICollection<InconsistenciaImportacionDto>
-            inconsistencias)
-    {
-        var referencia = filas.First();
-
-        if (!referencia.ValorPagado.HasValue ||
-            !referencia.ValorCruzado.HasValue ||
-            !referencia.Retencion.HasValue ||
-            !referencia.ReteIca.HasValue ||
-            !referencia.SaldoFavor.HasValue ||
-            !referencia.SaldoCruzadoPendiente.HasValue ||
-            filas.Any(
-                fila =>
-                    !fila.ValorAplicado.HasValue ||
-                    !fila.ValorCruzadoAplicado.HasValue))
-        {
-            return;
-        }
-
-        var valorPagado =
-            referencia.ValorPagado.Value;
-
-        var valorCruzado =
-            referencia.ValorCruzado.Value;
-
-        var valorPagadoCalculado =
-            valorCruzado +
-            referencia.Retencion.Value +
-            referencia.ReteIca.Value;
-
-        var totalAplicado =
-            filas.Sum(
-                fila =>
-                    fila.ValorAplicado!.Value);
-
-        var totalCruzadoAplicado =
-            filas.Sum(
-                fila =>
-                    fila.ValorCruzadoAplicado!.Value);
-
-        var saldoFavorCalculado =
-            valorPagado -
-            totalAplicado;
-
-        var saldoCruzadoCalculado =
-            valorCruzado -
-            totalCruzadoAplicado;
-
-        if (valorPagado != valorPagadoCalculado)
-        {
-            AgregarError(
-                inconsistencias,
-                referencia.NumeroFila,
-                "VALOR PAGADO",
-                "PAGO_DESCUADRADO",
-                "El valor pagado debe ser igual al valor " +
-                "cruzado más la retención y rete ICA.");
-        }
-
-        if (totalAplicado > valorPagado)
-        {
-            AgregarError(
-                inconsistencias,
-                referencia.NumeroFila,
-                "VR PAGADO",
-                "APLICACIONES_SUPERAN_VALOR_PAGADO",
-                "La suma de VR PAGADO supera el valor " +
-                "total del pago.");
-        }
-
-        if (totalCruzadoAplicado > valorCruzado)
-        {
-            AgregarError(
-                inconsistencias,
-                referencia.NumeroFila,
-                "VR CRUZADO",
-                "APLICACIONES_SUPERAN_VALOR_CRUZADO",
-                "La suma de VR CRUZADO supera el valor " +
-                "cruzado disponible.");
-        }
-
-        if (referencia.SaldoFavor.Value !=
-            saldoFavorCalculado)
-        {
-            AgregarError(
-                inconsistencias,
-                referencia.NumeroFila,
-                "SALDO FAVOR",
-                "SALDO_FAVOR_NO_COINCIDE",
-                "El saldo a favor informado no coincide " +
-                "con el saldo calculado.");
-        }
-
-        if (referencia.SaldoCruzadoPendiente.Value !=
-            saldoCruzadoCalculado)
-        {
-            AgregarError(
-                inconsistencias,
-                referencia.NumeroFila,
-                "SALDO RETENCION",
-                "SALDO_RETENCION_NO_COINCIDE",
-                "El saldo de retención informado no " +
-                "coincide con el saldo cruzado calculado.");
         }
     }
 
@@ -1374,12 +1114,7 @@ public sealed class ValidadorPagosModularClosedXml :
         DateOnly? FechaPago,
         string Recibo,
         decimal? ValorPagado,
-        decimal? ValorCruzado,
         decimal? Retencion,
         decimal? ReteIca,
-        decimal? SaldoFavor,
-        decimal? SaldoCruzadoPendiente,
-        decimal? ValorAplicado,
-        decimal? ValorCruzadoAplicado,
         string? Notas);
 }

@@ -1,13 +1,12 @@
-﻿using SeguimientoFacturacion.Domain.Enums;
+using SeguimientoFacturacion.Domain.Enums;
 
-namespace SeguimientoFacturacion.Application
-    .DTOs.Importacion;
+namespace SeguimientoFacturacion.ViewModels.Importacion;
 
 /// <summary>
-/// Contiene el resultado del procesamiento definitivo
-/// de un lote de pagos.
+/// Representa el resultado web del procesamiento
+/// definitivo de pagos y sus aplicaciones.
 /// </summary>
-public sealed record ResultadoProcesamientoLotePagosDto
+public sealed class ResultadoProcesamientoLotePagosViewModel
 {
     /// <summary>
     /// Obtiene el identificador del lote procesado.
@@ -20,13 +19,12 @@ public sealed record ResultadoProcesamientoLotePagosDto
     public EstadoImportacion Estado { get; init; }
 
     /// <summary>
-    /// Obtiene el total de pagos encontrados en staging.
+    /// Obtiene el total inicial de pagos en staging.
     /// </summary>
     public int TotalPagosStaging { get; init; }
 
     /// <summary>
-    /// Obtiene el total de aplicaciones encontradas
-    /// en staging.
+    /// Obtiene el total inicial de aplicaciones en staging.
     /// </summary>
     public int TotalAplicacionesStaging { get; init; }
 
@@ -41,13 +39,12 @@ public sealed record ResultadoProcesamientoLotePagosDto
     public int TotalAplicacionesImportadas { get; init; }
 
     /// <summary>
-    /// Obtiene los pagos omitidos porque ya existían.
+    /// Obtiene los pagos ya existentes que fueron omitidos.
     /// </summary>
     public int TotalPagosOmitidos { get; init; }
 
     /// <summary>
-    /// Obtiene las aplicaciones omitidas junto con
-    /// pagos que ya existían.
+    /// Obtiene las aplicaciones omitidas junto con sus pagos.
     /// </summary>
     public int TotalAplicacionesOmitidas { get; init; }
 
@@ -57,7 +54,7 @@ public sealed record ResultadoProcesamientoLotePagosDto
     public decimal ValorTotalPagadoImportado { get; init; }
 
     /// <summary>
-    /// Obtiene el valor bruto total aplicado.
+    /// Obtiene el valor bruto total aplicado a facturas.
     /// </summary>
     public decimal ValorTotalAplicadoImportado { get; init; }
 
@@ -67,7 +64,7 @@ public sealed record ResultadoProcesamientoLotePagosDto
     public decimal ValorTotalAnticipoImportado { get; init; }
 
     /// <summary>
-    /// Obtiene el usuario responsable.
+    /// Obtiene el usuario responsable del procesamiento.
     /// </summary>
     public required string ProcesadoPor { get; init; }
 

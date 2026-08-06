@@ -1,51 +1,40 @@
-﻿namespace SeguimientoFacturacion.Application.DTOs.Importacion;
+namespace SeguimientoFacturacion.Application.DTOs.Importacion;
 
 /// <summary>
-/// Representa la aplicación de una parte de un pago
-/// sobre una factura específica, preparada desde una
-/// plantilla modular.
+/// Representa la distribución calculada de una fila de pago.
 /// </summary>
-public sealed class
-    AplicacionPagoPreparadaImportacionDto
+public sealed class AplicacionPagoPreparadaImportacionDto
 {
-    /// <summary>
-    /// Obtiene el nombre de la hoja de origen.
-    /// </summary>
     public required string HojaOrigen { get; init; }
 
-    /// <summary>
-    /// Obtiene el número de fila de origen.
-    /// </summary>
     public required int FilaOrigen { get; init; }
 
-    /// <summary>
-    /// Obtiene el identificador FE de la factura.
-    /// </summary>
     public required string IdentificadorFe { get; init; }
 
-    /// <summary>
-    /// Obtiene el prefijo de la factura.
-    /// </summary>
     public required string Prefijo { get; init; }
 
-    /// <summary>
-    /// Obtiene el número de la factura.
-    /// </summary>
     public required string NumeroFactura { get; init; }
 
     /// <summary>
-    /// Obtiene el valor bruto aplicado a la factura.
-    /// Corresponde a la columna VR PAGADO.
+    /// Obtiene el importe recibido para la factura indicada.
+    /// </summary>
+    public required decimal ValorRecibido { get; init; }
+
+    /// <summary>
+    /// Obtiene la porción aplicada a cartera.
     /// </summary>
     public required decimal ValorAplicado { get; init; }
 
     /// <summary>
-    /// Obtiene el valor cruzado aplicado a la factura.
-    /// Corresponde a la columna VR CRUZADO.
+    /// Obtiene la porción registrada como anticipo.
     /// </summary>
-    public required decimal ValorCruzadoAplicado
-    {
-        get;
-        init;
-    }
+    public required decimal ValorAnticipo { get; init; }
+
+    public decimal SaldoAntes { get; init; }
+
+    public decimal SaldoDespues { get; init; }
+
+    public bool FacturaAnulada { get; init; }
+
+    public bool FacturaMuertaPorNotaCredito { get; init; }
 }

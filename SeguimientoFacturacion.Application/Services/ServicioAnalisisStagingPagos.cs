@@ -26,10 +26,6 @@ public sealed class ServicioAnalisisStagingPagos :
         CodigoTotalAplicacionesInconsistente =
             "TOTAL_APLICACIONES_PAGO_INCONSISTENTE";
 
-    private const string
-        CodigoPagosDescuadrados =
-            "PAGOS_DESCUADRADOS_PREPARACION";
-
     private readonly IValidadorPagosModular
         _validador;
 
@@ -235,14 +231,13 @@ public sealed class ServicioAnalisisStagingPagos :
                 "durante la validación.");
         }
 
-        if (preparacion.TotalPagosDescuadrados > 0)
+        if (!preparacion.TodosDistribuidos)
         {
             AgregarErrorGeneral(
                 inconsistencias,
-                CodigoPagosDescuadrados,
-                "La preparación contiene pagos cuyos " +
-                "valores o saldos reportados no coinciden " +
-                "con los valores calculados.");
+                "PAGOS_NO_DISTRIBUIDOS",
+                "La preparación no distribuyó completamente " +
+                "los valores recibidos entre cartera y anticipos.");
         }
 
         if (inconsistencias.Count ==
@@ -282,18 +277,10 @@ public sealed class ServicioAnalisisStagingPagos :
                         pagoPreparado.Recibo,
                     valorPagado:
                         pagoPreparado.ValorPagado,
-                    valorCruzado:
-                        pagoPreparado.ValorCruzado,
                     retencion:
                         pagoPreparado.Retencion,
                     reteIca:
                         pagoPreparado.ReteIca,
-                    saldoFavorReportado:
-                        pagoPreparado
-                            .SaldoFavorReportado,
-                    saldoCruzadoPendienteReportado:
-                        pagoPreparado
-                            .SaldoCruzadoPendienteReportado,
                     notas:
                         pagoPreparado.Notas);
 
@@ -316,18 +303,19 @@ public sealed class ServicioAnalisisStagingPagos :
                         numeroFactura:
                             aplicacionPreparada
                                 .NumeroFactura,
+                        valorRecibido:
+                            aplicacionPreparada.ValorRecibido,
                         valorAplicado:
                             aplicacionPreparada
                                 .ValorAplicado,
-                        valorCruzadoAplicado:
-                            aplicacionPreparada
-                                .ValorCruzadoAplicado);
+                        valorAnticipo:
+                            aplicacionPreparada.ValorAnticipo);
 
                 pagoTemporal.AgregarAplicacion(
                     aplicacionTemporal);
             }
 
-            pagoTemporal.ValidarCuadreAplicaciones();
+            pagoTemporal.ValidarDistribucionCompleta();
             pagosTemporales.Add(pagoTemporal);
         }
 
@@ -392,10 +380,10 @@ public sealed class ServicioAnalisisStagingPagos :
                     pago =>
                         pago.ValorPagado),
 
-            ValorTotalCruzado =
+            ValorTotalAplicado =
                 pagos.Sum(
                     pago =>
-                        pago.ValorCruzado),
+                        pago.TotalAplicado),
 
             ValorTotalRetencion =
                 pagos.Sum(
@@ -407,16 +395,10 @@ public sealed class ServicioAnalisisStagingPagos :
                     pago =>
                         pago.ReteIca),
 
-            SaldoFavorTotal =
+            ValorTotalAnticipo =
                 pagos.Sum(
                     pago =>
-                        pago.SaldoFavorReportado),
-
-            SaldoCruzadoPendienteTotal =
-                pagos.Sum(
-                    pago =>
-                        pago
-                            .SaldoCruzadoPendienteReportado)
+                        pago.TotalAnticipo)
         };
     }
 

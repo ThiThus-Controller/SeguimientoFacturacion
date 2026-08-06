@@ -151,16 +151,12 @@ public sealed class
             pago.TotalAplicado);
 
         Assert.Equal(
-            500m,
-            pago.TotalCruzadoAplicado);
+            1000m,
+            pago.TotalRecibidoDistribuido);
 
         Assert.Equal(
             400m,
-            pago.SaldoFavor);
-
-        Assert.Equal(
-            300m,
-            pago.SaldoCruzadoPendiente);
+            pago.TotalAnticipo);
     }
 
     [Fact]
@@ -284,7 +280,6 @@ public sealed class
                     new DateOnly(2026, 7, 20),
                 recibo: recibo,
                 valorPagado: 1000m,
-                valorCruzado: 800m,
                 retencion: 150m,
                 reteIca: 50m,
                 notas: "Pago de prueba");
@@ -297,8 +292,9 @@ public sealed class
             new AplicacionPago(
                 pagoId: pago.Id,
                 facturaId: facturaId,
+                valorRecibido: 1000m,
                 valorAplicado: 600m,
-                valorCruzadoAplicado: 500m);
+                valorAnticipo: 400m);
 
         aplicacion.RegistrarCreacion(
             FechaAuditoria,

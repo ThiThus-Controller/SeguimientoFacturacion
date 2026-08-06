@@ -1,10 +1,9 @@
-﻿using SeguimientoFacturacion.Domain.Common;
+using SeguimientoFacturacion.Domain.Common;
 
 namespace SeguimientoFacturacion.Domain.Entities;
 
 /// <summary>
-/// Representa la aplicación temporal de un pago
-/// sobre una factura específica.
+/// Representa la distribución temporal de una fila de pago.
 /// </summary>
 public sealed class AplicacionPagoImportacionTemporal :
     EntidadBase<Guid>
@@ -19,7 +18,7 @@ public sealed class AplicacionPagoImportacionTemporal :
     }
 
     /// <summary>
-    /// Inicializa una aplicación temporal de pago.
+    /// Inicializa una distribución temporal.
     /// </summary>
     public AplicacionPagoImportacionTemporal(
         Guid pagoImportacionTemporalId,
@@ -28,115 +27,91 @@ public sealed class AplicacionPagoImportacionTemporal :
         string identificadorFe,
         string prefijo,
         string numeroFactura,
+        decimal valorRecibido,
         decimal valorAplicado,
-        decimal valorCruzadoAplicado)
+        decimal valorAnticipo)
         : base(Guid.NewGuid())
     {
         PagoImportacionTemporalId =
             ValidarPagoImportacionTemporalId(
                 pagoImportacionTemporalId);
 
-        HojaOrigen =
-            ValidarTextoRequerido(
-                hojaOrigen,
-                nameof(hojaOrigen),
-                HojaOrigenLongitudMaxima);
+        HojaOrigen = ValidarTextoRequerido(
+            hojaOrigen,
+            nameof(hojaOrigen),
+            HojaOrigenLongitudMaxima);
 
-        FilaOrigen =
-            ValidarFilaOrigen(
-                filaOrigen);
+        FilaOrigen = ValidarFilaOrigen(filaOrigen);
 
-        IdentificadorFe =
-            ValidarTextoRequerido(
-                identificadorFe,
-                nameof(identificadorFe),
-                Factura.IdLongitudMaxima,
-                convertirMayusculas: true);
+        IdentificadorFe = ValidarTextoRequerido(
+            identificadorFe,
+            nameof(identificadorFe),
+            Factura.IdLongitudMaxima,
+            convertirMayusculas: true);
 
-        Prefijo =
-            ValidarTextoRequerido(
-                prefijo,
-                nameof(prefijo),
-                Factura.PrefijoLongitudMaxima,
-                convertirMayusculas: true);
+        Prefijo = ValidarTextoRequerido(
+            prefijo,
+            nameof(prefijo),
+            Factura.PrefijoLongitudMaxima,
+            convertirMayusculas: true);
 
-        NumeroFactura =
-            ValidarTextoRequerido(
-                numeroFactura,
-                nameof(numeroFactura),
-                Factura.NumeroLongitudMaxima,
-                convertirMayusculas: true);
+        NumeroFactura = ValidarTextoRequerido(
+            numeroFactura,
+            nameof(numeroFactura),
+            Factura.NumeroLongitudMaxima,
+            convertirMayusculas: true);
 
         ValidarCorrespondenciaFactura(
             IdentificadorFe,
             Prefijo,
             NumeroFactura);
 
-        ValorAplicado =
-            ValidarValorAplicado(
-                valorAplicado);
+        ValorRecibido = ValidarValorRecibido(
+            valorRecibido);
 
-        ValorCruzadoAplicado =
-            ValidarValorCruzadoAplicado(
-                valorCruzadoAplicado,
-                ValorAplicado);
+        ValorAplicado = ValidarImporteNoNegativo(
+            valorAplicado,
+            nameof(valorAplicado));
+
+        ValorAnticipo = ValidarImporteNoNegativo(
+            valorAnticipo,
+            nameof(valorAnticipo));
+
+        if (ValorAplicado + ValorAnticipo !=
+            ValorRecibido)
+        {
+            throw new ArgumentException(
+                "El valor aplicado más el anticipo debe " +
+                "coincidir con el valor recibido.");
+        }
     }
 
-    /// <summary>
-    /// Obtiene el identificador del pago temporal.
-    /// </summary>
     public Guid PagoImportacionTemporalId
     {
         get;
         private set;
     }
 
-    /// <summary>
-    /// Obtiene el nombre de la hoja de origen.
-    /// </summary>
     public string HojaOrigen { get; private set; } =
         string.Empty;
 
-    /// <summary>
-    /// Obtiene el número de fila de origen.
-    /// </summary>
     public int FilaOrigen { get; private set; }
 
-    /// <summary>
-    /// Obtiene el identificador FE de la factura.
-    /// </summary>
     public string IdentificadorFe { get; private set; } =
         string.Empty;
 
-    /// <summary>
-    /// Obtiene el prefijo de la factura.
-    /// </summary>
     public string Prefijo { get; private set; } =
         string.Empty;
 
-    /// <summary>
-    /// Obtiene el número de factura.
-    /// </summary>
     public string NumeroFactura { get; private set; } =
         string.Empty;
 
-    /// <summary>
-    /// Obtiene el valor bruto aplicado.
-    /// </summary>
+    public decimal ValorRecibido { get; private set; }
+
     public decimal ValorAplicado { get; private set; }
 
-    /// <summary>
-    /// Obtiene el valor cruzado aplicado.
-    /// </summary>
-    public decimal ValorCruzadoAplicado
-    {
-        get;
-        private set;
-    }
+    public decimal ValorAnticipo { get; private set; }
 
-    /// <summary>
-    /// Obtiene el pago temporal asociado.
-    /// </summary>
     public PagoImportacionTemporal?
         PagoImportacionTemporal
     {
@@ -144,9 +119,8 @@ public sealed class AplicacionPagoImportacionTemporal :
         private set;
     }
 
-    private static Guid
-        ValidarPagoImportacionTemporalId(
-            Guid pagoImportacionTemporalId)
+    private static Guid ValidarPagoImportacionTemporalId(
+        Guid pagoImportacionTemporalId)
     {
         if (pagoImportacionTemporalId == Guid.Empty)
         {
@@ -159,8 +133,7 @@ public sealed class AplicacionPagoImportacionTemporal :
         return pagoImportacionTemporalId;
     }
 
-    private static int ValidarFilaOrigen(
-        int filaOrigen)
+    private static int ValidarFilaOrigen(int filaOrigen)
     {
         if (filaOrigen <= 0)
         {
@@ -173,44 +146,33 @@ public sealed class AplicacionPagoImportacionTemporal :
         return filaOrigen;
     }
 
-    private static decimal ValidarValorAplicado(
-        decimal valorAplicado)
+    private static decimal ValidarValorRecibido(
+        decimal valorRecibido)
     {
-        if (valorAplicado <= decimal.Zero)
+        if (valorRecibido <= decimal.Zero)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(valorAplicado),
-                valorAplicado,
-                "El valor aplicado debe ser mayor que cero.");
+                nameof(valorRecibido),
+                valorRecibido,
+                "El valor recibido debe ser mayor que cero.");
         }
 
-        return valorAplicado;
+        return valorRecibido;
     }
 
-    private static decimal
-        ValidarValorCruzadoAplicado(
-            decimal valorCruzadoAplicado,
-            decimal valorAplicado)
+    private static decimal ValidarImporteNoNegativo(
+        decimal valor,
+        string nombreParametro)
     {
-        if (valorCruzadoAplicado < decimal.Zero)
+        if (valor < decimal.Zero)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(valorCruzadoAplicado),
-                valorCruzadoAplicado,
-                "El valor cruzado aplicado no puede ser " +
-                "negativo.");
+                nombreParametro,
+                valor,
+                "El importe no puede ser negativo.");
         }
 
-        if (valorCruzadoAplicado > valorAplicado)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(valorCruzadoAplicado),
-                valorCruzadoAplicado,
-                "El valor cruzado aplicado no puede " +
-                "superar el valor aplicado.");
-        }
-
-        return valorCruzadoAplicado;
+        return valor;
     }
 
     private static void ValidarCorrespondenciaFactura(
@@ -218,18 +180,14 @@ public sealed class AplicacionPagoImportacionTemporal :
         string prefijo,
         string numeroFactura)
     {
-        var identificadorEsperado =
-            $"{prefijo}{numeroFactura}";
-
         if (!string.Equals(
                 identificadorFe,
-                identificadorEsperado,
+                $"{prefijo}{numeroFactura}",
                 StringComparison.OrdinalIgnoreCase))
         {
             throw new ArgumentException(
                 "El identificador FE debe coincidir con " +
-                "la combinación del prefijo y el número " +
-                "de factura.",
+                "el prefijo y el número de factura.",
                 nameof(identificadorFe));
         }
     }
@@ -247,8 +205,7 @@ public sealed class AplicacionPagoImportacionTemporal :
                 nombreParametro);
         }
 
-        var valorNormalizado =
-            valor.Trim();
+        var valorNormalizado = valor.Trim();
 
         if (convertirMayusculas)
         {

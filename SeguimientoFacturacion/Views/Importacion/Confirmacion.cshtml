@@ -20,6 +20,13 @@
             User,
             PoliticasAutorizacion.ProcesarGlosas))
         .Succeeded;
+
+    var puedeProcesarPagos =
+        Model.Tipo == TipoImportacion.Pagos &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.ProcesarPagos))
+        .Succeeded;
 }
 
 <div class="row justify-content-center">
@@ -123,6 +130,15 @@
                    asp-route-loteId="@Model.LoteId"
                    class="btn btn-danger">
                     Procesar glosas definitivamente
+                </a>
+            }
+            else if (puedeProcesarPagos)
+            {
+                <a asp-controller="Importacion"
+                   asp-action="PrepararProcesamientoPagos"
+                   asp-route-loteId="@Model.LoteId"
+                   class="btn btn-danger">
+                    Procesar pagos definitivamente
                 </a>
             }
             else if (Model.Tipo != TipoImportacion.Facturas)

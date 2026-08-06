@@ -207,23 +207,7 @@ public sealed class
                     nameof(pagos));
             }
 
-            if (pago.TotalAplicado >
-                pago.ValorPagado)
-            {
-                throw new ArgumentException(
-                    "El valor aplicado supera el valor " +
-                    "disponible del pago.",
-                    nameof(pagos));
-            }
-
-            if (pago.TotalCruzadoAplicado >
-                pago.ValorCruzado)
-            {
-                throw new ArgumentException(
-                    "El valor cruzado aplicado supera el " +
-                    "valor cruzado disponible.",
-                    nameof(pagos));
-            }
+            pago.ValidarDistribucionCompleta();
         }
     }
 }

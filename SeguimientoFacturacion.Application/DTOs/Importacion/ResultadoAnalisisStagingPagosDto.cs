@@ -46,9 +46,9 @@ public sealed record ResultadoAnalisisStagingPagosDto
     public decimal ValorTotalPagado { get; init; }
 
     /// <summary>
-    /// Obtiene el valor cruzado total.
+    /// Obtiene el valor total aplicado a cartera.
     /// </summary>
-    public decimal ValorTotalCruzado { get; init; }
+    public decimal ValorTotalAplicado { get; init; }
 
     /// <summary>
     /// Obtiene el valor total de retenciones.
@@ -61,17 +61,7 @@ public sealed record ResultadoAnalisisStagingPagosDto
     public decimal ValorTotalReteIca { get; init; }
 
     /// <summary>
-    /// Obtiene el saldo a favor total reportado.
+    /// Obtiene el valor total registrado como anticipo.
     /// </summary>
-    public decimal SaldoFavorTotal { get; init; }
-
-    /// <summary>
-    /// Obtiene el saldo cruzado pendiente total
-    /// reportado.
-    /// </summary>
-    public decimal SaldoCruzadoPendienteTotal
-    {
-        get;
-        init;
-    }
+    public decimal ValorTotalAnticipo { get; init; }
 }

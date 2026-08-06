@@ -34,6 +34,12 @@ public sealed class ImportacionControllerAutorizacionTests
             parametro =>
                 parametro.ParameterType ==
                     typeof(IServicioProcesamientoLoteGlosas));
+
+        Assert.Contains(
+            constructor.GetParameters(),
+            parametro =>
+                parametro.ParameterType ==
+                    typeof(IServicioProcesamientoLotePagos));
     }
 
     [Theory]
@@ -64,6 +70,12 @@ public sealed class ImportacionControllerAutorizacionTests
     [InlineData(
         nameof(ImportacionController.ProcesarGlosas),
         PoliticasAutorizacion.ProcesarGlosas)]
+    [InlineData(
+        nameof(ImportacionController.PrepararProcesamientoPagos),
+        PoliticasAutorizacion.ProcesarPagos)]
+    [InlineData(
+        nameof(ImportacionController.ProcesarPagos),
+        PoliticasAutorizacion.ProcesarPagos)]
     public void Accion_DebeExigirPoliticaEsperada(
         string nombreAccion,
         string politicaEsperada)
@@ -83,6 +95,7 @@ public sealed class ImportacionControllerAutorizacionTests
     [InlineData(nameof(ImportacionController.ConfirmarLote))]
     [InlineData(nameof(ImportacionController.ProcesarNotasFactura))]
     [InlineData(nameof(ImportacionController.ProcesarGlosas))]
+    [InlineData(nameof(ImportacionController.ProcesarPagos))]
     public void AccionPost_DebeValidarAntiforgery(
         string nombreAccion)
     {

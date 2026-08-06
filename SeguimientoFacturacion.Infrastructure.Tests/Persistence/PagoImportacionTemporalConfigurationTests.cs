@@ -68,7 +68,15 @@ public sealed class
             pago.FindProperty(
                 nameof(
                     PagoImportacionTemporal
-                        .EstaCuadrado)));
+                        .EstaDistribuido)));
+
+        Assert.NotNull(
+            aplicacion.FindProperty(
+                nameof(AplicacionPagoImportacionTemporal.ValorRecibido)));
+
+        Assert.NotNull(
+            aplicacion.FindProperty(
+                nameof(AplicacionPagoImportacionTemporal.ValorAnticipo)));
     }
 
     [Fact]
@@ -215,10 +223,6 @@ public sealed class
 
         Assert.Contains(
             "CK_PagosTemporales_Valores",
-            restriccionesPago);
-
-        Assert.Contains(
-            "CK_PagosTemporales_Cuadre",
             restriccionesPago);
 
         var restriccionesAplicacion =

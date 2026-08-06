@@ -11,8 +11,9 @@ namespace SeguimientoFacturacion.Domain.Services;
 public sealed class CalculadoraSaldoFactura
 {
     /// <summary>
-    /// Calcula el saldo de una factura utilizando sus notas,
-    /// pagos aplicados y glosas.
+    /// Calcula el saldo de una factura utilizando sus notas
+    /// y pagos aplicados. Las glosas son informativas y no
+    /// disminuyen la deuda.
     /// </summary>
     public ResumenSaldoFactura Calcular(
         Factura factura,
@@ -70,9 +71,7 @@ public sealed class CalculadoraSaldoFactura
                 .Sum(glosa =>
                     glosa.ValorPendiente);
 
-        var saldoDisponibleGestion =
-            saldoCartera -
-            valorGlosaPendiente;
+        var saldoDisponibleGestion = saldoCartera;
 
         return new ResumenSaldoFactura(
             valorFactura: factura.Valor,

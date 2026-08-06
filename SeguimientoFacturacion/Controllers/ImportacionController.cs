@@ -49,6 +49,9 @@ public sealed class ImportacionController : Controller
     private readonly IServicioProcesamientoLoteGlosas
         _servicioProcesamientoGlosas;
 
+    private readonly IServicioProcesamientoLotePagos
+        _servicioProcesamientoPagos;
+
     private readonly IAuthorizationService
         _servicioAutorizacion;
 
@@ -80,6 +83,8 @@ public sealed class ImportacionController : Controller
             servicioProcesamientoNotas,
         IServicioProcesamientoLoteGlosas
             servicioProcesamientoGlosas,
+        IServicioProcesamientoLotePagos
+            servicioProcesamientoPagos,
         IAuthorizationService servicioAutorizacion,
         IContextoUsuarioActual contextoUsuarioActual,
         ILogger<ImportacionController> logger)
@@ -112,6 +117,9 @@ public sealed class ImportacionController : Controller
             servicioProcesamientoGlosas);
 
         ArgumentNullException.ThrowIfNull(
+            servicioProcesamientoPagos);
+
+        ArgumentNullException.ThrowIfNull(
             servicioAutorizacion);
 
         ArgumentNullException.ThrowIfNull(
@@ -136,6 +144,9 @@ public sealed class ImportacionController : Controller
 
         _servicioProcesamientoGlosas =
             servicioProcesamientoGlosas;
+
+        _servicioProcesamientoPagos =
+            servicioProcesamientoPagos;
 
         _servicioAutorizacion = servicioAutorizacion;
         _contextoUsuarioActual = contextoUsuarioActual;
@@ -911,6 +922,161 @@ public sealed class ImportacionController : Controller
         }
     }
 
+    /// <summary>
+    /// Muestra la autorización final para procesar
+    /// un lote confirmado de pagos y aplicaciones.
+    /// </summary>
+    [HttpGet("pagos/{loteId:guid}/procesar")]
+    [Authorize(
+        Policy = PoliticasAutorizacion.ProcesarPagos)]
+    public IActionResult PrepararProcesamientoPagos(
+        Guid loteId)
+    {
+        return View(
+            "ProcesarPagos",
+            new ProcesamientoLotePagosViewModel
+            {
+                LoteId = loteId
+            });
+    }
+
+    /// <summary>
+    /// Procesa definitivamente un lote confirmado
+    /// de pagos y sus aplicaciones a facturas.
+    /// </summary>
+    [HttpPost("pagos/procesar")]
+    [Authorize(
+        Policy = PoliticasAutorizacion.ProcesarPagos)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ProcesarPagos(
+        ProcesamientoLotePagosViewModel modelo,
+        CancellationToken cancellationToken)
+    {
+        if (modelo.LoteId == Guid.Empty)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                "El identificador del lote es obligatorio.");
+
+            return View("ProcesarPagos", modelo);
+        }
+
+        var identidad =
+            _contextoUsuarioActual.ObtenerRequerido();
+
+        var usuario = identidad.NombreUsuario;
+
+        try
+        {
+            var resultado =
+                await _servicioProcesamientoPagos
+                    .ProcesarAsync(
+                        new SolicitudProcesamientoLotePagosDto
+                        {
+                            LoteId = modelo.LoteId,
+                            Usuario = usuario
+                        },
+                        cancellationToken);
+
+            _logger.LogInformation(
+                "Lote de pagos {LoteId} procesado. " +
+                "Pagos: {Pagos}; aplicaciones: " +
+                "{Aplicaciones}; usuario: {Usuario}; " +
+                "UsuarioId: {UsuarioId}.",
+                resultado.LoteId,
+                resultado.TotalPagosImportados,
+                resultado.TotalAplicacionesImportadas,
+                usuario,
+                identidad.UsuarioId);
+
+            return View(
+                "ProcesamientoPagosCompletado",
+                new ResultadoProcesamientoLotePagosViewModel
+                {
+                    LoteId = resultado.LoteId,
+                    Estado = resultado.Estado,
+                    TotalPagosStaging =
+                        resultado.TotalPagosStaging,
+                    TotalAplicacionesStaging =
+                        resultado.TotalAplicacionesStaging,
+                    TotalPagosImportados =
+                        resultado.TotalPagosImportados,
+                    TotalAplicacionesImportadas =
+                        resultado.TotalAplicacionesImportadas,
+                    TotalPagosOmitidos =
+                        resultado.TotalPagosOmitidos,
+                    TotalAplicacionesOmitidas =
+                        resultado.TotalAplicacionesOmitidas,
+                    ValorTotalPagadoImportado =
+                        resultado.ValorTotalPagadoImportado,
+                    ValorTotalAplicadoImportado =
+                        resultado.ValorTotalAplicadoImportado,
+                    ValorTotalAnticipoImportado =
+                        resultado.ValorTotalAnticipoImportado,
+                    ProcesadoPor = resultado.ProcesadoPor,
+                    FechaFinalizacionUtc =
+                        resultado.FechaFinalizacionUtc
+                });
+        }
+        catch (OperationCanceledException)
+            when (HttpContext.RequestAborted
+                .IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (ExcepcionLotePagosNoProcesable excepcion)
+        {
+            _logger.LogWarning(
+                excepcion,
+                "El lote de pagos {LoteId} no pudo " +
+                "procesarse. Usuario: {Usuario}.",
+                modelo.LoteId,
+                usuario);
+
+            ModelState.AddModelError(
+                string.Empty,
+                excepcion.Motivo);
+
+            return View("ProcesarPagos", modelo);
+        }
+        catch (Exception excepcion)
+            when (excepcion is
+                ExcepcionValidacionAplicacion or
+                ExcepcionLoteImportacionNoEncontrado)
+        {
+            _logger.LogWarning(
+                excepcion,
+                "Solicitud inválida para procesar el lote " +
+                "de pagos {LoteId}. Usuario: {Usuario}.",
+                modelo.LoteId,
+                usuario);
+
+            ModelState.AddModelError(
+                string.Empty,
+                "El lote de pagos solicitado no puede " +
+                "procesarse.");
+
+            return View("ProcesarPagos", modelo);
+        }
+        catch (Exception excepcion)
+        {
+            _logger.LogError(
+                excepcion,
+                "Error inesperado al procesar el lote " +
+                "de pagos {LoteId}. Identificador: " +
+                "{TraceIdentifier}.",
+                modelo.LoteId,
+                HttpContext.TraceIdentifier);
+
+            ModelState.AddModelError(
+                string.Empty,
+                "No fue posible completar la importación " +
+                "de pagos. No se confirmaron cambios parciales.");
+
+            return View("ProcesarPagos", modelo);
+        }
+    }
+
     private async Task<IReadOnlyCollection<TipoImportacion>>
         ObtenerTiposImportacionPermitidosAsync()
     {
@@ -1259,9 +1425,14 @@ public sealed class ImportacionController : Controller
                         resultado.ValorTotalPagado)),
 
                 CrearIndicador(
-                    "Valor cruzado",
+                    "Valor aplicado",
                     FormatearMoneda(
-                        resultado.ValorTotalCruzado))
+                        resultado.ValorTotalAplicado)),
+
+                CrearIndicador(
+                    "Valor anticipo",
+                    FormatearMoneda(
+                        resultado.ValorTotalAnticipo))
             ]
         };
     }

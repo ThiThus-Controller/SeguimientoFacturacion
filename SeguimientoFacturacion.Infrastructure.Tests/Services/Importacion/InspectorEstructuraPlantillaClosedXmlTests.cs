@@ -48,7 +48,7 @@ public sealed class
 
     [Fact]
     public async Task
-        Inspeccionar_Pagos_DebeResolverAliases()
+        Inspeccionar_Pagos_DebeAceptarContratoDeDiezColumnas()
     {
         string[] encabezados =
         [
@@ -57,13 +57,8 @@ public sealed class
             "FACTURA",
             "ASEGURADORA",
             "VALOR PAGADO",
-            "VALOR CRUZADO",
             "RETENCION",
             "RETE ICA ",
-            "SALDO FAVOR",
-            "SALDO RETENCION",
-            "VR PAGADO",
-            "VR CRUZADO",
             "FECHA DE PAGO",
             "RECIBO",
             "NOTAS"
@@ -84,13 +79,12 @@ public sealed class
         Assert.True(resultado.EsValida);
 
         Assert.Equal(
-            8,
+            7,
             resultado.Columnas["RETE ICA"]);
 
         Assert.Equal(
             10,
-            resultado.Columnas[
-                "SALDO RETENCION"]);
+            resultado.Columnas["NOTAS"]);
     }
 
     [Fact]

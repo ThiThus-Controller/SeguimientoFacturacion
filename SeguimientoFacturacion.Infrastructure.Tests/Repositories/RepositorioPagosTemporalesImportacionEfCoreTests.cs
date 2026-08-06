@@ -86,10 +86,10 @@ public sealed class
             aplicacion.ValorAplicado);
 
         Assert.Equal(
-            800m,
-            aplicacion.ValorCruzadoAplicado);
+            0m,
+            aplicacion.ValorAnticipo);
 
-        Assert.True(resultado[0].EstaCuadrado);
+        Assert.True(resultado[0].EstaDistribuido);
     }
 
     [Fact]
@@ -284,11 +284,8 @@ public sealed class
                 fechaPago: new DateOnly(2026, 7, 16),
                 recibo: "RC-001",
                 valorPagado: 1000m,
-                valorCruzado: 800m,
                 retencion: 150m,
                 reteIca: 50m,
-                saldoFavorReportado: 100m,
-                saldoCruzadoPendienteReportado: 0m,
                 notas: "Pago descuadrado");
 
         pago.AgregarAplicacion(
@@ -299,8 +296,9 @@ public sealed class
                 identificadorFe: "FE000001",
                 prefijo: "FE",
                 numeroFactura: "000001",
-                valorAplicado: 1000m,
-                valorCruzadoAplicado: 800m));
+                valorRecibido: 900m,
+                valorAplicado: 900m,
+                valorAnticipo: 0m));
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () =>
@@ -411,11 +409,8 @@ public sealed class
                 fechaPago: fechaPago,
                 recibo: recibo,
                 valorPagado: 1000m,
-                valorCruzado: 800m,
                 retencion: 150m,
                 reteIca: 50m,
-                saldoFavorReportado: 0m,
-                saldoCruzadoPendienteReportado: 0m,
                 notas: "Pago de prueba");
 
         pago.AgregarAplicacion(
@@ -427,8 +422,9 @@ public sealed class
                     $"FE{numeroFactura}",
                 prefijo: "FE",
                 numeroFactura: numeroFactura,
+                valorRecibido: 1000m,
                 valorAplicado: 1000m,
-                valorCruzadoAplicado: 800m));
+                valorAnticipo: 0m));
 
         return pago;
     }
