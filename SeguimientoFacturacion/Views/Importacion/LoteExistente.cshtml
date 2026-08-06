@@ -19,6 +19,14 @@
             User,
             PoliticasAutorizacion.ProcesarNotasFactura))
         .Succeeded;
+
+    var puedeProcesarGlosas =
+        Model.PuedeContinuarProcesamiento &&
+        Model.Tipo == TipoImportacion.Glosas &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.ProcesarGlosas))
+        .Succeeded;
 }
 
 <div class="row justify-content-center">
@@ -101,8 +109,18 @@
                     Continuar al procesamiento definitivo
                 </a>
             }
+            else if (puedeProcesarGlosas)
+            {
+                <a asp-controller="Importacion"
+                   asp-action="PrepararProcesamientoGlosas"
+                   asp-route-loteId="@Model.LoteId"
+                   class="btn btn-danger">
+                    Continuar al procesamiento definitivo
+                </a>
+            }
             else if (Model.PuedeContinuarProcesamiento &&
-                Model.Tipo == TipoImportacion.NotasFactura)
+                (Model.Tipo == TipoImportacion.NotasFactura ||
+                    Model.Tipo == TipoImportacion.Glosas))
             {
                 <span class="text-secondary me-2">
                     El lote debe ser procesado por un usuario

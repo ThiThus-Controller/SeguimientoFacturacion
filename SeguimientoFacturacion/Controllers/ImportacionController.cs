@@ -46,6 +46,9 @@ public sealed class ImportacionController : Controller
     private readonly IServicioProcesamientoLoteNotasFactura
         _servicioProcesamientoNotas;
 
+    private readonly IServicioProcesamientoLoteGlosas
+        _servicioProcesamientoGlosas;
+
     private readonly IAuthorizationService
         _servicioAutorizacion;
 
@@ -75,6 +78,8 @@ public sealed class ImportacionController : Controller
             servicioProcesamientoFacturas,
         IServicioProcesamientoLoteNotasFactura
             servicioProcesamientoNotas,
+        IServicioProcesamientoLoteGlosas
+            servicioProcesamientoGlosas,
         IAuthorizationService servicioAutorizacion,
         IContextoUsuarioActual contextoUsuarioActual,
         ILogger<ImportacionController> logger)
@@ -104,6 +109,9 @@ public sealed class ImportacionController : Controller
             servicioProcesamientoNotas);
 
         ArgumentNullException.ThrowIfNull(
+            servicioProcesamientoGlosas);
+
+        ArgumentNullException.ThrowIfNull(
             servicioAutorizacion);
 
         ArgumentNullException.ThrowIfNull(
@@ -125,6 +133,9 @@ public sealed class ImportacionController : Controller
 
         _servicioProcesamientoNotas =
             servicioProcesamientoNotas;
+
+        _servicioProcesamientoGlosas =
+            servicioProcesamientoGlosas;
 
         _servicioAutorizacion = servicioAutorizacion;
         _contextoUsuarioActual = contextoUsuarioActual;
@@ -740,6 +751,155 @@ public sealed class ImportacionController : Controller
                 "de notas. No se confirmaron cambios parciales.");
 
             return View("ProcesarNotasFactura", modelo);
+        }
+    }
+
+    /// <summary>
+    /// Muestra la autorización final para procesar
+    /// un lote confirmado de glosas y sus respuestas.
+    /// </summary>
+    [HttpGet("glosas/{loteId:guid}/procesar")]
+    [Authorize(
+        Policy = PoliticasAutorizacion.ProcesarGlosas)]
+    public IActionResult PrepararProcesamientoGlosas(
+        Guid loteId)
+    {
+        return View(
+            "ProcesarGlosas",
+            new ProcesamientoLoteGlosasViewModel
+            {
+                LoteId = loteId
+            });
+    }
+
+    /// <summary>
+    /// Procesa definitivamente un lote confirmado
+    /// de glosas y sus respuestas.
+    /// </summary>
+    [HttpPost("glosas/procesar")]
+    [Authorize(
+        Policy = PoliticasAutorizacion.ProcesarGlosas)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ProcesarGlosas(
+        ProcesamientoLoteGlosasViewModel modelo,
+        CancellationToken cancellationToken)
+    {
+        if (modelo.LoteId == Guid.Empty)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                "El identificador del lote es obligatorio.");
+
+            return View("ProcesarGlosas", modelo);
+        }
+
+        var identidad =
+            _contextoUsuarioActual.ObtenerRequerido();
+
+        var usuario = identidad.NombreUsuario;
+
+        try
+        {
+            var resultado =
+                await _servicioProcesamientoGlosas
+                    .ProcesarAsync(
+                        new SolicitudProcesamientoLoteGlosasDto
+                        {
+                            LoteId = modelo.LoteId,
+                            Usuario = usuario
+                        },
+                        cancellationToken);
+
+            _logger.LogInformation(
+                "Lote de glosas {LoteId} procesado. " +
+                "Importadas: {Importadas}; omitidas: " +
+                "{Omitidas}; usuario: {Usuario}; " +
+                "UsuarioId: {UsuarioId}.",
+                resultado.LoteId,
+                resultado.TotalGlosasImportadas,
+                resultado.TotalGlosasOmitidas,
+                usuario,
+                identidad.UsuarioId);
+
+            return View(
+                "ProcesamientoGlosasCompletado",
+                new ResultadoProcesamientoLoteGlosasViewModel
+                {
+                    LoteId = resultado.LoteId,
+                    Estado = resultado.Estado,
+                    TotalGlosasStaging =
+                        resultado.TotalGlosasStaging,
+                    TotalGlosasImportadas =
+                        resultado.TotalGlosasImportadas,
+                    TotalGlosasOmitidas =
+                        resultado.TotalGlosasOmitidas,
+                    TotalGlosasAbiertasImportadas =
+                        resultado.TotalGlosasAbiertasImportadas,
+                    TotalGlosasRespondidasImportadas =
+                        resultado.TotalGlosasRespondidasImportadas,
+                    ValorTotalGlosadoImportado =
+                        resultado.ValorTotalGlosadoImportado,
+                    ProcesadoPor = resultado.ProcesadoPor,
+                    FechaFinalizacionUtc =
+                        resultado.FechaFinalizacionUtc
+                });
+        }
+        catch (OperationCanceledException)
+            when (HttpContext.RequestAborted
+                .IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (ExcepcionLoteGlosasNoProcesable excepcion)
+        {
+            _logger.LogWarning(
+                excepcion,
+                "El lote de glosas {LoteId} no pudo " +
+                "procesarse. Usuario: {Usuario}.",
+                modelo.LoteId,
+                usuario);
+
+            ModelState.AddModelError(
+                string.Empty,
+                excepcion.Motivo);
+
+            return View("ProcesarGlosas", modelo);
+        }
+        catch (Exception excepcion)
+            when (excepcion is
+                ExcepcionValidacionAplicacion or
+                ExcepcionLoteImportacionNoEncontrado)
+        {
+            _logger.LogWarning(
+                excepcion,
+                "Solicitud inválida para procesar el lote " +
+                "de glosas {LoteId}. Usuario: {Usuario}.",
+                modelo.LoteId,
+                usuario);
+
+            ModelState.AddModelError(
+                string.Empty,
+                "El lote de glosas solicitado no puede " +
+                "procesarse.");
+
+            return View("ProcesarGlosas", modelo);
+        }
+        catch (Exception excepcion)
+        {
+            _logger.LogError(
+                excepcion,
+                "Error inesperado al procesar el lote " +
+                "de glosas {LoteId}. Identificador: " +
+                "{TraceIdentifier}.",
+                modelo.LoteId,
+                HttpContext.TraceIdentifier);
+
+            ModelState.AddModelError(
+                string.Empty,
+                "No fue posible completar la importación " +
+                "de glosas. No se confirmaron cambios parciales.");
+
+            return View("ProcesarGlosas", modelo);
         }
     }
 
