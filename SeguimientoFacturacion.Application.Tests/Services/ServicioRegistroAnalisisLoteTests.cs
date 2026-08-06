@@ -173,6 +173,48 @@ public sealed class ServicioRegistroAnalisisLoteTests
 
     [Fact]
     public async Task
+        Registrar_ConErrorEnEncabezado_NoDebeContarloComoFilaDatos()
+    {
+        var lote = CrearLote();
+
+        var repositorio =
+            new RepositorioImportacionesFalso(lote);
+
+        var servicio = CrearServicio(
+            repositorio,
+            new UnidadTrabajoFalsa());
+
+        var resultadoAnalisis =
+            new ResultadoAnalisisImportacionDto
+            {
+                NombreArchivo = "Facturas.xlsx",
+                TotalFilasAnalizadas = 0,
+                Inconsistencias =
+                [
+                    CrearInconsistencia(
+                        fila: 1,
+                        codigo: "ENCABEZADO_NO_PERMITIDO",
+                        severidad: SeveridadDto.Error)
+                ]
+            };
+
+        await servicio.RegistrarAsync(
+            lote.Id,
+            resultadoAnalisis,
+            "analista");
+
+        Assert.Equal(
+            EstadoImportacion.Analizada,
+            lote.Estado);
+        Assert.Equal(0, lote.TotalFilas);
+        Assert.Equal(0, lote.TotalFilasValidas);
+        Assert.Equal(0, lote.TotalFilasConError);
+        Assert.Equal(1, lote.TotalErrores);
+        Assert.False(lote.PuedeConfirmarse);
+    }
+
+    [Fact]
+    public async Task
         Registrar_ConDatoSensible_NoDebePersistirValorPresentado()
     {
         var lote = CrearLote();

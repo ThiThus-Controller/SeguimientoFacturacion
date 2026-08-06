@@ -1,4 +1,5 @@
 ﻿using SeguimientoFacturacion.Application.Common.Exceptions;
+using SeguimientoFacturacion.Application.Common.Importacion;
 using SeguimientoFacturacion.Application.DTOs.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
@@ -98,7 +99,10 @@ public sealed class ServicioRegistroAnalisisLote :
                     inconsistencia =>
                         inconsistencia.Severidad ==
                             SeveridadImportacion.Error &&
-                        inconsistencia.NumeroFila.HasValue)
+                        inconsistencia.NumeroFila.HasValue &&
+                        inconsistencia.NumeroFila.Value >=
+                            ContratosPlantillasImportacion
+                                .PrimeraFilaDatos)
                 .Select(
                     inconsistencia =>
                         inconsistencia.NumeroFila!.Value)
