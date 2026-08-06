@@ -69,8 +69,9 @@ public static class ContratosPlantillasImportacion
 
     /// <summary>
     /// Obtiene el contrato de glosas.
-    /// La fecha de respuesta pertenece a la estructura,
-    /// pero su valor puede estar vacío.
+    /// La fecha de respuesta, el estado y el valor aceptado
+    /// pertenecen a la estructura oficial. Sus valores se
+    /// validan de acuerdo con el estado informado.
     /// </summary>
     public static ContratoPlantillaImportacion Glosas
     {
@@ -85,7 +86,9 @@ public static class ContratosPlantillasImportacion
             "ASEGURADORA",
             "FECHA GLOSA",
             "VALOR GLOSA",
-            "FECHA RTA GLOSA"
+            "FECHA RTA GLOSA",
+            "ESTADO GLOSA",
+            "VALOR ACEPTADO"
         ],
         new Dictionary<string, string>(
             StringComparer.OrdinalIgnoreCase)

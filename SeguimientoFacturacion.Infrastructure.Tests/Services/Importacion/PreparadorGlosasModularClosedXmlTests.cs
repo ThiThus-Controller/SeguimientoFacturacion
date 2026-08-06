@@ -3,6 +3,7 @@ using SeguimientoFacturacion.Application.Common.Importacion;
 using SeguimientoFacturacion.Application.DTOs.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Importacion;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Domain.Enums;
 using SeguimientoFacturacion.Infrastructure.Services.Importacion;
 
 namespace SeguimientoFacturacion.Infrastructure.Tests
@@ -27,7 +28,10 @@ public sealed class
                             new DateTime(2026, 2, 1),
                         valorGlosa: 100000m,
                         fechaRespuesta:
-                            new DateTime(2026, 2, 10));
+                            new DateTime(2026, 2, 10),
+                        estado: "ACEPTADA",
+                        valorAceptado: 60000m,
+                        feComoFormula: true);
 
                     EscribirFila(
                         hoja,
@@ -120,6 +124,14 @@ public sealed class
         Assert.Equal(
             new DateOnly(2026, 2, 10),
             glosaRespondida.FechaRespuesta);
+
+        Assert.Equal(
+            EstadoGlosa.Aceptada,
+            glosaRespondida.Estado);
+
+        Assert.Equal(
+            60000m,
+            glosaRespondida.ValorAceptado);
 
         var glosaAbierta =
             Assert.Single(
@@ -316,10 +328,21 @@ public sealed class
         string numeroFactura,
         DateTime fechaGlosa,
         decimal valorGlosa,
-        DateTime? fechaRespuesta)
+        DateTime? fechaRespuesta,
+        string? estado = null,
+        decimal? valorAceptado = null,
+        bool feComoFormula = false)
     {
-        hoja.Cell(fila, 1).Value =
-            $"FE{numeroFactura}";
+        if (feComoFormula)
+        {
+            hoja.Cell(fila, 1).FormulaA1 =
+                $"B{fila}&C{fila}";
+        }
+        else
+        {
+            hoja.Cell(fila, 1).Value =
+                $"FE{numeroFactura}";
+        }
 
         hoja.Cell(fila, 2).Value = "FE";
         hoja.Cell(fila, 3).Value = numeroFactura;
@@ -331,6 +354,18 @@ public sealed class
         {
             hoja.Cell(fila, 7).Value =
                 fechaRespuesta.Value;
+        }
+
+        hoja.Cell(fila, 8).Value =
+            estado ??
+            (fechaRespuesta.HasValue
+                ? "RESPONDIDA"
+                : "ABIERTA");
+
+        if (valorAceptado.HasValue)
+        {
+            hoja.Cell(fila, 9).Value =
+                valorAceptado.Value;
         }
     }
 

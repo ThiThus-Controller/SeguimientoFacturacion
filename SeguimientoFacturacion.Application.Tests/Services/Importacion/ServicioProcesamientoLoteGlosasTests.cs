@@ -168,6 +168,58 @@ public sealed class
 
     [Fact]
     public async Task
+        Procesar_ConGlosaAceptada_DebeConservarResolucion()
+    {
+        var lote =
+            CrearLoteConfirmado(
+                totalFilas: 1);
+
+        var repositorioDefinitivo =
+            new RepositorioDefinitivoPrueba();
+
+        var servicio =
+            CrearServicio(
+                new RepositorioImportacionesPrueba(lote),
+                new RepositorioTemporalPrueba(
+                [
+                    CrearRegistro(
+                        lote.Id,
+                        fila: 2,
+                        facturaId: "FV000001",
+                        numeroFactura: "000001",
+                        valor: 100000m,
+                        fechaRespuesta:
+                            new DateOnly(2026, 7, 25),
+                        estado:
+                            EstadoGlosa.Aceptada,
+                        valorAceptado: 60000m)
+                ]),
+                repositorioDefinitivo,
+                new ConsultaFacturasPrueba(
+                [
+                    CrearReferencia("FV000001")
+                ]),
+                new UnidadTrabajoPrueba());
+
+        var resultado =
+            await servicio.ProcesarAsync(
+                CrearSolicitud(lote.Id));
+
+        var glosa =
+            Assert.Single(
+                repositorioDefinitivo.Agregadas);
+
+        Assert.Equal(
+            EstadoGlosa.Aceptada,
+            glosa.Estado);
+
+        Assert.Equal(60000m, glosa.ValorAceptado);
+        Assert.Equal(1, resultado.TotalGlosasAceptadasImportadas);
+        Assert.Equal(60000m, resultado.ValorTotalAceptadoImportado);
+    }
+
+    [Fact]
+    public async Task
         Procesar_ConGlosaExistente_DebeOmitirla()
     {
         var lote =
@@ -582,7 +634,9 @@ public sealed class
             decimal valor,
             int aseguradoraId = 1,
             DateOnly? fechaGlosa = null,
-            DateOnly? fechaRespuesta = null)
+            DateOnly? fechaRespuesta = null,
+            EstadoGlosa? estado = null,
+            decimal valorAceptado = decimal.Zero)
     {
         return new GlosaImportacionTemporal(
             loteImportacionId: loteId,
@@ -596,7 +650,9 @@ public sealed class
                 fechaGlosa ??
                 new DateOnly(2026, 7, 20),
             valorGlosa: valor,
-            fechaRespuesta: fechaRespuesta);
+            fechaRespuesta: fechaRespuesta,
+            estado: estado,
+            valorAceptado: valorAceptado);
     }
 
     private static ReferenciaFacturaImportacionDto

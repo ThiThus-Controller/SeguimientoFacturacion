@@ -46,6 +46,32 @@ internal sealed class
                     "CK_GlosasTemporales_Fechas",
                     "[FechaRespuesta] IS NULL OR " +
                     "[FechaRespuesta] >= [FechaGlosa]");
+
+                tableBuilder.HasCheckConstraint(
+                    "CK_GlosasTemporales_Estado",
+                    "[Estado] IN (1, 2, 3, 4, 5)");
+
+                tableBuilder.HasCheckConstraint(
+                    "CK_GlosasTemporales_ValorAceptado",
+                    "[ValorAceptado] >= 0 AND " +
+                    "[ValorAceptado] <= [ValorGlosa]");
+
+                tableBuilder.HasCheckConstraint(
+                    "CK_GlosasTemporales_Resolucion",
+                    "([Estado] = 1 AND " +
+                    "[FechaRespuesta] IS NULL AND " +
+                    "[ValorAceptado] = 0) OR " +
+                    "([Estado] = 2 AND " +
+                    "[FechaRespuesta] IS NOT NULL AND " +
+                    "[ValorAceptado] = 0) OR " +
+                    "([Estado] = 3 AND " +
+                    "[FechaRespuesta] IS NOT NULL AND " +
+                    "[ValorAceptado] > 0) OR " +
+                    "([Estado] = 4 AND " +
+                    "[FechaRespuesta] IS NOT NULL AND " +
+                    "[ValorAceptado] = 0) OR " +
+                    "([Estado] = 5 AND " +
+                    "[FechaRespuesta] IS NOT NULL)");
             });
 
         builder.HasKey(
@@ -112,6 +138,16 @@ internal sealed class
         builder.Property(
                 registro => registro.FechaRespuesta)
             .HasColumnType("date");
+
+        builder.Property(
+                registro => registro.Estado)
+            .HasConversion<int>()
+            .IsRequired();
+
+        builder.Property(
+                registro => registro.ValorAceptado)
+            .HasPrecision(18, 2)
+            .IsRequired();
 
         builder.Ignore(
             registro => registro.TieneRespuesta);

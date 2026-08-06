@@ -1,4 +1,5 @@
 ﻿using SeguimientoFacturacion.Domain.Common;
+using SeguimientoFacturacion.Domain.Enums;
 
 namespace SeguimientoFacturacion.Domain.Entities;
 
@@ -32,7 +33,9 @@ public sealed class GlosaImportacionTemporal :
         int aseguradoraId,
         DateOnly fechaGlosa,
         decimal valorGlosa,
-        DateOnly? fechaRespuesta)
+        DateOnly? fechaRespuesta,
+        EstadoGlosa? estado = null,
+        decimal valorAceptado = decimal.Zero)
         : base(Guid.NewGuid())
     {
         LoteImportacionId =
@@ -89,6 +92,19 @@ public sealed class GlosaImportacionTemporal :
             ValidarFechaRespuesta(
                 FechaGlosa,
                 fechaRespuesta);
+
+        Estado =
+            estado ??
+            (FechaRespuesta.HasValue
+                ? EstadoGlosa.Respondida
+                : EstadoGlosa.Abierta);
+
+        ValorAceptado =
+            ValidarResolucion(
+                Estado,
+                FechaRespuesta,
+                valorAceptado,
+                ValorGlosa);
     }
 
     /// <summary>
@@ -146,6 +162,16 @@ public sealed class GlosaImportacionTemporal :
     /// informada en el archivo.
     /// </summary>
     public DateOnly? FechaRespuesta { get; private set; }
+
+    /// <summary>
+    /// Obtiene el estado de gestión informado en el archivo.
+    /// </summary>
+    public EstadoGlosa Estado { get; private set; }
+
+    /// <summary>
+    /// Obtiene el valor aceptado por la institución.
+    /// </summary>
+    public decimal ValorAceptado { get; private set; }
 
     /// <summary>
     /// Indica si la glosa contiene una fecha de respuesta.
@@ -259,6 +285,82 @@ public sealed class GlosaImportacionTemporal :
         }
 
         return fechaRespuesta;
+    }
+
+    private static decimal ValidarResolucion(
+        EstadoGlosa estado,
+        DateOnly? fechaRespuesta,
+        decimal valorAceptado,
+        decimal valorGlosa)
+    {
+        if (!Enum.IsDefined(estado))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(estado),
+                estado,
+                "El estado de la glosa no es válido.");
+        }
+
+        if (valorAceptado < decimal.Zero ||
+            valorAceptado > valorGlosa)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(valorAceptado),
+                valorAceptado,
+                "El valor aceptado debe estar entre cero " +
+                "y el valor de la glosa.");
+        }
+
+        if (estado == EstadoGlosa.Abierta)
+        {
+            if (fechaRespuesta.HasValue)
+            {
+                throw new ArgumentException(
+                    "Una glosa abierta no puede tener fecha " +
+                    "de respuesta.",
+                    nameof(fechaRespuesta));
+            }
+
+            if (valorAceptado != decimal.Zero)
+            {
+                throw new ArgumentException(
+                    "Una glosa abierta no puede tener valor " +
+                    "aceptado.",
+                    nameof(valorAceptado));
+            }
+
+            return decimal.Zero;
+        }
+
+        if (!fechaRespuesta.HasValue)
+        {
+            throw new ArgumentException(
+                "El estado informado requiere fecha de " +
+                "respuesta.",
+                nameof(fechaRespuesta));
+        }
+
+        if (estado == EstadoGlosa.Aceptada &&
+            valorAceptado <= decimal.Zero)
+        {
+            throw new ArgumentException(
+                "Una glosa aceptada debe tener un valor " +
+                "aceptado mayor que cero.",
+                nameof(valorAceptado));
+        }
+
+        if ((estado is
+                EstadoGlosa.Respondida or
+                EstadoGlosa.Levantada) &&
+            valorAceptado != decimal.Zero)
+        {
+            throw new ArgumentException(
+                "Una glosa respondida o levantada no puede " +
+                "tener valor aceptado.",
+                nameof(valorAceptado));
+        }
+
+        return valorAceptado;
     }
 
     private static void ValidarCorrespondenciaFactura(

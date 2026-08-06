@@ -47,10 +47,30 @@ public sealed record
     public int TotalGlosasRespondidasImportadas { get; init; }
 
     /// <summary>
+    /// Obtiene la cantidad de glosas aceptadas importadas.
+    /// </summary>
+    public int TotalGlosasAceptadasImportadas { get; init; }
+
+    /// <summary>
+    /// Obtiene la cantidad de glosas levantadas importadas.
+    /// </summary>
+    public int TotalGlosasLevantadasImportadas { get; init; }
+
+    /// <summary>
+    /// Obtiene la cantidad de glosas conciliadas importadas.
+    /// </summary>
+    public int TotalGlosasConciliadasImportadas { get; init; }
+
+    /// <summary>
     /// Obtiene el valor total de las glosas nuevas
     /// importadas.
     /// </summary>
     public decimal ValorTotalGlosadoImportado { get; init; }
+
+    /// <summary>
+    /// Obtiene el valor aceptado total de las glosas nuevas.
+    /// </summary>
+    public decimal ValorTotalAceptadoImportado { get; init; }
 
     /// <summary>
     /// Obtiene el usuario responsable del procesamiento.

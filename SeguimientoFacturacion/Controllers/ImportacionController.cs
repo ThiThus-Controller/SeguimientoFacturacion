@@ -837,8 +837,16 @@ public sealed class ImportacionController : Controller
                         resultado.TotalGlosasAbiertasImportadas,
                     TotalGlosasRespondidasImportadas =
                         resultado.TotalGlosasRespondidasImportadas,
+                    TotalGlosasAceptadasImportadas =
+                        resultado.TotalGlosasAceptadasImportadas,
+                    TotalGlosasLevantadasImportadas =
+                        resultado.TotalGlosasLevantadasImportadas,
+                    TotalGlosasConciliadasImportadas =
+                        resultado.TotalGlosasConciliadasImportadas,
                     ValorTotalGlosadoImportado =
                         resultado.ValorTotalGlosadoImportado,
+                    ValorTotalAceptadoImportado =
+                        resultado.ValorTotalAceptadoImportado,
                     ProcesadoPor = resultado.ProcesadoPor,
                     FechaFinalizacionUtc =
                         resultado.FechaFinalizacionUtc

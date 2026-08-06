@@ -44,9 +44,29 @@ public sealed class ResultadoProcesamientoLoteGlosasViewModel
     public int TotalGlosasRespondidasImportadas { get; init; }
 
     /// <summary>
+    /// Obtiene el total de glosas aceptadas importadas.
+    /// </summary>
+    public int TotalGlosasAceptadasImportadas { get; init; }
+
+    /// <summary>
+    /// Obtiene el total de glosas levantadas importadas.
+    /// </summary>
+    public int TotalGlosasLevantadasImportadas { get; init; }
+
+    /// <summary>
+    /// Obtiene el total de glosas conciliadas importadas.
+    /// </summary>
+    public int TotalGlosasConciliadasImportadas { get; init; }
+
+    /// <summary>
     /// Obtiene el valor total de las glosas nuevas.
     /// </summary>
     public decimal ValorTotalGlosadoImportado { get; init; }
+
+    /// <summary>
+    /// Obtiene el valor aceptado total importado.
+    /// </summary>
+    public decimal ValorTotalAceptadoImportado { get; init; }
 
     /// <summary>
     /// Obtiene el usuario responsable del procesamiento.

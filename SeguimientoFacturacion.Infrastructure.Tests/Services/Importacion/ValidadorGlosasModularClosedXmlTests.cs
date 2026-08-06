@@ -78,6 +78,82 @@ public sealed class
 
     [Fact]
     public async Task
+        Validar_GlosaAceptadaConFeFormula_DebeAceptarArchivo()
+    {
+        await using var archivo =
+            CrearArchivo(
+                hoja =>
+                    EscribirFila(
+                        hoja,
+                        fila: 2,
+                        numeroFactura: "000001",
+                        valor: 100000m,
+                        fechaGlosa:
+                            new DateTime(2026, 2, 1),
+                        fechaRespuesta:
+                            new DateTime(2026, 2, 5),
+                        estado: "ACEPTADA",
+                        valorAceptado: 60000m,
+                        feComoFormula: true));
+
+        var resultado =
+            await CrearValidador(
+                    new ConsultaFacturasControlada(
+                    [
+                        CrearReferenciaFactura(
+                            "FE000001",
+                            aseguradoraId: 1,
+                            fechaFactura:
+                                new DateOnly(2026, 1, 10))
+                    ]))
+                .ValidarAsync(
+                    CrearSolicitud(archivo));
+
+        Assert.True(resultado.EsValido);
+        Assert.Equal(1, resultado.GlosasDetectadas);
+        Assert.Empty(resultado.Inconsistencias);
+    }
+
+    [Fact]
+    public async Task
+        Validar_AceptadaSinValorAceptado_DebeRetornarError()
+    {
+        await using var archivo =
+            CrearArchivo(
+                hoja =>
+                    EscribirFila(
+                        hoja,
+                        fila: 2,
+                        numeroFactura: "000001",
+                        valor: 100000m,
+                        fechaGlosa:
+                            new DateTime(2026, 2, 1),
+                        fechaRespuesta:
+                            new DateTime(2026, 2, 5),
+                        estado: "ACEPTADA"));
+
+        var resultado =
+            await CrearValidador(
+                    new ConsultaFacturasControlada(
+                    [
+                        CrearReferenciaFactura(
+                            "FE000001",
+                            aseguradoraId: 1,
+                            fechaFactura:
+                                new DateOnly(2026, 1, 10))
+                    ]))
+                .ValidarAsync(
+                    CrearSolicitud(archivo));
+
+        Assert.Contains(
+            resultado.Inconsistencias,
+            inconsistencia =>
+                inconsistencia.Codigo ==
+                "VALOR_ACEPTADO_REQUERIDO");
+    }
+
+    [Fact]
+    public async Task
         Validar_FacturaInexistente_DebeRetornarError()
     {
         await using var archivo =
@@ -351,10 +427,21 @@ public sealed class
         string numeroFactura,
         decimal valor,
         DateTime fechaGlosa,
-        DateTime? fechaRespuesta = null)
+        DateTime? fechaRespuesta = null,
+        string? estado = null,
+        decimal? valorAceptado = null,
+        bool feComoFormula = false)
     {
-        hoja.Cell(fila, 1).Value =
-            $"FE{numeroFactura}";
+        if (feComoFormula)
+        {
+            hoja.Cell(fila, 1).FormulaA1 =
+                $"B{fila}&C{fila}";
+        }
+        else
+        {
+            hoja.Cell(fila, 1).Value =
+                $"FE{numeroFactura}";
+        }
 
         hoja.Cell(fila, 2).Value = "FE";
         hoja.Cell(fila, 3).Value = numeroFactura;
@@ -366,6 +453,18 @@ public sealed class
         {
             hoja.Cell(fila, 7).Value =
                 fechaRespuesta.Value;
+        }
+
+        hoja.Cell(fila, 8).Value =
+            estado ??
+            (fechaRespuesta.HasValue
+                ? "RESPONDIDA"
+                : "ABIERTA");
+
+        if (valorAceptado.HasValue)
+        {
+            hoja.Cell(fila, 9).Value =
+                valorAceptado.Value;
         }
     }
 

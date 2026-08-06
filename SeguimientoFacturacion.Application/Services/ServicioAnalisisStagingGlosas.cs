@@ -268,7 +268,11 @@ public sealed class ServicioAnalisisStagingGlosas :
                         valorGlosa:
                             glosa.ValorGlosa,
                         fechaRespuesta:
-                            glosa.FechaRespuesta))
+                            glosa.FechaRespuesta,
+                        estado:
+                            glosa.Estado,
+                        valorAceptado:
+                            glosa.ValorAceptado))
             .ToArray();
     }
 
