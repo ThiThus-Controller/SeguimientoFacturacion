@@ -4,8 +4,8 @@
 
 | Fase | Avance | Estado |
 |---|---:|---|
-| 1. Importación masiva modular | 100 % funcional | Certificada; cierre técnico en curso |
-| 2. Gestión manual | 25 % | Diseño y componentes transversales disponibles |
+| 1. Importación masiva modular | 100 % | Cerrada y etiquetada como `v0.1.0` |
+| 2. Gestión manual | 30 % | Diseño funcional de facturas y pacientes iniciado |
 | 3. Dashboard administrativo | 5 % | Requisitos definidos |
 
 ## Fase 1 — Importación masiva modular
@@ -26,18 +26,21 @@
 - Certificación financiera de cuatro escenarios.
 - Certificación integral: 25 controles, 0 hallazgos.
 
-### Cierre técnico pendiente
+### Cierre técnico
 
-- Consolidar documentación.
-- Ejecutar compilación, pruebas y análisis de vulnerabilidades finales.
-- Revisar secretos, binarios y archivos sensibles antes de fusionar.
-- Fusionar `refactor/importacion-modular` en `main`.
-- Crear etiqueta de cierre de la Fase 1.
+- Documentación consolidada.
+- Compilación, pruebas y análisis de vulnerabilidades correctos.
+- Revisión de secretos, binarios y archivos sensibles completada.
+- Rama de importación fusionada en `main`.
+- Versión de cierre etiquetada como `v0.1.0`.
 
 ## Fase 2 — Gestión manual
 
 Antes de implementar cada módulo se revisarán con el usuario las
 columnas, acciones, permisos y reglas particulares.
+
+El diseño funcional se encuentra en
+[FASE2_GESTION_MANUAL.md](FASE2_GESTION_MANUAL.md).
 
 ### Consulta y grilla
 
