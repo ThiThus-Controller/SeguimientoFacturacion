@@ -64,6 +64,7 @@
                             </label>
 
                             <select asp-for="Tipo"
+                                    id="tipoImportacion"
                                     class="form-select">
                                 <option value="">
                                     Seleccione un proceso
@@ -72,7 +73,8 @@
                                 @if (Model.TiposPermitidos.Contains(
                                     TipoImportacion.Facturas))
                                 {
-                                    <option value="@((int)TipoImportacion.Facturas)">
+                                    <option value="@((int)TipoImportacion.Facturas)"
+                                            data-plantilla-url="@Url.Action("DescargarPlantilla", "Importacion", new { tipo = (int)TipoImportacion.Facturas })">
                                         Facturas y pacientes
                                     </option>
                                 }
@@ -80,7 +82,8 @@
                                 @if (Model.TiposPermitidos.Contains(
                                     TipoImportacion.NotasFactura))
                                 {
-                                    <option value="@((int)TipoImportacion.NotasFactura)">
+                                    <option value="@((int)TipoImportacion.NotasFactura)"
+                                            data-plantilla-url="@Url.Action("DescargarPlantilla", "Importacion", new { tipo = (int)TipoImportacion.NotasFactura })">
                                         Notas crédito y débito
                                     </option>
                                 }
@@ -88,7 +91,8 @@
                                 @if (Model.TiposPermitidos.Contains(
                                     TipoImportacion.Glosas))
                                 {
-                                    <option value="@((int)TipoImportacion.Glosas)">
+                                    <option value="@((int)TipoImportacion.Glosas)"
+                                            data-plantilla-url="@Url.Action("DescargarPlantilla", "Importacion", new { tipo = (int)TipoImportacion.Glosas })">
                                         Glosas y respuestas
                                     </option>
                                 }
@@ -96,7 +100,8 @@
                                 @if (Model.TiposPermitidos.Contains(
                                     TipoImportacion.Pagos))
                                 {
-                                    <option value="@((int)TipoImportacion.Pagos)">
+                                    <option value="@((int)TipoImportacion.Pagos)"
+                                            data-plantilla-url="@Url.Action("DescargarPlantilla", "Importacion", new { tipo = (int)TipoImportacion.Pagos })">
                                         Pagos y aplicaciones
                                     </option>
                                 }
@@ -130,11 +135,25 @@
                         con la estructura de la plantilla.
                     </div>
 
-                    <div class="mt-3">
+                    <div class="mt-3 d-flex flex-wrap gap-2">
                         <button type="submit"
                                 class="btn btn-primary">
                             Registrar y analizar archivo
                         </button>
+
+                        <a id="descargarPlantilla"
+                           class="btn btn-outline-success disabled"
+                           href="#"
+                           aria-disabled="true"
+                           tabindex="-1">
+                            Descargar formato seleccionado
+                        </a>
+                    </div>
+
+                    <div class="form-text mt-2">
+                        La plantilla descargada incluye notas
+                        aclaratorias en sus encabezados y listas
+                        desplegables para los estados cerrados.
                     </div>
                 </form>
             </div>
@@ -428,3 +447,41 @@
         }
     </div>
 </div>
+
+@section Scripts
+{
+    <script>
+        (() => {
+            const selector = document.getElementById(
+                "tipoImportacion");
+            const enlace = document.getElementById(
+                "descargarPlantilla");
+
+            if (!selector || !enlace) {
+                return;
+            }
+
+            const actualizarEnlace = () => {
+                const opcion =
+                    selector.options[selector.selectedIndex];
+                const url = opcion?.dataset.plantillaUrl;
+                const habilitado = Boolean(url);
+
+                enlace.href = habilitado ? url : "#";
+                enlace.classList.toggle(
+                    "disabled",
+                    !habilitado);
+                enlace.setAttribute(
+                    "aria-disabled",
+                    String(!habilitado));
+                enlace.tabIndex = habilitado ? 0 : -1;
+            };
+
+            selector.addEventListener(
+                "change",
+                actualizarEnlace);
+
+            actualizarEnlace();
+        })();
+    </script>
+}
