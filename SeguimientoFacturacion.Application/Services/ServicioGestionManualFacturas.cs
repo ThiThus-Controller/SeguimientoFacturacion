@@ -68,6 +68,51 @@ public sealed class ServicioGestionManualFacturas :
     }
 
     /// <inheritdoc />
+    public async Task<FacturaGestionManualDto?> ObtenerPorIdAsync(
+        string facturaId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+
+        var factura = await _repositorio.ObtenerFacturaAsync(
+            facturaId,
+            cancellationToken);
+
+        return factura is null ? null : MapearFactura(factura);
+    }
+
+    /// <inheritdoc />
+    public async Task<PacienteGestionManualDto?> ObtenerPacienteAsync(
+        int tipoDocumentoId,
+        string numeroDocumento,
+        CancellationToken cancellationToken = default)
+    {
+        if (tipoDocumentoId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(tipoDocumentoId));
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(numeroDocumento);
+
+        var paciente = await _repositorio.ObtenerPacienteAsync(
+            tipoDocumentoId,
+            numeroDocumento,
+            cancellationToken);
+
+        return paciente is null
+            ? null
+            : MapearPaciente(paciente, facturasActualizadas: 0);
+    }
+
+    /// <inheritdoc />
+    public Task<CatalogosGestionManualFacturaDto> ObtenerCatalogosAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return _repositorio.ObtenerCatalogosAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<FacturaGestionManualDto> CrearAsync(
         SolicitudCreacionFacturaManualDto solicitud,
         string actor,

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SeguimientoFacturacion.Application.DTOs.Facturas;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Infrastructure.Persistence;
@@ -203,5 +204,89 @@ public sealed class RepositorioGestionManualFacturasEfCore :
                     facturador.Id == facturadorId &&
                     facturador.Activo,
                 cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<CatalogosGestionManualFacturaDto>
+        ObtenerCatalogosAsync(
+            CancellationToken cancellationToken = default)
+    {
+        var aseguradoras = await _contexto.Aseguradoras
+            .AsNoTracking()
+            .Where(item => item.Activo)
+            .OrderBy(item => item.Id)
+            .Select(
+                item => new OpcionCatalogoFacturaDto
+                {
+                    Id = item.Id,
+                    Nombre = item.Descripcion
+                })
+            .ToArrayAsync(cancellationToken);
+
+        var tiposDocumento = await _contexto.TiposDocumento
+            .AsNoTracking()
+            .OrderBy(item => item.Id)
+            .Select(
+                item => new OpcionCatalogoFacturaDto
+                {
+                    Id = item.Id,
+                    Nombre = item.Sigla
+                })
+            .ToArrayAsync(cancellationToken);
+
+        var atenciones = await _contexto.Atenciones
+            .AsNoTracking()
+            .OrderBy(item => item.Id)
+            .Select(
+                item => new OpcionCatalogoFacturaDto
+                {
+                    Id = item.Id,
+                    Nombre = item.Descripcion
+                })
+            .ToArrayAsync(cancellationToken);
+
+        var costos = await _contexto.Costos
+            .AsNoTracking()
+            .OrderBy(item => item.Id)
+            .Select(
+                item => new OpcionCatalogoFacturaDto
+                {
+                    Id = item.Id,
+                    Nombre = item.Descripcion
+                })
+            .ToArrayAsync(cancellationToken);
+
+        var estados = await _contexto.Estados
+            .AsNoTracking()
+            .OrderBy(item => item.Id)
+            .Select(
+                item => new OpcionCatalogoFacturaDto
+                {
+                    Id = item.Id,
+                    Nombre = item.Descripcion
+                })
+            .ToArrayAsync(cancellationToken);
+
+        var facturadores = await _contexto.Facturadores
+            .AsNoTracking()
+            .Where(item => item.Activo)
+            .OrderBy(item => item.Id)
+            .Select(
+                item => new OpcionCatalogoFacturaDto
+                {
+                    Id = item.Id,
+                    Nombre = item.Nombre
+                })
+            .ToArrayAsync(cancellationToken);
+
+        return new CatalogosGestionManualFacturaDto
+        {
+            Aseguradoras = aseguradoras,
+            TiposDocumento = tiposDocumento,
+            Atenciones = atenciones,
+            Costos = costos,
+            Estados = estados,
+            Facturadores = facturadores
+        };
     }
 }

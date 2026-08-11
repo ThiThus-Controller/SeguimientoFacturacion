@@ -7,6 +7,18 @@ namespace SeguimientoFacturacion.Application.Interfaces.Services;
 /// </summary>
 public interface IServicioGestionManualFacturas
 {
+    Task<FacturaGestionManualDto?> ObtenerPorIdAsync(
+        string facturaId,
+        CancellationToken cancellationToken = default);
+
+    Task<PacienteGestionManualDto?> ObtenerPacienteAsync(
+        int tipoDocumentoId,
+        string numeroDocumento,
+        CancellationToken cancellationToken = default);
+
+    Task<CatalogosGestionManualFacturaDto> ObtenerCatalogosAsync(
+        CancellationToken cancellationToken = default);
+
     Task<FacturaGestionManualDto> CrearAsync(
         SolicitudCreacionFacturaManualDto solicitud,
         string actor,

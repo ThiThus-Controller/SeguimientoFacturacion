@@ -1,0 +1,208 @@
+@using Microsoft.AspNetCore.Authorization
+@using SeguimientoFacturacion.Configurations
+@model FacturasListadoViewModel
+@inject IAuthorizationService ServicioAutorizacion
+
+@{
+    ViewData["Title"] = "Gestión de facturas";
+
+    var puedeCrear = (await ServicioAutorizacion.AuthorizeAsync(
+        User,
+        PoliticasAutorizacion.FacturasCrearManual)).Succeeded;
+
+    var puedeEditar = (await ServicioAutorizacion.AuthorizeAsync(
+        User,
+        PoliticasAutorizacion.FacturasEditar)).Succeeded;
+
+    var puedeEditarPaciente =
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.PacientesEditar)).Succeeded;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">Gestión manual de facturas</h1>
+        <p class="text-muted mb-0">
+            Consulte facturas y realice ajustes operativos controlados.
+        </p>
+    </div>
+
+    @if (puedeCrear)
+    {
+        <a asp-action="Crear" class="btn btn-primary">
+            Crear factura
+        </a>
+    }
+</div>
+
+@if (ViewData["MensajeExito"] is string mensajeExito)
+{
+    <div class="alert alert-success" role="alert">@mensajeExito</div>
+}
+
+@if (ViewData["MensajeError"] is string mensajeError)
+{
+    <div class="alert alert-warning" role="alert">@mensajeError</div>
+}
+
+<form method="get" class="card card-body mb-4">
+    <div asp-validation-summary="ModelOnly"
+         class="alert alert-danger"
+         role="alert"></div>
+
+    <div class="row g-3 align-items-end">
+        <div class="col-12 col-lg-4">
+            <label asp-for="TextoBusqueda" class="form-label"></label>
+            <input asp-for="TextoBusqueda"
+                   class="form-control"
+                   placeholder="FE, factura, paciente o documento" />
+        </div>
+
+        <div class="col-6 col-lg-2">
+            <label asp-for="FechaDesde" class="form-label"></label>
+            <input asp-for="FechaDesde" class="form-control" />
+        </div>
+
+        <div class="col-6 col-lg-2">
+            <label asp-for="FechaHasta" class="form-label"></label>
+            <input asp-for="FechaHasta" class="form-control" />
+        </div>
+
+        <div class="col-12 col-lg-2">
+            <div class="form-check mb-2">
+                <input asp-for="SoloConSaldo"
+                       class="form-check-input" />
+                <label asp-for="SoloConSaldo"
+                       class="form-check-label"></label>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-2 d-grid">
+            <button type="submit" class="btn btn-outline-primary">
+                Buscar
+            </button>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <strong>Facturas encontradas</strong>
+        <span class="badge text-bg-secondary">
+            @Model.TotalRegistros
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>FE</th>
+                    <th>Fecha</th>
+                    <th>Paciente</th>
+                    <th>Aseguradora</th>
+                    <th class="text-end">Valor</th>
+                    <th class="text-end">Saldo</th>
+                    <th>Estado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+            @if (Model.Facturas.Count == 0)
+            {
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        No se encontraron facturas.
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var factura in Model.Facturas)
+                {
+                    <tr>
+                        <td>
+                            <strong>@factura.Id</strong>
+                            <div class="small text-muted">
+                                @factura.Prefijo - @factura.Numero
+                            </div>
+                        </td>
+                        <td>@factura.FechaFactura.ToString("yyyy-MM-dd")</td>
+                        <td>
+                            @factura.NombreCompleto
+                            <div class="small text-muted">
+                                @factura.TipoDocumentoSigla
+                                @factura.NumeroDocumento
+                            </div>
+                        </td>
+                        <td>@factura.Aseguradora</td>
+                        <td class="text-end">
+                            @factura.Valor.ToString("N2")
+                        </td>
+                        <td class="text-end">
+                            @factura.SaldoCartera.ToString("N2")
+                        </td>
+                        <td>@factura.Estado</td>
+                        <td class="text-end text-nowrap">
+                            @if (puedeEditar)
+                            {
+                                <a asp-action="Editar"
+                                   asp-route-facturaId="@factura.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Editar
+                                </a>
+                            }
+
+                            @if (puedeEditarPaciente)
+                            {
+                                <a asp-action="EditarPaciente"
+                                   asp-route-tipoDocumentoId="@factura.TipoDocumentoId"
+                                   asp-route-numeroDocumento="@factura.NumeroDocumento"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Paciente
+                                </a>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPaginas > 1)
+    {
+        <div class="card-footer d-flex justify-content-between">
+            <span>
+                Página @Model.Pagina de @Model.TotalPaginas
+            </span>
+
+            <div class="btn-group">
+                <a asp-action="Index"
+                   asp-route-textoBusqueda="@Model.TextoBusqueda"
+                   asp-route-fechaDesde="@Model.FechaDesde"
+                   asp-route-fechaHasta="@Model.FechaHasta"
+                   asp-route-soloConSaldo="@Model.SoloConSaldo"
+                   asp-route-pagina="@(Model.Pagina - 1)"
+                   asp-route-tamanoPagina="@Model.TamanoPagina"
+                   class="btn btn-sm btn-outline-secondary
+                          @(Model.Pagina <= 1 ? "disabled" : string.Empty)">
+                    Anterior
+                </a>
+
+                <a asp-action="Index"
+                   asp-route-textoBusqueda="@Model.TextoBusqueda"
+                   asp-route-fechaDesde="@Model.FechaDesde"
+                   asp-route-fechaHasta="@Model.FechaHasta"
+                   asp-route-soloConSaldo="@Model.SoloConSaldo"
+                   asp-route-pagina="@(Model.Pagina + 1)"
+                   asp-route-tamanoPagina="@Model.TamanoPagina"
+                   class="btn btn-sm btn-outline-secondary
+                          @(Model.Pagina >= Model.TotalPaginas ? "disabled" : string.Empty)">
+                    Siguiente
+                </a>
+            </div>
+        </div>
+    }
+</div>

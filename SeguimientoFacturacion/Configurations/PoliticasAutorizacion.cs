@@ -90,11 +90,29 @@ public static class PoliticasAutorizacion
     public const string AseguradorasCambiarEstado =
         PrefijoPermiso + PermisosSistema.Aseguradoras.Inactivar;
 
+    public const string FacturasConsultar =
+        PrefijoPermiso + PermisosSistema.Facturas.Ver;
+
+    public const string FacturasCrearManual =
+        "Facturas.CrearManual";
+
+    public const string FacturasEditar =
+        PrefijoPermiso + PermisosSistema.Facturas.Editar;
+
+    public const string PacientesEditar =
+        PrefijoPermiso + PermisosSistema.Pacientes.Editar;
+
     private static readonly string[] PermisosCreacionUsuarios =
     [
         PermisosSistema.Usuarios.Crear,
         PermisosSistema.Usuarios.AsignarRoles,
         PermisosSistema.Usuarios.AsignarPermisos
+    ];
+
+    private static readonly string[] PermisosCreacionManualFactura =
+    [
+        PermisosSistema.Facturas.Crear,
+        PermisosSistema.Pacientes.Crear
     ];
 
     private static readonly string[] PermisosEdicionUsuarios =
@@ -249,6 +267,12 @@ public static class PoliticasAutorizacion
             UsuariosCrear,
             RequisitoPermisos.ExigirTodos(
                 PermisosCreacionUsuarios));
+
+        AgregarPolitica(
+            options,
+            FacturasCrearManual,
+            RequisitoPermisos.ExigirTodos(
+                PermisosCreacionManualFactura));
 
         AgregarPolitica(
             options,

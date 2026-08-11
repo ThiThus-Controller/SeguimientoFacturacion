@@ -1,0 +1,60 @@
+@model PacienteEdicionViewModel
+
+@{
+    ViewData["Title"] = "Corregir paciente";
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">Corregir nombre del paciente</h1>
+    <p class="text-muted mb-0">
+        El nuevo nombre se propagará a todas las facturas de esta identificación.
+    </p>
+</div>
+
+@if (ViewData["MensajeError"] is string mensajeError)
+{
+    <div class="alert alert-warning" role="alert">@mensajeError</div>
+}
+
+<div class="alert alert-warning">
+    Esta operación es global para el paciente y quedará registrada
+    en la auditoría de cada factura afectada.
+</div>
+
+<form asp-action="EditarPaciente" method="post" class="card">
+    <input asp-for="TipoDocumentoId" type="hidden" />
+    <input asp-for="NumeroDocumento" type="hidden" />
+    <input asp-for="VersionFilaBase64" type="hidden" />
+
+    <div class="card-body">
+        <div asp-validation-summary="All"
+             class="alert alert-danger"
+             role="alert"></div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Identificación</label>
+                <input value="@Model.NumeroDocumento"
+                       class="form-control"
+                       readonly />
+            </div>
+            <div class="col-md-8">
+                <label asp-for="NombreCompleto" class="form-label"></label>
+                <input asp-for="NombreCompleto" class="form-control" />
+                <span asp-validation-for="NombreCompleto"
+                      class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">
+            Actualizar en todas las facturas
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

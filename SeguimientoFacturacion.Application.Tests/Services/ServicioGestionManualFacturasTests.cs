@@ -394,6 +394,12 @@ public sealed class ServicioGestionManualFacturasTests
             int facturadorId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(true);
+
+        public Task<CatalogosGestionManualFacturaDto>
+            ObtenerCatalogosAsync(
+                CancellationToken cancellationToken = default) =>
+            Task.FromResult(
+                new CatalogosGestionManualFacturaDto());
     }
 
     private sealed class UnidadTrabajoFalsa : IUnidadTrabajo

@@ -1,4 +1,5 @@
 using SeguimientoFacturacion.Domain.Entities;
+using SeguimientoFacturacion.Application.DTOs.Facturas;
 
 namespace SeguimientoFacturacion.Application.Interfaces.Persistence;
 
@@ -59,5 +60,8 @@ public interface IRepositorioGestionManualFacturas
 
     Task<bool> ExisteFacturadorActivoAsync(
         int facturadorId,
+        CancellationToken cancellationToken = default);
+
+    Task<CatalogosGestionManualFacturaDto> ObtenerCatalogosAsync(
         CancellationToken cancellationToken = default);
 }
