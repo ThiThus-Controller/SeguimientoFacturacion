@@ -38,6 +38,10 @@ public static class DependencyInjection
             ServicioConsultaFacturas>();
 
         services.AddTransient<
+            IServicioGestionManualFacturas,
+            ServicioGestionManualFacturas>();
+
+        services.AddTransient<
             IServicioAnalisisImportacion,
             ServicioAnalisisImportacion>();
 

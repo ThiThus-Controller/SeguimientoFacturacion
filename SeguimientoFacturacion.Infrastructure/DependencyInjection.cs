@@ -85,6 +85,10 @@ public static class DependencyInjection
             ConsultaFacturasEfCore>();
 
         services.AddScoped<
+            IRepositorioGestionManualFacturas,
+            RepositorioGestionManualFacturasEfCore>();
+
+        services.AddScoped<
             IRepositorioImportaciones,
             RepositorioImportacionesEfCore>();
 

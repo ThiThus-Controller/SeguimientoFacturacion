@@ -84,6 +84,10 @@ public sealed class DependencyInjectionTests
         Assert.IsType<RepositorioAseguradorasEfCore>(
             scope.ServiceProvider.GetRequiredService<
                 IRepositorioAseguradoras>());
+
+        Assert.IsType<RepositorioGestionManualFacturasEfCore>(
+            scope.ServiceProvider.GetRequiredService<
+                IRepositorioGestionManualFacturas>());
     }
 
     [Fact]
