@@ -66,6 +66,32 @@ procesar definitivamente el lote, el sistema vuelve a consultar notas,
 estado y pagos aplicados, y recalcula las filas en orden determinista.
 Esto evita aplicar importes con un saldo desactualizado.
 
+## Escenarios financieros certificados
+
+La certificación funcional de la Fase 1 cubre los siguientes casos:
+
+| Escenario | Comportamiento esperado |
+|---|---|
+| Factura activa con saldo | Aplica hasta el saldo disponible |
+| Factura anulada | Conserva el valor recibido como anticipo |
+| Factura saldada antes del lote | Conserva el valor recibido como anticipo |
+| Pago con excedente | Aplica hasta el saldo y registra el excedente como anticipo |
+
+La ejecución certificada incluyó 14 facturas activas con saldo, 3
+facturas anuladas, 1 factura saldada antes del lote y 1 pago con
+excedente. Todos los casos cumplieron las fórmulas de distribución.
+
+## Controles de cierre
+
+Después de procesar un lote deben verificarse estas condiciones:
+
+- No quedan pagos ni aplicaciones temporales del lote completado.
+- Ninguna aplicación supera el valor recibido ni el saldo disponible.
+- Cada pago cumple `ValorRecibido = ValorAplicado + ValorAnticipo`.
+- Los pagos de facturas anuladas no incrementan la cartera aplicada.
+- Los lotes conservan usuario y fechas de confirmación y procesamiento.
+- Los valores consolidados coinciden con el detalle de las aplicaciones.
+
 ## Cambios posteriores
 
 Al anular una factura o registrar una nota crédito que reduzca el saldo
