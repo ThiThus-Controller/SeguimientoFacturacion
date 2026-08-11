@@ -82,6 +82,9 @@ internal sealed class FacturaConfiguration :
             .HasMaxLength(UsuarioAuditoriaLongitudMaxima)
             .IsUnicode(false);
 
+        builder.Property(factura => factura.VersionFila)
+            .IsRowVersion();
+
         builder.Ignore(factura => factura.DiasHastaRadicacion);
         builder.Ignore(factura => factura.TotalNotasCredito);
         builder.Ignore(factura => factura.TotalAbonos);

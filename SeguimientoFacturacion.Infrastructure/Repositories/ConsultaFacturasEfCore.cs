@@ -215,6 +215,10 @@ public sealed class ConsultaFacturasEfCore :
                                         .Facturador
                                         .Nombre,
 
+                            VersionFila =
+                                registro.Factura
+                                    .VersionFila,
+
                             TotalNotasCredito =
                                 registro
                                     .TotalNotasCredito,

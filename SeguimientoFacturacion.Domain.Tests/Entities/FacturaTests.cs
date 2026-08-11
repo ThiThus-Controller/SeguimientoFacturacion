@@ -13,6 +13,7 @@ public sealed class FacturaTests
         Assert.Equal("FE4250", factura.Id);
         Assert.Equal("FE", factura.Prefijo);
         Assert.Equal("4250", factura.Numero);
+        Assert.Empty(factura.VersionFila);
     }
 
     [Fact]

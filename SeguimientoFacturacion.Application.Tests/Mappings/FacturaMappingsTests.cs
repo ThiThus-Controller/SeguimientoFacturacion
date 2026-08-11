@@ -87,6 +87,8 @@ public sealed class FacturaMappingsTests
         Assert.Equal(
             550m,
             resultado.SaldoDisponibleGestion);
+
+        Assert.Empty(resultado.VersionFila);
     }
 
     private static Factura CrearFactura()

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Entities.Catalogos;
 using SeguimientoFacturacion.Infrastructure.Configuration;
@@ -70,6 +71,27 @@ public sealed class SeguimientoDbContextModelTests
 
         Assert.Null(
             entidad.FindProperty(nameof(Factura.Saldo)));
+    }
+
+    [Fact]
+    public void Factura_DebeUsarVersionFilaComoTokenDeConcurrencia()
+    {
+        using var contexto = CrearContexto();
+
+        var entidad =
+            contexto.Model.FindEntityType(typeof(Factura));
+
+        Assert.NotNull(entidad);
+
+        var versionFila =
+            entidad.FindProperty(nameof(Factura.VersionFila));
+
+        Assert.NotNull(versionFila);
+        Assert.True(versionFila.IsConcurrencyToken);
+        Assert.Equal(
+            ValueGenerated.OnAddOrUpdate,
+            versionFila.ValueGenerated);
+        Assert.Equal("rowversion", versionFila.GetColumnType());
     }
 
     [Fact]

@@ -91,6 +91,27 @@ public sealed class PacienteConfigurationTests
     }
 
     [Fact]
+    public void Paciente_DebeUsarVersionFilaComoTokenDeConcurrencia()
+    {
+        using var contexto = CrearContexto();
+
+        var entidad =
+            contexto.Model.FindEntityType(typeof(Paciente));
+
+        Assert.NotNull(entidad);
+
+        var versionFila =
+            entidad.FindProperty(nameof(Paciente.VersionFila));
+
+        Assert.NotNull(versionFila);
+        Assert.True(versionFila.IsConcurrencyToken);
+        Assert.Equal(
+            ValueGenerated.OnAddOrUpdate,
+            versionFila.ValueGenerated);
+        Assert.Equal("rowversion", versionFila.GetColumnType());
+    }
+
+    [Fact]
     public void Paciente_DebeRestringirEliminacionDelTipoDocumento()
     {
         using var contexto = CrearContexto();
