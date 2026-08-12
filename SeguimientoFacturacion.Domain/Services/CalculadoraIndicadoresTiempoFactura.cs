@@ -29,9 +29,15 @@ public sealed class CalculadoraIndicadoresTiempoFactura
                 nameof(fechaCorte));
         }
 
-        var glosasMaterializadas = glosas.ToArray();
+        var glosasRecibidas = glosas.ToArray();
 
-        ValidarPertenencia(factura.Id, glosasMaterializadas);
+        ValidarPertenencia(factura.Id, glosasRecibidas);
+
+        var glosasMaterializadas = glosasRecibidas
+            .Where(
+                glosa =>
+                    glosa.Estado != EstadoGlosa.Anulada)
+            .ToArray();
 
         var facturaARadicacion = CalcularFacturaARadicacion(
             factura,

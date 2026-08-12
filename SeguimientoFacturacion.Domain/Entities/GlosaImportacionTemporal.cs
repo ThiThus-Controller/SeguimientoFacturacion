@@ -301,6 +301,14 @@ public sealed class GlosaImportacionTemporal :
                 "El estado de la glosa no es válido.");
         }
 
+        if (estado == EstadoGlosa.Anulada)
+        {
+            throw new ArgumentException(
+                "El estado anulada es exclusivo de la gestión " +
+                "manual y no puede importarse.",
+                nameof(estado));
+        }
+
         if (valorAceptado < decimal.Zero ||
             valorAceptado > valorGlosa)
         {

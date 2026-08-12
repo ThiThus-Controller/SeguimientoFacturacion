@@ -174,6 +174,21 @@ public sealed class
 
     [Fact]
     public void
+        Crear_ConEstadoAnulada_DebeLanzarExcepcion()
+    {
+        void Accion()
+        {
+            _ = CrearRegistro(
+                fechaRespuesta:
+                    new DateOnly(2026, 7, 20),
+                estado: EstadoGlosa.Anulada);
+        }
+
+        Assert.Throws<ArgumentException>(Accion);
+    }
+
+    [Fact]
+    public void
         Crear_FeNoCoincide_DebeLanzarExcepcion()
     {
         void Accion()

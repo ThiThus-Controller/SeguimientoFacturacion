@@ -38,6 +38,20 @@ internal sealed class GlosaConfiguration :
                     "CK_Glosas_FechaRespuesta",
                     "[FechaRespuesta] IS NULL OR " +
                     "[FechaRespuesta] >= [FechaGlosa]");
+
+                tableBuilder.HasCheckConstraint(
+                    "CK_Glosas_Estado",
+                    "[Estado] BETWEEN 1 AND 6");
+
+                tableBuilder.HasCheckConstraint(
+                    "CK_Glosas_ObservacionResolucion",
+                    "[Estado] IN (1, 2) OR " +
+                    "NULLIF(LTRIM(RTRIM([Observacion])), '') " +
+                    "IS NOT NULL");
+
+                tableBuilder.HasCheckConstraint(
+                    "CK_Glosas_Anulacion",
+                    "[Estado] <> 6 OR [ValorAceptado] = 0");
             });
 
         builder.HasKey(
@@ -77,6 +91,12 @@ internal sealed class GlosaConfiguration :
                 glosa => glosa.ValorAceptado)
             .HasPrecision(18, 2)
             .IsRequired();
+
+        builder.Property(
+                glosa => glosa.Observacion)
+            .HasMaxLength(
+                Glosa.ObservacionLongitudMaxima)
+            .IsUnicode();
 
         builder.Property(
                 glosa => glosa.VersionFila)

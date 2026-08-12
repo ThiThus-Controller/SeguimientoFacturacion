@@ -165,6 +165,16 @@ public sealed class AjustesFacturaConfigurationTests
         Assert.Equal(18, valorAceptado.GetPrecision());
         Assert.Equal(2, valorAceptado.GetScale());
 
+        var observacion =
+            entidad.FindProperty(
+                nameof(Glosa.Observacion));
+
+        Assert.NotNull(observacion);
+        Assert.True(observacion.IsNullable);
+        Assert.Equal(
+            Glosa.ObservacionLongitudMaxima,
+            observacion.GetMaxLength());
+
         var versionFila = entidad.FindProperty(
             nameof(Glosa.VersionFila));
 

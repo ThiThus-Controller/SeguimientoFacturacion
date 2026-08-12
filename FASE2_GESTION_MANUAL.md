@@ -297,6 +297,24 @@ trazabilidad; no sustituyen el historial inmutable.
 - No existen accesos directos a SQL desde Web.
 - Las pruebas de Domain, Application, Infrastructure y Web son correctas.
 
+## Gestión manual de glosas y respuestas
+
+La glosa utiliza los estados `Abierta`, `Respondida`, `Aceptada`,
+`Levantada`, `Conciliada` y `Anulada`. El estado `Anulada` es exclusivo
+de la operación manual y no forma parte de las plantillas de importación.
+
+La observación admite hasta 1.000 caracteres. Es opcional al crear o
+responder, y obligatoria al aceptar, levantar, conciliar o anular.
+
+La anulación solo podrá ejecutarse cuando no existan notas crédito
+vigentes asociadas. Una glosa anulada no participa en indicadores ni
+conserva valor aceptado. La operación exige permiso `Glosas.Anular`,
+concurrencia optimista y auditoría inmutable.
+
+Una glosa aceptada o conciliada no reduce directamente la cartera ni
+genera automáticamente una nota crédito. El sistema mostrará el valor
+aceptado pendiente de respaldo hasta registrar la nota correspondiente.
+
 ## Decisiones funcionales propuestas
 
 Antes de iniciar la implementación se solicita aprobar o ajustar:

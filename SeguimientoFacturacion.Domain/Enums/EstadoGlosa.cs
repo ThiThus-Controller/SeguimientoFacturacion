@@ -29,5 +29,11 @@ public enum EstadoGlosa
     /// <summary>
     /// La glosa fue resuelta mediante conciliación.
     /// </summary>
-    Conciliada = 5
+    Conciliada = 5,
+
+    /// <summary>
+    /// La glosa fue anulada manualmente por haberse registrado
+    /// de manera errónea.
+    /// </summary>
+    Anulada = 6
 }
