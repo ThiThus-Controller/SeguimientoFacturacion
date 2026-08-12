@@ -26,6 +26,9 @@ public sealed class
         IConsultaReferenciasFacturasImportacion
         _consultaFacturas;
 
+    private readonly IConsultaGlosasNotasCredito
+        _consultaGlosas;
+
     /// <summary>
     /// Inicializa el preparador modular de notas.
     /// </summary>
@@ -33,16 +36,19 @@ public sealed class
         IValidadorNotasFacturaModular validador,
         IInspectorEstructuraPlantilla inspector,
         IConsultaReferenciasFacturasImportacion
-            consultaFacturas)
+            consultaFacturas,
+        IConsultaGlosasNotasCredito consultaGlosas)
     {
         ArgumentNullException.ThrowIfNull(validador);
         ArgumentNullException.ThrowIfNull(inspector);
         ArgumentNullException.ThrowIfNull(
             consultaFacturas);
+        ArgumentNullException.ThrowIfNull(consultaGlosas);
 
         _validador = validador;
         _inspector = inspector;
         _consultaFacturas = consultaFacturas;
+        _consultaGlosas = consultaGlosas;
     }
 
     /// <inheritdoc />
@@ -131,10 +137,42 @@ public sealed class
                     referencia.FacturaId,
                 StringComparer.OrdinalIgnoreCase);
 
+        var referenciasGlosas =
+            await _consultaGlosas.ObtenerPorFacturasAsync(
+                filas
+                    .Where(fila =>
+                        fila.Tipo == TipoNotaFactura.Credito)
+                    .Select(fila => fila.IdentificadorFe)
+                    .Distinct(
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray(),
+                cancellationToken);
+
+        var asignacionGlosas =
+            AsignadorGlosasNotasCredito.Resolver(
+                filas
+                    .Where(fila =>
+                        fila.Tipo == TipoNotaFactura.Credito)
+                    .Select(fila =>
+                        new SolicitudAsignacionGlosa(
+                            fila.NumeroFila,
+                            fila.IdentificadorFe,
+                            fila.FechaNota,
+                            fila.ValorNota)),
+                referenciasGlosas);
+
+        if (asignacionGlosas.Errores.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "La relación entre notas crédito y glosas " +
+                "cambió después de validar el archivo.");
+        }
+
         var notas =
             PrepararNotas(
                 filas,
                 indiceReferencias,
+                asignacionGlosas.Asignaciones,
                 cancellationToken);
 
         return new ResultadoPreparacionNotasFacturaDto
@@ -260,12 +298,13 @@ public sealed class
     private static IReadOnlyCollection<
         NotaFacturaPreparadaImportacionDto>
         PrepararNotas(
-            IEnumerable<FilaNotaPreparacion> filas,
-            IReadOnlyDictionary<
+        IEnumerable<FilaNotaPreparacion> filas,
+        IReadOnlyDictionary<
                 string,
                 ReferenciaFacturaImportacionDto>
                 referencias,
-            CancellationToken cancellationToken)
+        IReadOnlyDictionary<int, Guid> asignacionesGlosas,
+        CancellationToken cancellationToken)
     {
         var notas =
             new List<
@@ -318,7 +357,12 @@ public sealed class
                         fila.NumeroNota,
 
                     ValorNota =
-                        fila.ValorNota
+                        fila.ValorNota,
+
+                    GlosaId =
+                        fila.Tipo == TipoNotaFactura.Credito
+                            ? asignacionesGlosas[fila.NumeroFila]
+                            : null
                 });
         }
 

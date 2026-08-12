@@ -13,7 +13,8 @@ public sealed class NotaFacturaTests
             tipo: TipoNotaFactura.Credito,
             fecha: new DateOnly(2026, 7, 28),
             numero: "  nc-60195  ",
-            valor: 150000m);
+            valor: 150000m,
+            glosaId: Guid.NewGuid());
 
         Assert.NotEqual(
             Guid.Empty,
@@ -61,7 +62,8 @@ public sealed class NotaFacturaTests
             tipo: (TipoNotaFactura)999,
             fecha: new DateOnly(2026, 7, 28),
             numero: "NC-100",
-            valor: 150000m);
+            valor: 150000m,
+            glosaId: Guid.NewGuid());
 
         Assert.Throws<ArgumentOutOfRangeException>(
             accion);
@@ -108,7 +110,8 @@ public sealed class NotaFacturaTests
             tipo: TipoNotaFactura.Credito,
             fecha: new DateOnly(2026, 7, 28),
             numero: "NC-100",
-            valor: 150000m);
+            valor: 150000m,
+            glosaId: Guid.NewGuid());
 
         nota.Anular(
             "Nota duplicada durante la carga histórica.");
@@ -122,5 +125,59 @@ public sealed class NotaFacturaTests
         Assert.Equal(
             decimal.Zero,
             nota.ImpactoSaldo);
+    }
+
+    [Fact]
+    public void CrearNotaCredito_AsociadaGlosa_DebeConservarRelacion()
+    {
+        var glosaId = Guid.NewGuid();
+
+        var nota = new NotaFactura(
+            facturaId: "FE4250",
+            tipo: TipoNotaFactura.Credito,
+            fecha: new DateOnly(2026, 8, 12),
+            numero: "NC-GLOSA-001",
+            valor: 15921m,
+            glosaId: glosaId);
+
+        Assert.Equal(glosaId, nota.GlosaId);
+    }
+
+    [Fact]
+    public void CrearNotaCredito_SinGlosa_DebeLanzarExcepcion()
+    {
+        var accion = () => new NotaFactura(
+            facturaId: "FE4250",
+            tipo: TipoNotaFactura.Credito,
+            fecha: new DateOnly(2026, 8, 12),
+            numero: "NC-SIN-GLOSA",
+            valor: 15921m);
+
+        var excepcion = Assert.Throws<ArgumentException>(accion);
+
+        Assert.Contains(
+            "respaldada por una glosa",
+            excepcion.Message,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CrearNotaDebito_AsociadaGlosa_DebeLanzarExcepcion()
+    {
+        var accion = () => new NotaFactura(
+            facturaId: "FE4250",
+            tipo: TipoNotaFactura.Debito,
+            fecha: new DateOnly(2026, 8, 12),
+            numero: "ND-GLOSA-001",
+            valor: 15921m,
+            glosaId: Guid.NewGuid());
+
+        var excepcion = Assert.Throws<ArgumentException>(
+            accion);
+
+        Assert.Contains(
+            "Solo una nota crédito",
+            excepcion.Message,
+            StringComparison.OrdinalIgnoreCase);
     }
 }

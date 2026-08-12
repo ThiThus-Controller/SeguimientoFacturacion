@@ -34,6 +34,11 @@ internal sealed class NotaFacturaConfiguration :
                     "([Anulada] = 1 AND " +
                     "NULLIF(LTRIM(RTRIM(" +
                     "[MotivoAnulacion])), '') IS NOT NULL)");
+
+                tableBuilder.HasCheckConstraint(
+                    "CK_NotasFactura_Glosa",
+                    "([Tipo] = 1 AND [GlosaId] IS NOT NULL) OR " +
+                    "([Tipo] = 2 AND [GlosaId] IS NULL)");
             });
 
         builder.HasKey(nota => nota.Id);
@@ -64,6 +69,8 @@ internal sealed class NotaFacturaConfiguration :
         builder.Property(nota => nota.Valor)
             .HasPrecision(18, 2)
             .IsRequired();
+
+        builder.Property(nota => nota.GlosaId);
 
         builder.Property(nota => nota.Anulada)
             .IsRequired();
@@ -96,6 +103,11 @@ internal sealed class NotaFacturaConfiguration :
             .HasForeignKey(nota => nota.FacturaId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(nota => nota.Glosa)
+            .WithMany()
+            .HasForeignKey(nota => nota.GlosaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(
                 nota => new
                 {
@@ -110,5 +122,9 @@ internal sealed class NotaFacturaConfiguration :
         builder.HasIndex(nota => nota.Fecha)
             .HasDatabaseName(
                 "IX_NotasFactura_Fecha");
+
+        builder.HasIndex(nota => nota.GlosaId)
+            .HasDatabaseName(
+                "IX_NotasFactura_GlosaId");
     }
 }

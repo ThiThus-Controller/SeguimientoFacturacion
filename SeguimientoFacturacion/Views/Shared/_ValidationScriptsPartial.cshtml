@@ -1,2 +1,36 @@
 ﻿<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
 <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+<script>
+    (() => {
+        const validador = window.jQuery?.validator;
+
+        if (!validador) {
+            return;
+        }
+
+        const numeroOriginal = validador.methods.number;
+        const patronDecimal = /^-?\d+(?:[.,]\d{1,2})?$/;
+
+        validador.methods.number = function (valor, elemento) {
+            if (elemento.dataset.decimalFlexible !== "true") {
+                return numeroOriginal.call(this, valor, elemento);
+            }
+
+            return this.optional(elemento) || patronDecimal.test(valor);
+        };
+
+        validador.addMethod(
+            "decimalpositivo",
+            function (valor, elemento) {
+                if (this.optional(elemento)) {
+                    return true;
+                }
+
+                return patronDecimal.test(valor) &&
+                    Number(valor.replace(",", ".")) > 0;
+            });
+
+        window.jQuery.validator.unobtrusive.adapters.addBool(
+            "decimalpositivo");
+    })();
+</script>

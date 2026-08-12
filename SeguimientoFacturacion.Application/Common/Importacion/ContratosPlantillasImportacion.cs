@@ -48,6 +48,9 @@ public static class ContratosPlantillasImportacion
 
     /// <summary>
     /// Obtiene el contrato de notas crédito y débito.
+    /// Las notas crédito se asocian internamente con una
+    /// glosa aceptada; la plantilla no expone identificadores
+    /// ni datos redundantes de la glosa.
     /// </summary>
     public static ContratoPlantillaImportacion
         NotasFactura

@@ -37,6 +37,9 @@ public sealed class
             0,
             TimeSpan.Zero);
 
+    private static readonly Guid GlosaIdPrueba =
+        Guid.Parse("11111111-1111-1111-1111-111111111111");
+
     [Fact]
     public async Task
         Procesar_ConNotasNuevas_DebeCompletarLote()
@@ -444,6 +447,92 @@ public sealed class
                     }));
     }
 
+    [Theory]
+    [InlineData(15921, 0, 15921)]
+    [InlineData(15921, 5000, 8000)]
+    public async Task
+        Procesar_NotaCreditoHastaValorAceptado_DebePermitir(
+            decimal valorAceptado,
+            decimal notasPrevias,
+            decimal nuevaNota)
+    {
+        var lote = CrearLoteConfirmado(totalFilas: 1);
+        var glosaId = Guid.NewGuid();
+        var repositorio = new RepositorioDefinitivoPrueba();
+
+        var servicio = CrearServicio(
+            new RepositorioImportacionesPrueba(lote),
+            new RepositorioTemporalPrueba(
+                [
+                    CrearRegistro(
+                        lote.Id,
+                        fila: 2,
+                        facturaId: "FV000001",
+                        numeroFactura: "000001",
+                        valor: nuevaNota,
+                        glosaId: glosaId)
+                ]),
+            repositorio,
+            new ConsultaFacturasPrueba(
+                [CrearReferencia("FV000001")]),
+            new UnidadTrabajoPrueba(),
+            new ConsultaGlosasPrueba(
+                [
+                    CrearReferenciaGlosa(
+                        glosaId,
+                        valorAceptado,
+                        notasPrevias)
+                ]));
+
+        await servicio.ProcesarAsync(
+            CrearSolicitud(lote.Id));
+
+        var nota = Assert.Single(repositorio.Agregadas);
+        Assert.Equal(glosaId, nota.GlosaId);
+    }
+
+    [Fact]
+    public async Task
+        Procesar_NotaCreditoExcedeValorAceptado_DebeRechazar()
+    {
+        var lote = CrearLoteConfirmado(totalFilas: 1);
+        var glosaId = Guid.NewGuid();
+
+        var servicio = CrearServicio(
+            new RepositorioImportacionesPrueba(lote),
+            new RepositorioTemporalPrueba(
+                [
+                    CrearRegistro(
+                        lote.Id,
+                        fila: 2,
+                        facturaId: "FV000001",
+                        numeroFactura: "000001",
+                        valor: 10000m,
+                        glosaId: glosaId)
+                ]),
+            new RepositorioDefinitivoPrueba(),
+            new ConsultaFacturasPrueba(
+                [CrearReferencia("FV000001")]),
+            new UnidadTrabajoPrueba(),
+            new ConsultaGlosasPrueba(
+                [
+                    CrearReferenciaGlosa(
+                        glosaId,
+                        valorAceptado: 15921m,
+                        notasPrevias: 7000m)
+                ]));
+
+        var excepcion = await Assert.ThrowsAsync<
+            ExcepcionLoteNotasFacturaNoProcesable>(
+                () => servicio.ProcesarAsync(
+                    CrearSolicitud(lote.Id)));
+
+        Assert.Contains(
+            "supera el valor aceptado",
+            excepcion.Motivo,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public void DependencyInjection_DebeRegistrarServicio()
     {
@@ -479,7 +568,9 @@ public sealed class
                 repositorioDefinitivo,
             IConsultaReferenciasFacturasImportacion
                 consultaFacturas,
-            IUnidadTrabajo unidadTrabajo)
+            IUnidadTrabajo unidadTrabajo,
+            IConsultaGlosasNotasCredito?
+                consultaGlosas = null)
     {
         return new
             ServicioProcesamientoLoteNotasFactura(
@@ -487,6 +578,14 @@ public sealed class
                 repositorioTemporal,
                 repositorioDefinitivo,
                 consultaFacturas,
+                consultaGlosas ??
+                    new ConsultaGlosasPrueba(
+                    [
+                        CrearReferenciaGlosa(
+                            GlosaIdPrueba,
+                            valorAceptado: 1000000m,
+                            notasPrevias: 0m)
+                    ]),
                 unidadTrabajo,
                 new
                     SolicitudProcesamientoLoteNotasFacturaDtoValidator(),
@@ -550,7 +649,8 @@ public sealed class
                 TipoNotaFactura.Credito,
             string numeroNota = "NC-001",
             decimal valor = 50000m,
-            DateOnly? fechaNota = null)
+            DateOnly? fechaNota = null,
+            Guid? glosaId = null)
     {
         return new
             NotaFacturaImportacionTemporal(
@@ -566,7 +666,10 @@ public sealed class
                     fechaNota ??
                     new DateOnly(2026, 7, 20),
                 numeroNota: numeroNota,
-                valorNota: valor);
+                valorNota: valor,
+                glosaId: tipo == TipoNotaFactura.Credito
+                    ? glosaId ?? GlosaIdPrueba
+                    : null);
     }
 
     private static ReferenciaFacturaImportacionDto
@@ -586,6 +689,23 @@ public sealed class
             FechaFactura =
                 fechaFactura ??
                 new DateOnly(2026, 7, 10)
+        };
+    }
+
+    private static ReferenciaGlosaNotaCreditoDto
+        CrearReferenciaGlosa(
+            Guid glosaId,
+            decimal valorAceptado,
+            decimal notasPrevias)
+    {
+        return new ReferenciaGlosaNotaCreditoDto
+        {
+            GlosaId = glosaId,
+            FacturaId = "FV000001",
+            FechaGlosa = new DateOnly(2026, 7, 15),
+            ValorGlosa = 26535m,
+            ValorAceptado = valorAceptado,
+            TotalNotasCreditoVigentes = notasPrevias
         };
     }
 
@@ -768,6 +888,54 @@ public sealed class
                     .ToArray();
 
             return Task.FromResult(resultado);
+        }
+    }
+
+    private sealed class ConsultaGlosasPrueba :
+        IConsultaGlosasNotasCredito
+    {
+        private readonly IReadOnlyCollection<
+            ReferenciaGlosaNotaCreditoDto> _referencias;
+
+        public ConsultaGlosasPrueba(
+            IReadOnlyCollection<
+                ReferenciaGlosaNotaCreditoDto> referencias)
+        {
+            _referencias = referencias;
+        }
+
+        public Task<IReadOnlyCollection<
+            ReferenciaGlosaNotaCreditoDto>>
+            ObtenerPorFacturasAsync(
+                IReadOnlyCollection<string> facturaIds,
+                CancellationToken cancellationToken = default)
+        {
+            var solicitados = facturaIds.ToHashSet(
+                StringComparer.OrdinalIgnoreCase);
+
+            IReadOnlyCollection<
+                ReferenciaGlosaNotaCreditoDto> resultado =
+                _referencias
+                    .Where(referencia =>
+                        solicitados.Contains(
+                            referencia.FacturaId))
+                    .ToArray();
+
+            return Task.FromResult(resultado);
+        }
+
+        public Task<int> PrepararControlConcurrenciaAsync(
+            IReadOnlyCollection<Guid> glosaIds,
+            DateTimeOffset fecha,
+            string actor,
+            CancellationToken cancellationToken = default)
+        {
+            var disponibles = _referencias
+                .Select(referencia => referencia.GlosaId)
+                .ToHashSet();
+
+            return Task.FromResult(
+                glosaIds.Distinct().Count(disponibles.Contains));
         }
     }
 

@@ -30,6 +30,13 @@
             User,
             PoliticasAutorizacion.AseguradorasConsultar))
         .Succeeded;
+
+    var puedeConsultarFacturas =
+        User.Identity?.IsAuthenticated == true &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.FacturasConsultar))
+        .Succeeded;
 }
 
 <!DOCTYPE html>
@@ -101,6 +108,17 @@
                                    asp-controller="Importacion"
                                    asp-action="Index">
                                     Analizar importación
+                                </a>
+                            </li>
+                        }
+
+                        @if (puedeConsultarFacturas)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                   asp-controller="Facturas"
+                                   asp-action="Index">
+                                    Facturas
                                 </a>
                             </li>
                         }

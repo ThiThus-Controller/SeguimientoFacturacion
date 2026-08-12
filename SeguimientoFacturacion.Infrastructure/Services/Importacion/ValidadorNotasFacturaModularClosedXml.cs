@@ -28,6 +28,9 @@ public sealed class
         IConsultaReferenciasFacturasImportacion
         _consultaFacturas;
 
+    private readonly IConsultaGlosasNotasCredito
+        _consultaGlosas;
+
     /// <summary>
     /// Inicializa el validador modular.
     /// </summary>
@@ -35,15 +38,18 @@ public sealed class
         IInspectorEstructuraPlantilla inspector,
         IConsultaCatalogosImportacion consultaCatalogos,
         IConsultaReferenciasFacturasImportacion
-            consultaFacturas)
+            consultaFacturas,
+        IConsultaGlosasNotasCredito consultaGlosas)
     {
         ArgumentNullException.ThrowIfNull(inspector);
         ArgumentNullException.ThrowIfNull(consultaCatalogos);
         ArgumentNullException.ThrowIfNull(consultaFacturas);
+        ArgumentNullException.ThrowIfNull(consultaGlosas);
 
         _inspector = inspector;
         _consultaCatalogos = consultaCatalogos;
         _consultaFacturas = consultaFacturas;
+        _consultaGlosas = consultaGlosas;
     }
 
     /// <inheritdoc />
@@ -181,6 +187,35 @@ public sealed class
         ValidarReferencias(
             filas,
             referencias,
+            inconsistencias);
+
+        var facturasAdmitenNotas = referencias
+            .Where(referencia =>
+                !CodigosEstadoFactura.EsAnulada(
+                    referencia.EstadoId))
+            .Select(referencia => referencia.FacturaId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var referenciasGlosas =
+            await _consultaGlosas.ObtenerPorFacturasAsync(
+                filas
+                    .Where(fila =>
+                        fila.Tipo == TipoNotaFactura.Credito &&
+                        fila.FechaNota.HasValue &&
+                        fila.ValorNota.HasValue &&
+                        fila.ValorNota.Value > decimal.Zero &&
+                        facturasAdmitenNotas.Contains(
+                            fila.IdentificadorFe))
+                    .Select(fila => fila.IdentificadorFe)
+                    .Distinct(
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray(),
+                cancellationToken);
+
+        ValidarRespaldosGlosas(
+            filas,
+            referenciasGlosas,
+            facturasAdmitenNotas,
             inconsistencias);
 
         return new ResultadoValidacionNotasFacturaDto
@@ -470,6 +505,45 @@ public sealed class
                     "La fecha de la nota no puede ser " +
                     "anterior a la fecha de factura.");
             }
+        }
+    }
+
+    private static void ValidarRespaldosGlosas(
+        IEnumerable<FilaNota> filas,
+        IEnumerable<ReferenciaGlosaNotaCreditoDto>
+            referenciasGlosas,
+        IReadOnlySet<string> facturasAdmitenNotas,
+        ICollection<InconsistenciaImportacionDto>
+            inconsistencias)
+    {
+        var solicitudes = filas
+            .Where(fila =>
+                fila.Tipo == TipoNotaFactura.Credito &&
+                fila.FechaNota.HasValue &&
+                fila.ValorNota.HasValue &&
+                fila.ValorNota.Value > decimal.Zero &&
+                facturasAdmitenNotas.Contains(
+                    fila.IdentificadorFe))
+            .Select(fila =>
+                new SolicitudAsignacionGlosa(
+                    fila.NumeroFila,
+                    fila.IdentificadorFe,
+                    fila.FechaNota!.Value,
+                    fila.ValorNota!.Value))
+            .ToArray();
+
+        var resultado = AsignadorGlosasNotasCredito.Resolver(
+            solicitudes,
+            referenciasGlosas);
+
+        foreach (var error in resultado.Errores)
+        {
+            AgregarError(
+                inconsistencias,
+                error.NumeroFila,
+                error.Columna,
+                error.Codigo,
+                error.Mensaje);
         }
     }
 

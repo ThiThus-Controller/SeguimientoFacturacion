@@ -37,7 +37,8 @@ public sealed class NotaFactura : EntidadAuditableBase<Guid>
         TipoNotaFactura tipo,
         DateOnly fecha,
         string numero,
-        decimal valor)
+        decimal valor,
+        Guid? glosaId = null)
         : base(Guid.NewGuid())
     {
         FacturaId = ValidarFacturaId(facturaId);
@@ -45,6 +46,7 @@ public sealed class NotaFactura : EntidadAuditableBase<Guid>
         Fecha = ValidarFecha(fecha);
         Numero = ValidarNumero(numero);
         Valor = ValidarValor(valor);
+        GlosaId = ValidarGlosaId(tipo, glosaId);
     }
 
     /// <summary>
@@ -73,6 +75,12 @@ public sealed class NotaFactura : EntidadAuditableBase<Guid>
     /// Obtiene el valor monetario de la nota.
     /// </summary>
     public decimal Valor { get; private set; }
+
+    /// <summary>
+    /// Obtiene la glosa cuyo valor aceptado respalda esta
+    /// nota crédito. Es nulo exclusivamente para notas débito.
+    /// </summary>
+    public Guid? GlosaId { get; private set; }
 
     /// <summary>
     /// Indica si la nota fue anulada.
@@ -108,6 +116,12 @@ public sealed class NotaFactura : EntidadAuditableBase<Guid>
     /// Obtiene la factura asociada.
     /// </summary>
     public Factura? Factura { get; private set; }
+
+    /// <summary>
+    /// Obtiene la glosa asociada cuando la nota materializa
+    /// una aceptación total o parcial.
+    /// </summary>
+    public Glosa? Glosa { get; private set; }
 
     /// <summary>
     /// Anula la nota y elimina su impacto financiero.
@@ -219,6 +233,43 @@ public sealed class NotaFactura : EntidadAuditableBase<Guid>
         }
 
         return valor;
+    }
+
+    private static Guid? ValidarGlosaId(
+        TipoNotaFactura tipo,
+        Guid? glosaId)
+    {
+        if (tipo == TipoNotaFactura.Credito &&
+            !glosaId.HasValue)
+        {
+            throw new ArgumentException(
+                "Toda nota crédito debe estar respaldada " +
+                "por una glosa.",
+                nameof(glosaId));
+        }
+
+        if (!glosaId.HasValue)
+        {
+            return null;
+        }
+
+        if (glosaId.Value == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "El identificador de la glosa no puede " +
+                "estar vacío.",
+                nameof(glosaId));
+        }
+
+        if (tipo != TipoNotaFactura.Credito)
+        {
+            throw new ArgumentException(
+                "Solo una nota crédito puede asociarse " +
+                "a una glosa.",
+                nameof(glosaId));
+        }
+
+        return glosaId;
     }
 
     private static string ValidarMotivoAnulacion(

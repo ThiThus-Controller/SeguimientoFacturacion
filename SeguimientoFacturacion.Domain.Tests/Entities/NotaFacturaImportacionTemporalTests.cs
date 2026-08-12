@@ -26,7 +26,8 @@ public sealed class
                 fechaNota:
                     new DateOnly(2026, 7, 29),
                 numeroNota: " nc-001 ",
-                valorNota: 100000m);
+                valorNota: 100000m,
+                glosaId: Guid.NewGuid());
 
         Assert.NotEqual(Guid.Empty, registro.Id);
         Assert.Equal(loteId, registro.LoteImportacionId);
@@ -112,6 +113,28 @@ public sealed class
             fechaNota:
                 new DateOnly(2026, 7, 29),
             numeroNota: "NC-001",
-            valorNota: valorNota);
+            valorNota: valorNota,
+            glosaId: tipo == TipoNotaFactura.Credito
+                ? Guid.NewGuid()
+                : null);
+    }
+
+    [Fact]
+    public void Crear_NotaCreditoSinGlosa_DebeLanzarExcepcion()
+    {
+        var accion = () => new NotaFacturaImportacionTemporal(
+            loteImportacionId: Guid.NewGuid(),
+            hojaOrigen: "Notas",
+            filaOrigen: 2,
+            identificadorFe: "FE000001",
+            prefijo: "FE",
+            numeroFactura: "000001",
+            aseguradoraId: 1,
+            tipo: TipoNotaFactura.Credito,
+            fechaNota: new DateOnly(2026, 7, 29),
+            numeroNota: "NC-001",
+            valorNota: 100000m);
+
+        Assert.Throws<ArgumentException>(accion);
     }
 }

@@ -71,6 +71,13 @@ public sealed class Paciente : EntidadAuditableBase<Guid>
         string.Empty;
 
     /// <summary>
+    /// Obtiene la versión utilizada para detectar modificaciones
+    /// concurrentes. El valor es generado por la base de datos.
+    /// </summary>
+    public byte[] VersionFila { get; private set; } =
+        Array.Empty<byte>();
+
+    /// <summary>
     /// Obtiene el tipo de documento asociado.
     /// </summary>
     public TipoDocumento? TipoDocumento { get; private set; }

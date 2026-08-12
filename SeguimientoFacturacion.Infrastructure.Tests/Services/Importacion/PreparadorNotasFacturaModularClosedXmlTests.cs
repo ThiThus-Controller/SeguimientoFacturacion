@@ -114,6 +114,11 @@ public sealed class
             notaCredito.NumeroNota);
 
         Assert.Equal(
+            Guid.Parse(
+                "11111111-1111-1111-1111-111111111111"),
+            notaCredito.GlosaId);
+
+        Assert.Equal(
             100000m,
             notaCredito.ValorNota);
 
@@ -222,17 +227,21 @@ public sealed class
         var inspector =
             new InspectorEstructuraPlantillaClosedXml();
 
+        var consultaGlosas = new ConsultaGlosasControlada();
+
         var validador =
             new ValidadorNotasFacturaModularClosedXml(
                 inspector,
                 new ConsultaCatalogosControlada(),
-                consultaFacturas);
+                consultaFacturas,
+                consultaGlosas);
 
         return new
             PreparadorNotasFacturaModularClosedXml(
                 validador,
                 inspector,
-                consultaFacturas);
+                consultaFacturas,
+                consultaGlosas);
     }
 
     private static SolicitudAnalisisImportacionDto
@@ -340,6 +349,41 @@ public sealed class
                     ]
                 });
         }
+    }
+
+    private sealed class ConsultaGlosasControlada :
+        IConsultaGlosasNotasCredito
+    {
+        private static readonly Guid GlosaId =
+            Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        public Task<IReadOnlyCollection<
+            ReferenciaGlosaNotaCreditoDto>>
+            ObtenerPorFacturasAsync(
+                IReadOnlyCollection<string> facturaIds,
+                CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyCollection<
+                ReferenciaGlosaNotaCreditoDto>>(
+            [
+                new ReferenciaGlosaNotaCreditoDto
+                {
+                    GlosaId = GlosaId,
+                    FacturaId = "FE000001",
+                    FechaGlosa = new DateOnly(2026, 1, 20),
+                    ValorGlosa = 150000m,
+                    ValorAceptado = 150000m,
+                    TotalNotasCreditoVigentes = 0m
+                }
+            ]);
+        }
+
+        public Task<int> PrepararControlConcurrenciaAsync(
+            IReadOnlyCollection<Guid> glosaIds,
+            DateTimeOffset fecha,
+            string actor,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
     }
 
     private sealed class

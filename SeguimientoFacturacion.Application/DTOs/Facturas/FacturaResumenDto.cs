@@ -122,6 +122,12 @@ public sealed record FacturaResumenDto
     public required string Facturador { get; init; }
 
     /// <summary>
+    /// Obtiene la versión de concurrencia de la factura. Al serializarse
+    /// como JSON se representa en Base64.
+    /// </summary>
+    public required byte[] VersionFila { get; init; }
+
+    /// <summary>
     /// Obtiene el total de notas crédito activas.
     /// </summary>
     public decimal TotalNotasCredito { get; init; }

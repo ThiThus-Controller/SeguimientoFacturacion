@@ -27,6 +27,8 @@ public sealed class PacienteTests
         Assert.Equal(
             "María López",
             paciente.NombreCompleto);
+
+        Assert.Empty(paciente.VersionFila);
     }
 
     [Fact]

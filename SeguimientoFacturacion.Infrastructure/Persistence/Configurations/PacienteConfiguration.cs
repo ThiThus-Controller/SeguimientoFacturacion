@@ -57,6 +57,9 @@ internal sealed class PacienteConfiguration :
             .HasMaxLength(UsuarioAuditoriaLongitudMaxima)
             .IsUnicode(false);
 
+        builder.Property(paciente => paciente.VersionFila)
+            .IsRowVersion();
+
         builder.HasOne(paciente => paciente.TipoDocumento)
             .WithMany()
             .HasForeignKey(paciente => paciente.TipoDocumentoId)

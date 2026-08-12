@@ -134,6 +134,36 @@ public sealed class
     }
 
     [Fact]
+    public void Notas_DebeTenerOchoColumnasOperativas()
+    {
+        var contrato =
+            ContratosPlantillasImportacion.NotasFactura;
+
+        Assert.Equal(8, contrato.EncabezadosRequeridos.Count);
+        Assert.DoesNotContain(
+            "FECHA GLOSA ASOCIADA",
+            contrato.EncabezadosRequeridos);
+        Assert.DoesNotContain(
+            "VALOR GLOSA ASOCIADA",
+            contrato.EncabezadosRequeridos);
+
+        var encabezados = contrato.EncabezadosRequeridos;
+
+        Assert.Empty(
+            contrato.ObtenerEncabezadosFaltantes(
+                encabezados));
+
+        Assert.Empty(
+            contrato.ObtenerEncabezadosNoReconocidos(
+                encabezados));
+
+        Assert.Equal(
+            TipoImportacion.NotasFactura,
+            ContratosPlantillasImportacion
+                .Detectar(encabezados)?.Tipo);
+    }
+
+    [Fact]
     public void Pagos_DebeTenerDiezColumnas()
     {
         var encabezados =

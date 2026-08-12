@@ -1,0 +1,133 @@
+@using Microsoft.AspNetCore.Authorization
+@using SeguimientoFacturacion.Configurations
+@model FacturaEdicionOperativaViewModel
+@inject IAuthorizationService ServicioAutorizacion
+
+@{
+    ViewData["Title"] = $"Editar {Model.Id}";
+
+    var puedeAnular = (await ServicioAutorizacion.AuthorizeAsync(
+        User,
+        PoliticasAutorizacion.FacturasAnular)).Succeeded;
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">Editar factura @Model.Id</h1>
+    <p class="text-muted mb-0">
+        Solo están habilitados los datos operativos autorizados.
+    </p>
+</div>
+
+@if (ViewData["MensajeExito"] is string mensajeExito)
+{
+    <div class="alert alert-success" role="alert">@mensajeExito</div>
+}
+
+@if (ViewData["MensajeError"] is string mensajeError)
+{
+    <div class="alert alert-warning" role="alert">@mensajeError</div>
+}
+
+<div class="alert alert-info">
+    Aseguradora, valor, estado e identificación permanecen bloqueados
+    en esta operación.
+</div>
+
+<form asp-action="Editar"
+      asp-route-facturaId="@Model.Id"
+      method="post"
+      class="card">
+    <input asp-for="VersionFilaBase64" type="hidden" />
+
+    <div class="card-body">
+        <div asp-validation-summary="All"
+             class="alert alert-danger"
+             role="alert"></div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Paciente</label>
+                <input value="@Model.Paciente"
+                       class="form-control"
+                       readonly />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Identificación</label>
+                <input value="@Model.Identificacion"
+                       class="form-control"
+                       readonly />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Fecha de factura</label>
+                <input value="@Model.FechaFactura.ToString("yyyy-MM-dd")"
+                       class="form-control"
+                       readonly />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Valor</label>
+                <input value="@Model.Valor.ToString("N2")"
+                       class="form-control"
+                       readonly />
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="FechaRadicacion" class="form-label"></label>
+                <input asp-for="FechaRadicacion" class="form-control" />
+                <span asp-validation-for="FechaRadicacion" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="AtencionId" class="form-label"></label>
+                <select asp-for="AtencionId"
+                        class="form-select"
+                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Atenciones, "Id", "Nombre"))">
+                </select>
+                <span asp-validation-for="AtencionId" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="CostoId" class="form-label"></label>
+                <select asp-for="CostoId"
+                        class="form-select"
+                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Costos, "Id", "Nombre"))">
+                </select>
+                <span asp-validation-for="CostoId" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="NumeroAdmision" class="form-label"></label>
+                <input asp-for="NumeroAdmision" class="form-control" />
+                <span asp-validation-for="NumeroAdmision" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="FechaAdmision" class="form-label"></label>
+                <input asp-for="FechaAdmision" class="form-control" />
+                <span asp-validation-for="FechaAdmision" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="FacturadorId" class="form-label"></label>
+                <select asp-for="FacturadorId"
+                        class="form-select"
+                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Facturadores, "Id", "Nombre"))">
+                </select>
+                <span asp-validation-for="FacturadorId" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
+        @if (puedeAnular)
+        {
+            <a asp-action="Anular"
+               asp-route-facturaId="@Model.Id"
+               class="btn btn-outline-danger">
+                Anular factura
+            </a>
+        }
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

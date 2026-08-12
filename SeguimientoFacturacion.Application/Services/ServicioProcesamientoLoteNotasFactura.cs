@@ -32,6 +32,9 @@ public sealed class
         IConsultaReferenciasFacturasImportacion
         _consultaFacturas;
 
+    private readonly IConsultaGlosasNotasCredito
+        _consultaGlosas;
+
     private readonly IUnidadTrabajo _unidadTrabajo;
 
     private readonly IValidator<
@@ -52,6 +55,7 @@ public sealed class
             repositorioDefinitivo,
         IConsultaReferenciasFacturasImportacion
             consultaFacturas,
+        IConsultaGlosasNotasCredito consultaGlosas,
         IUnidadTrabajo unidadTrabajo,
         IValidator<
             SolicitudProcesamientoLoteNotasFacturaDto>
@@ -70,6 +74,9 @@ public sealed class
         ArgumentNullException.ThrowIfNull(
             consultaFacturas);
 
+        ArgumentNullException.ThrowIfNull(
+            consultaGlosas);
+
         ArgumentNullException.ThrowIfNull(unidadTrabajo);
         ArgumentNullException.ThrowIfNull(validator);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -85,6 +92,8 @@ public sealed class
 
         _consultaFacturas =
             consultaFacturas;
+
+        _consultaGlosas = consultaGlosas;
 
         _unidadTrabajo = unidadTrabajo;
         _validator = validator;
@@ -188,6 +197,23 @@ public sealed class
                                     registro.NumeroNota)))
                 .ToArray();
 
+        var referenciasGlosas =
+            await _consultaGlosas.ObtenerPorFacturasAsync(
+                registrosNuevos
+                    .Where(registro =>
+                        registro.GlosaId.HasValue)
+                    .Select(registro =>
+                        registro.IdentificadorFe)
+                    .Distinct(
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray(),
+                cancellationToken);
+
+        ValidarRespaldosGlosas(
+            lote.Id,
+            registrosNuevos,
+            referenciasGlosas);
+
         var notasNuevas =
             CrearNotas(registrosNuevos);
 
@@ -196,6 +222,25 @@ public sealed class
 
         var fechaInicio =
             _timeProvider.GetUtcNow();
+
+        var glosasRequeridas = registrosNuevos
+            .Where(registro =>
+                registro.Tipo == TipoNotaFactura.Credito)
+            .Select(registro => registro.GlosaId!.Value)
+            .Distinct()
+            .ToArray();
+
+        var totalGlosasControladas = await _consultaGlosas
+            .PrepararControlConcurrenciaAsync(
+                glosasRequeridas,
+                fechaInicio,
+                usuarioNormalizado,
+                cancellationToken);
+
+        ValidarGlosasParaControlConcurrencia(
+            lote.Id,
+            glosasRequeridas.Length,
+            totalGlosasControladas);
 
         foreach (var nota in notasNuevas)
         {
@@ -525,8 +570,107 @@ public sealed class
                         numero:
                             registro.NumeroNota,
                         valor:
-                            registro.ValorNota))
+                            registro.ValorNota,
+                        glosaId:
+                            registro.GlosaId))
             .ToList();
+    }
+
+    private static void ValidarGlosasParaControlConcurrencia(
+        Guid loteId,
+        int totalRequeridas,
+        int totalControladas)
+    {
+        if (totalControladas != totalRequeridas)
+        {
+            throw new ExcepcionLoteNotasFacturaNoProcesable(
+                loteId,
+                "Una o más glosas cambiaron o dejaron de " +
+                "existir antes de procesar el lote.");
+        }
+    }
+
+    private static void ValidarRespaldosGlosas(
+        Guid loteId,
+        IReadOnlyCollection<
+            NotaFacturaImportacionTemporal> registros,
+        IReadOnlyCollection<
+            ReferenciaGlosaNotaCreditoDto> referencias)
+    {
+        var indice = referencias.ToDictionary(
+            referencia => referencia.GlosaId);
+
+        var creditosSinGlosa = registros
+            .Where(registro =>
+                registro.Tipo == TipoNotaFactura.Credito &&
+                !registro.GlosaId.HasValue)
+            .Select(registro => registro.NumeroNota)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (creditosSinGlosa.Length > 0)
+        {
+            throw new ExcepcionLoteNotasFacturaNoProcesable(
+                loteId,
+                "Una o más notas crédito no tienen una " +
+                "glosa asociada.",
+                creditosSinGlosa);
+        }
+
+        var vinculados = registros
+            .Where(registro => registro.GlosaId.HasValue)
+            .ToArray();
+
+        var referenciasInvalidas = vinculados
+            .Where(registro =>
+                !indice.TryGetValue(
+                    registro.GlosaId!.Value,
+                    out var glosa) ||
+                !string.Equals(
+                    glosa.FacturaId,
+                    registro.IdentificadorFe,
+                    StringComparison.OrdinalIgnoreCase) ||
+                registro.Tipo != TipoNotaFactura.Credito ||
+                glosa.ValorAceptado <= decimal.Zero ||
+                registro.FechaNota < glosa.FechaGlosa)
+            .Select(registro =>
+                registro.NumeroNota)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (referenciasInvalidas.Length > 0)
+        {
+            throw new ExcepcionLoteNotasFacturaNoProcesable(
+                loteId,
+                "Una o más notas ya no tienen una glosa " +
+                "válida y aceptada asociada.",
+                referenciasInvalidas);
+        }
+
+        var glosasExcedidas = vinculados
+            .GroupBy(registro =>
+                registro.GlosaId!.Value)
+            .Where(grupo =>
+            {
+                var glosa = indice[grupo.Key];
+
+                return glosa.TotalNotasCreditoVigentes +
+                       grupo.Sum(registro =>
+                           registro.ValorNota) >
+                       glosa.ValorAceptado;
+            })
+            .Select(grupo => grupo.Key.ToString())
+            .ToArray();
+
+        if (glosasExcedidas.Length > 0)
+        {
+            throw new ExcepcionLoteNotasFacturaNoProcesable(
+                loteId,
+                "El valor acumulado de las notas crédito " +
+                "supera el valor aceptado de una o más " +
+                "glosas.",
+                glosasExcedidas);
+        }
     }
 
     private static string FormatearClave(

@@ -45,9 +45,9 @@ La solución ya dispone de:
 La implementación debe ampliar estos componentes sin duplicar sus
 reglas.
 
-La calculadora actual deberá utilizar
-`CodigosEstadoFactura.EsAnulada` para tratar de la misma forma los
-códigos 3 y 5 al presentar indicadores históricos.
+La calculadora y los comandos manuales utilizarán
+`CodigosEstadoFactura.EsAnulada` para tratar los códigos 3 y 5 como
+estados vigentes de anulación en indicadores y reglas financieras.
 
 ## Diseño de la pantalla
 
@@ -194,8 +194,11 @@ El formulario mostrará el valor anterior y el nuevo antes de confirmar.
 - Las notas y glosas activas deben resolverse antes de anular.
 - Las aplicaciones existentes deben reclasificarse a anticipo dentro de
   la misma transacción de anulación.
-- El estado histórico de anulación con código 3 se consulta, pero las
-  nuevas anulaciones utilizan el código empresarial 5.
+- Los estados de anulación con códigos 3 y 5 se consultan y gestionan.
+- El formulario de anulación permite seleccionar el estado 3 o 5 según
+  corresponda al proceso empresarial y exige un motivo.
+- Ambos estados activan las mismas restricciones sobre notas, glosas,
+  saldo y aplicaciones de pago.
 
 ## Creación manual
 
@@ -304,4 +307,5 @@ Antes de iniciar la implementación se solicita aprobar o ajustar:
 3. Valor y aseguradora se bloquean cuando existen dependencias.
 4. La anulación reclasifica aplicaciones de pago a anticipos.
 5. El pegado masivo utiliza validación previa y staging.
-6. El código 3 se conserva únicamente como anulación histórica.
+6. Los códigos 3 y 5 se administran como estados válidos de anulación y
+   comparten las mismas protecciones financieras.

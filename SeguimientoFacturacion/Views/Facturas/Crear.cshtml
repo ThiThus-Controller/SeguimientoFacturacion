@@ -1,0 +1,143 @@
+@model FacturaCreacionViewModel
+
+@{
+    ViewData["Title"] = "Crear factura";
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">Crear factura</h1>
+    <p class="text-muted mb-0">
+        Registre la factura y su paciente en una sola operación auditada.
+    </p>
+</div>
+
+<form asp-action="Crear" method="post" class="card">
+    <div class="card-body">
+        <div asp-validation-summary="All"
+             class="alert alert-danger"
+             role="alert"></div>
+
+        <h2 class="h5">Factura</h2>
+        <div class="row g-3 mb-4">
+            <div class="col-md-2">
+                <label asp-for="Prefijo" class="form-label"></label>
+                <input asp-for="Prefijo" class="form-control" />
+                <span asp-validation-for="Prefijo" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Numero" class="form-label"></label>
+                <input asp-for="Numero" class="form-control" />
+                <span asp-validation-for="Numero" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="FechaFactura" class="form-label"></label>
+                <input asp-for="FechaFactura" class="form-control" />
+                <span asp-validation-for="FechaFactura" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="AseguradoraId" class="form-label"></label>
+                <select asp-for="AseguradoraId"
+                        class="form-select"
+                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Aseguradoras, "Id", "Nombre"))">
+                    <option value="">Seleccione</option>
+                </select>
+                <span asp-validation-for="AseguradoraId" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Valor" class="form-label"></label>
+                <input asp-for="Valor"
+                       class="form-control"
+                       inputmode="decimal"
+                       data-decimal-flexible="true" />
+                <span asp-validation-for="Valor" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="FechaRadicacion" class="form-label"></label>
+                <input asp-for="FechaRadicacion" class="form-control" />
+                <span asp-validation-for="FechaRadicacion" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="EstadoId" class="form-label"></label>
+                <select asp-for="EstadoId"
+                        class="form-select"
+                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Estados, "Id", "Nombre"))">
+                    <option value="">Seleccione</option>
+                </select>
+                <span asp-validation-for="EstadoId" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="FacturadorId" class="form-label"></label>
+                <select asp-for="FacturadorId"
+                        class="form-select"
+                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Facturadores, "Id", "Nombre"))">
+                    <option value="">Seleccione</option>
+                </select>
+                <span asp-validation-for="FacturadorId" class="text-danger"></span>
+            </div>
+        </div>
+
+        <h2 class="h5">Paciente</h2>
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label asp-for="TipoDocumentoId" class="form-label"></label>
+                <select asp-for="TipoDocumentoId"
+                        class="form-select"
+                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.TiposDocumento, "Id", "Nombre"))">
+                    <option value="">Seleccione</option>
+                </select>
+                <span asp-validation-for="TipoDocumentoId" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="NumeroDocumento" class="form-label"></label>
+                <input asp-for="NumeroDocumento" class="form-control" />
+                <span asp-validation-for="NumeroDocumento" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="NombreCompleto" class="form-label"></label>
+                <input asp-for="NombreCompleto" class="form-control" />
+                <span asp-validation-for="NombreCompleto" class="text-danger"></span>
+            </div>
+        </div>
+
+        <h2 class="h5">Atención y admisión</h2>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label asp-for="AtencionId" class="form-label"></label>
+                <select asp-for="AtencionId"
+                        class="form-select"
+                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Atenciones, "Id", "Nombre"))">
+                    <option value="">Seleccione</option>
+                </select>
+                <span asp-validation-for="AtencionId" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="CostoId" class="form-label"></label>
+                <select asp-for="CostoId"
+                        class="form-select"
+                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Costos, "Id", "Nombre"))">
+                    <option value="">Seleccione</option>
+                </select>
+                <span asp-validation-for="CostoId" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="NumeroAdmision" class="form-label"></label>
+                <input asp-for="NumeroAdmision" class="form-control" />
+                <span asp-validation-for="NumeroAdmision" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="FechaAdmision" class="form-label"></label>
+                <input asp-for="FechaAdmision" class="form-control" />
+                <span asp-validation-for="FechaAdmision" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Crear factura</button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

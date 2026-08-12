@@ -88,6 +88,9 @@ public static class FacturaMappings
                 factura.Facturador?.Nombre ??
                 string.Empty,
 
+            VersionFila =
+                factura.VersionFila.ToArray(),
+
             TotalNotasCredito =
                 resumenSaldo.TotalNotasCredito,
 

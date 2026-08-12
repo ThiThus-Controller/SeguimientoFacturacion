@@ -189,6 +189,13 @@ public sealed class Factura : EntidadAuditableBase<string>
     public int FacturadorId { get; private set; }
 
     /// <summary>
+    /// Obtiene la versión utilizada para detectar modificaciones
+    /// concurrentes. El valor es generado por la base de datos.
+    /// </summary>
+    public byte[] VersionFila { get; private set; } =
+        Array.Empty<byte>();
+
+    /// <summary>
     /// Obtiene los días transcurridos entre la fecha de factura
     /// y la fecha de radicación.
     /// </summary>

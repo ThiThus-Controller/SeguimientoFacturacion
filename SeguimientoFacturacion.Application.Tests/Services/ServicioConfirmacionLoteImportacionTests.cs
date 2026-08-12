@@ -430,7 +430,8 @@ public sealed class
             fechaNota:
                 new DateOnly(2026, 7, 20),
             numeroNota: "NC-001",
-            valorNota: 50000m);
+            valorNota: 50000m,
+            glosaId: Guid.NewGuid());
     }
 
     private static GlosaImportacionTemporal

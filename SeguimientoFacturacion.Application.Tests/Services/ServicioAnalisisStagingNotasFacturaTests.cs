@@ -18,6 +18,10 @@ public sealed class
         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
         "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
+    private static readonly Guid GlosaIdPrueba =
+        Guid.Parse(
+            "11111111-1111-1111-1111-111111111111");
+
     [Fact]
     public async Task
         Analizar_ArchivoValido_DebeGuardarStaging()
@@ -94,6 +98,10 @@ public sealed class
         Assert.Equal(
             "NC-001",
             notaCredito.NumeroNota);
+
+        Assert.Equal(
+            GlosaIdPrueba,
+            notaCredito.GlosaId);
 
         Assert.Equal(1, validador.NumeroInvocaciones);
         Assert.Equal(1, preparador.NumeroInvocaciones);
@@ -475,7 +483,12 @@ public sealed class
                 new DateOnly(2026, 7, 29),
 
             NumeroNota = numeroNota,
-            ValorNota = valor
+            ValorNota = valor,
+
+            GlosaId =
+                tipo == TipoNotaFactura.Credito
+                    ? GlosaIdPrueba
+                    : null
         };
     }
 

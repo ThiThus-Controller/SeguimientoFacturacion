@@ -62,6 +62,11 @@ public sealed class
                 .GetRequiredService<
                     IValidadorNotasFacturaModular>();
 
+        var consultaGlosas =
+            alcance.ServiceProvider
+                .GetRequiredService<
+                    IConsultaGlosasNotasCredito>();
+
         var preparador =
             alcance.ServiceProvider
                 .GetRequiredService<
@@ -70,6 +75,10 @@ public sealed class
         Assert.IsType<
             ConsultaReferenciasFacturasImportacionEfCore>(
                 consultaFacturas);
+
+        Assert.IsType<
+            ConsultaGlosasNotasCreditoEfCore>(
+                consultaGlosas);
 
         Assert.IsType<
             ValidadorNotasFacturaModularClosedXml>(

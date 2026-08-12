@@ -106,6 +106,11 @@ factura siempre referencia catálogos existentes.
 - Nota crédito: disminuye el saldo.
 - Nota débito: aumenta el saldo.
 - Una nota vigente no se importa sobre una factura anulada.
+- Toda nota crédito referencia internamente una glosa aceptada de la
+  misma factura. La asociación se resuelve durante el análisis y no se
+  solicita como dato redundante en Excel.
+- El valor acumulado de notas crédito no puede superar el valor
+  aceptado de la glosa que las respalda.
 - Una anulación de nota requiere motivo.
 
 ### Glosas

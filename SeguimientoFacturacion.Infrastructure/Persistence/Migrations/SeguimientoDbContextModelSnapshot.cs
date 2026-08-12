@@ -55,11 +55,11 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("PagoId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("ValorAplicado")
+                    b.Property<decimal>("ValorAnticipo")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("ValorAnticipo")
+                    b.Property<decimal>("ValorAplicado")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
@@ -117,11 +117,11 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(50)");
 
-                    b.Property<decimal>("ValorAplicado")
+                    b.Property<decimal>("ValorAnticipo")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("ValorAnticipo")
+                    b.Property<decimal>("ValorAplicado")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
@@ -440,6 +440,12 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<byte[]>("VersionFila")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AseguradoraId")
@@ -617,6 +623,12 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<byte[]>("VersionFila")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.HasKey("Id");
 
                     b.HasIndex("FechaGlosa")
@@ -686,11 +698,11 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(50)");
 
-                    b.Property<decimal>("ValorGlosa")
+                    b.Property<decimal>("ValorAceptado")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("ValorAceptado")
+                    b.Property<decimal>("ValorGlosa")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
@@ -988,6 +1000,9 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         .HasPrecision(0)
                         .HasColumnType("datetimeoffset(0)");
 
+                    b.Property<Guid?>("GlosaId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("ModificadoPor")
                         .HasMaxLength(100)
                         .IsUnicode(false)
@@ -1016,6 +1031,9 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                     b.HasIndex("Fecha")
                         .HasDatabaseName("IX_NotasFactura_Fecha");
 
+                    b.HasIndex("GlosaId")
+                        .HasDatabaseName("IX_NotasFactura_GlosaId");
+
                     b.HasIndex("FacturaId", "Tipo", "Numero")
                         .IsUnique()
                         .HasDatabaseName("UX_NotasFactura_Factura_Tipo_Numero");
@@ -1023,6 +1041,8 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                     b.ToTable("NotasFactura", "facturacion", t =>
                         {
                             t.HasCheckConstraint("CK_NotasFactura_Anulacion", "([Anulada] = 0 AND [MotivoAnulacion] IS NULL) OR ([Anulada] = 1 AND NULLIF(LTRIM(RTRIM([MotivoAnulacion])), '') IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_NotasFactura_Glosa", "([Tipo] = 1 AND [GlosaId] IS NOT NULL) OR ([Tipo] = 2 AND [GlosaId] IS NULL)");
 
                             t.HasCheckConstraint("CK_NotasFactura_Valor", "[Valor] > 0");
                         });
@@ -1041,6 +1061,9 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("FilaOrigen")
                         .HasColumnType("int");
+
+                    b.Property<Guid?>("GlosaId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("HojaOrigen")
                         .IsRequired()
@@ -1084,6 +1107,9 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("GlosaId")
+                        .HasDatabaseName("IX_NotasFacturaTemporales_GlosaId");
+
                     b.HasIndex("LoteImportacionId", "IdentificadorFe")
                         .HasDatabaseName("IX_NotasFacturaTemporales_Lote_FE");
 
@@ -1102,6 +1128,8 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("CK_NotasFacturaTemporales_FE", "[IdentificadorFe] = [Prefijo] + [NumeroFactura]");
 
                             t.HasCheckConstraint("CK_NotasFacturaTemporales_FilaOrigen", "[FilaOrigen] > 0");
+
+                            t.HasCheckConstraint("CK_NotasFacturaTemporales_Glosa", "([Tipo] = 1 AND [GlosaId] IS NOT NULL) OR ([Tipo] = 2 AND [GlosaId] IS NULL)");
 
                             t.HasCheckConstraint("CK_NotasFacturaTemporales_Tipo", "[Tipo] IN (1, 2)");
 
@@ -1147,6 +1175,12 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("TipoDocumentoId")
                         .HasColumnType("int");
+
+                    b.Property<byte[]>("VersionFila")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.HasKey("Id");
 
@@ -1508,11 +1542,23 @@ namespace SeguimientoFacturacion.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("SeguimientoFacturacion.Domain.Entities.Glosa", "Glosa")
+                        .WithMany()
+                        .HasForeignKey("GlosaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Factura");
+
+                    b.Navigation("Glosa");
                 });
 
             modelBuilder.Entity("SeguimientoFacturacion.Domain.Entities.NotaFacturaImportacionTemporal", b =>
                 {
+                    b.HasOne("SeguimientoFacturacion.Domain.Entities.Glosa", null)
+                        .WithMany()
+                        .HasForeignKey("GlosaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("SeguimientoFacturacion.Domain.Entities.LoteImportacion", "LoteImportacion")
                         .WithMany()
                         .HasForeignKey("LoteImportacionId")

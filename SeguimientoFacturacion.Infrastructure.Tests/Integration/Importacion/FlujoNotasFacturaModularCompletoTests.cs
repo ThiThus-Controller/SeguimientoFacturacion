@@ -117,6 +117,8 @@ public sealed class
                     RepositorioPersistenciaNotasFacturaImportacionEfCore(
                         contexto),
                 consultaFacturas,
+                new ConsultaGlosasNotasCreditoEfCore(
+                    contexto),
                 contexto,
                 new
                     SolicitudProcesamientoLoteNotasFacturaDtoValidator(),
@@ -234,17 +236,23 @@ public sealed class
             new ConsultaCatalogosImportacionEfCore(
                 contexto);
 
+        var consultaGlosas =
+            new ConsultaGlosasNotasCreditoEfCore(
+                contexto);
+
         var validador =
             new ValidadorNotasFacturaModularClosedXml(
                 inspector,
                 consultaCatalogos,
-                consultaFacturas);
+                consultaFacturas,
+                consultaGlosas);
 
         var preparador =
             new PreparadorNotasFacturaModularClosedXml(
                 validador,
                 inspector,
-                consultaFacturas);
+                consultaFacturas,
+                consultaGlosas);
 
         var registroAnalisis =
             new ServicioRegistroAnalisisLote(
@@ -293,6 +301,16 @@ public sealed class
                 estadoId: 1,
                 facturadorId: 1);
 
+        var glosa = new Glosa(
+            factura.Id,
+            new DateOnly(2026, 1, 20),
+            150000m);
+
+        glosa.Resolver(
+            EstadoGlosa.Aceptada,
+            new DateOnly(2026, 1, 25),
+            150000m);
+
         var lote =
             new LoteImportacion(
                 TipoImportacion.NotasFactura,
@@ -300,6 +318,10 @@ public sealed class
                 HashValido);
 
         factura.RegistrarCreacion(
+            CrearFecha(9),
+            "usuario-pruebas");
+
+        glosa.RegistrarCreacion(
             CrearFecha(9),
             "usuario-pruebas");
 
@@ -311,6 +333,8 @@ public sealed class
             aseguradora);
 
         await contexto.Facturas.AddAsync(factura);
+
+        await contexto.Glosas.AddAsync(glosa);
 
         await contexto.LotesImportacion.AddAsync(
             lote);

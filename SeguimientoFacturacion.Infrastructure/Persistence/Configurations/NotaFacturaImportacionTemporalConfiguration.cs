@@ -44,6 +44,11 @@ internal sealed class
                     "CK_NotasFacturaTemporales_FE",
                     "[IdentificadorFe] = " +
                     "[Prefijo] + [NumeroFactura]");
+
+                tableBuilder.HasCheckConstraint(
+                    "CK_NotasFacturaTemporales_Glosa",
+                    "([Tipo] = 1 AND [GlosaId] IS NOT NULL) OR " +
+                    "([Tipo] = 2 AND [GlosaId] IS NULL)");
             });
 
         builder.HasKey(registro => registro.Id);
@@ -105,6 +110,8 @@ internal sealed class
             .HasPrecision(18, 2)
             .IsRequired();
 
+        builder.Property(registro => registro.GlosaId);
+
         builder.Ignore(registro => registro.ImpactoSaldo);
 
         builder.HasOne(
@@ -113,6 +120,11 @@ internal sealed class
             .HasForeignKey(
                 registro => registro.LoteImportacionId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne<Glosa>()
+            .WithMany()
+            .HasForeignKey(registro => registro.GlosaId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(
                 registro => new
@@ -147,5 +159,9 @@ internal sealed class
                 })
             .HasDatabaseName(
                 "IX_NotasFacturaTemporales_Lote_FE");
+
+        builder.HasIndex(registro => registro.GlosaId)
+            .HasDatabaseName(
+                "IX_NotasFacturaTemporales_GlosaId");
     }
 }
