@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using SeguimientoFacturacion.Application.DTOs.Facturas;
 using SeguimientoFacturacion.Domain.Entities;
+using SeguimientoFacturacion.Validation;
 
 namespace SeguimientoFacturacion.ViewModels.Facturas;
 
@@ -27,7 +28,7 @@ public sealed class FacturaCreacionViewModel
     [Display(Name = "Aseguradora")]
     public int AseguradoraId { get; set; }
 
-    [Range(typeof(decimal), "0.01", "9999999999999999")]
+    [DecimalPositivo]
     [Display(Name = "Valor de factura")]
     public decimal Valor { get; set; }
 
