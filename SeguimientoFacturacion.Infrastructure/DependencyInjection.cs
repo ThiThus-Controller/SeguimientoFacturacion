@@ -89,6 +89,10 @@ public static class DependencyInjection
             RepositorioGestionManualFacturasEfCore>();
 
         services.AddScoped<
+            IRepositorioGestionManualGlosas,
+            RepositorioGestionManualGlosasEfCore>();
+
+        services.AddScoped<
             IRepositorioImportaciones,
             RepositorioImportacionesEfCore>();
 
