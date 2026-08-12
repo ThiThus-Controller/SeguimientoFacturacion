@@ -105,6 +105,21 @@ public static class PoliticasAutorizacion
     public const string PacientesEditar =
         PrefijoPermiso + PermisosSistema.Pacientes.Editar;
 
+    public const string GlosasConsultar =
+        PrefijoPermiso + PermisosSistema.Glosas.Ver;
+
+    public const string GlosasEditar =
+        PrefijoPermiso + PermisosSistema.Glosas.Editar;
+
+    public const string GlosasResponder =
+        PrefijoPermiso + PermisosSistema.Glosas.Responder;
+
+    public const string GlosasConciliar =
+        PrefijoPermiso + PermisosSistema.Glosas.Conciliar;
+
+    public const string GlosasAnular =
+        PrefijoPermiso + PermisosSistema.Glosas.Anular;
+
     private static readonly string[] PermisosCreacionUsuarios =
     [
         PermisosSistema.Usuarios.Crear,
