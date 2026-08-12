@@ -1,0 +1,207 @@
+@using Microsoft.AspNetCore.Authorization
+@using SeguimientoFacturacion.Configurations
+@model SeguimientoFacturacion.ViewModels.Glosas.GlosasFacturaViewModel
+@inject IAuthorizationService ServicioAutorizacion
+
+@{
+    ViewData["Title"] = $"Glosas de {Model.FacturaId}";
+
+    var puedeResponder = (await ServicioAutorizacion.AuthorizeAsync(
+        User,
+        PoliticasAutorizacion.GlosasResponder)).Succeeded;
+
+    var puedeResolver = (await ServicioAutorizacion.AuthorizeAsync(
+        User,
+        PoliticasAutorizacion.GlosasEditar)).Succeeded;
+
+    var puedeConciliar = (await ServicioAutorizacion.AuthorizeAsync(
+        User,
+        PoliticasAutorizacion.GlosasConciliar)).Succeeded;
+
+    var puedeAnular = (await ServicioAutorizacion.AuthorizeAsync(
+        User,
+        PoliticasAutorizacion.GlosasAnular)).Succeeded;
+
+    static string ClaseEstado(EstadoGlosa estado) => estado switch
+    {
+        EstadoGlosa.Abierta => "text-bg-warning",
+        EstadoGlosa.Respondida => "text-bg-info",
+        EstadoGlosa.Aceptada => "text-bg-danger",
+        EstadoGlosa.Levantada => "text-bg-success",
+        EstadoGlosa.Conciliada => "text-bg-primary",
+        EstadoGlosa.Anulada => "text-bg-secondary",
+        _ => "text-bg-light"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">Glosas de la factura @Model.FacturaId</h1>
+        <p class="text-muted mb-0">
+            Consulte tiempos y gestione el ciclo de cada objeción.
+        </p>
+    </div>
+
+    <a asp-controller="Facturas"
+       asp-action="Index"
+       asp-route-textoBusqueda="@Model.FacturaId"
+       class="btn btn-outline-secondary">
+        Volver a facturas
+    </a>
+</div>
+
+@if (ViewData["MensajeExito"] is string mensajeExito)
+{
+    <div class="alert alert-success" role="alert">@mensajeExito</div>
+}
+
+@if (ViewData["MensajeError"] is string mensajeError)
+{
+    <div class="alert alert-warning" role="alert">@mensajeError</div>
+}
+
+<div class="alert alert-info" role="alert">
+    Los indicadores corresponden a días calendario. Una glosa con nota
+    crédito vigente no puede anularse.
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <strong>Glosas registradas</strong>
+        <span class="badge text-bg-secondary">@Model.Glosas.Count</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Fecha glosa</th>
+                    <th>Estado</th>
+                    <th class="text-end">Valor glosado</th>
+                    <th class="text-end">Valor aceptado</th>
+                    <th class="text-end">Valor pendiente</th>
+                    <th>Fecha respuesta</th>
+                    <th class="text-end">Radicación a objeción</th>
+                    <th class="text-end">Objeción a respuesta</th>
+                    <th>Nota crédito</th>
+                    <th>Observación</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+            @if (Model.Glosas.Count == 0)
+            {
+                <tr>
+                    <td colspan="11" class="text-center text-muted py-4">
+                        La factura no tiene glosas registradas.
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var glosa in Model.Glosas)
+                {
+                    var permiteResolucion = glosa.Estado is
+                        EstadoGlosa.Abierta or EstadoGlosa.Respondida;
+
+                    <tr>
+                        <td>@glosa.FechaGlosa.ToString("yyyy-MM-dd")</td>
+                        <td>
+                            <span class="badge @ClaseEstado(glosa.Estado)">
+                                @glosa.Estado
+                            </span>
+                            @if (glosa.RespuestaPendiente)
+                            {
+                                <div class="small text-danger mt-1">
+                                    Respuesta pendiente
+                                </div>
+                            }
+                        </td>
+                        <td class="text-end">@glosa.ValorGlosa.ToString("N2")</td>
+                        <td class="text-end">@glosa.ValorAceptado.ToString("N2")</td>
+                        <td class="text-end">@glosa.ValorPendiente.ToString("N2")</td>
+                        <td>
+                            @(glosa.FechaRespuesta?.ToString("yyyy-MM-dd")
+                                ?? "Pendiente")
+                        </td>
+                        <td class="text-end">
+                            @(glosa.DiasRadicacionAObjecion?.ToString()
+                                ?? "No disponible")
+                        </td>
+                        <td class="text-end">
+                            @(glosa.DiasObjecionARespuesta?.ToString()
+                                ?? "Pendiente")
+                        </td>
+                        <td>
+                            @if (glosa.TieneNotaCreditoVigente)
+                            {
+                                <span class="badge text-bg-success">Vigente</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">No asociada</span>
+                            }
+                        </td>
+                        <td class="text-break">
+                            @(string.IsNullOrWhiteSpace(glosa.Observacion)
+                                ? "—"
+                                : glosa.Observacion)
+                        </td>
+                        <td class="text-end text-nowrap">
+                            @if (puedeResponder &&
+                                glosa.Estado == EstadoGlosa.Abierta)
+                            {
+                                <a asp-action="Responder"
+                                   asp-route-glosaId="@glosa.Id"
+                                   class="btn btn-sm btn-outline-info">
+                                    Responder
+                                </a>
+                            }
+
+                            @if (puedeResolver && permiteResolucion)
+                            {
+                                <a asp-action="Resolver"
+                                   asp-route-glosaId="@glosa.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Resolver
+                                </a>
+                            }
+
+                            @if (puedeConciliar && permiteResolucion)
+                            {
+                                <a asp-action="Conciliar"
+                                   asp-route-glosaId="@glosa.Id"
+                                   class="btn btn-sm btn-outline-success">
+                                    Conciliar
+                                </a>
+                            }
+
+                            @if (puedeAnular &&
+                                glosa.Estado != EstadoGlosa.Anulada)
+                            {
+                                @if (glosa.TieneNotaCreditoVigente)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            title="Tiene una nota crédito vigente"
+                                            disabled>
+                                        Anular
+                                    </button>
+                                }
+                                else
+                                {
+                                    <a asp-action="Anular"
+                                       asp-route-glosaId="@glosa.Id"
+                                       class="btn btn-sm btn-outline-danger">
+                                        Anular
+                                    </a>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

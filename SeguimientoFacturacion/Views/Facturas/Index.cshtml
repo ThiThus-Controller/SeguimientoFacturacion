@@ -18,6 +18,11 @@
         (await ServicioAutorizacion.AuthorizeAsync(
             User,
             PoliticasAutorizacion.PacientesEditar)).Succeeded;
+
+    var puedeConsultarGlosas =
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.GlosasConsultar)).Succeeded;
 }
 
 <div class="d-flex justify-content-between align-items-start mb-4">
@@ -161,6 +166,16 @@
                                    asp-route-numeroDocumento="@factura.NumeroDocumento"
                                    class="btn btn-sm btn-outline-secondary">
                                     Paciente
+                                </a>
+                            }
+
+                            @if (puedeConsultarGlosas)
+                            {
+                                <a asp-controller="Glosas"
+                                   asp-action="Index"
+                                   asp-route-facturaId="@factura.Id"
+                                   class="btn btn-sm btn-outline-warning">
+                                    Glosas
                                 </a>
                             }
                         </td>
