@@ -30,6 +30,16 @@ public interface IServicioGestionManualFacturas
         string actor,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Anula una factura sin movimientos bloqueantes y
+    /// reclasifica a anticipo sus aplicaciones de pago.
+    /// </summary>
+    Task<ResultadoAnulacionFacturaDto> AnularAsync(
+        string facturaId,
+        SolicitudAnulacionFacturaDto solicitud,
+        string actor,
+        CancellationToken cancellationToken = default);
+
     Task<PacienteGestionManualDto> ActualizarNombrePacienteAsync(
         int tipoDocumentoId,
         string numeroDocumento,

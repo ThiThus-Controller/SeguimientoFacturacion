@@ -4,6 +4,7 @@ using SeguimientoFacturacion.Application.Common.Exceptions;
 using SeguimientoFacturacion.Application.DTOs.Facturas;
 using SeguimientoFacturacion.Application.Interfaces.Services;
 using SeguimientoFacturacion.Configurations;
+using SeguimientoFacturacion.Domain.Constants;
 using SeguimientoFacturacion.Services.Seguridad;
 using SeguimientoFacturacion.ViewModels.Facturas;
 
@@ -305,6 +306,117 @@ public sealed class FacturasController : Controller
             });
     }
 
+    [Authorize(Policy = PoliticasAutorizacion.FacturasAnular)]
+    [HttpGet("{facturaId}/anular")]
+    public async Task<IActionResult> Anular(
+        string facturaId,
+        CancellationToken cancellationToken)
+    {
+        var factura = await _servicioGestion.ObtenerPorIdAsync(
+            facturaId,
+            cancellationToken);
+
+        if (factura is null)
+        {
+            return NotFound();
+        }
+
+        if (CodigosEstadoFactura.EsAnulada(factura.EstadoId))
+        {
+            TempData[MensajeError] =
+                "La factura ya se encuentra anulada.";
+
+            return RedirectToAction(
+                nameof(Editar),
+                new { facturaId });
+        }
+
+        return View(CrearModeloAnulacion(factura));
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.FacturasAnular)]
+    [HttpPost("{facturaId}/anular")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Anular(
+        string facturaId,
+        FacturaAnulacionViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        model.Id = facturaId;
+        ModelState.Remove(nameof(model.Id));
+
+        var version = ObtenerVersion(
+            model.VersionFilaBase64,
+            nameof(model.VersionFilaBase64));
+
+        if (!ModelState.IsValid || version is null)
+        {
+            if (!await CompletarModeloAnulacionAsync(
+                    model,
+                    cancellationToken))
+            {
+                return NotFound();
+            }
+
+            return View(model);
+        }
+
+        try
+        {
+            var identidad = _contextoUsuarioActual.ObtenerRequerido();
+            var resultado = await _servicioGestion.AnularAsync(
+                facturaId,
+                new SolicitudAnulacionFacturaDto
+                {
+                    Motivo = model.Motivo,
+                    VersionFila = version
+                },
+                identidad.NombreUsuario,
+                cancellationToken);
+
+            TempData[MensajeExito] =
+                resultado.AplicacionesReclasificadas == 0
+                    ? $"La factura {resultado.FacturaId} fue anulada."
+                    : $"La factura {resultado.FacturaId} fue anulada " +
+                      $"y {resultado.ValorReclasificadoAnticipo:N2} " +
+                      "se reclasificó como anticipo.";
+
+            return RedirectToAction(nameof(Index));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ExcepcionConcurrenciaPersistencia excepcion)
+        {
+            TempData[MensajeError] = excepcion.Message;
+
+            return RedirectToAction(
+                nameof(Anular),
+                new { facturaId });
+        }
+        catch (ExcepcionValidacionAplicacion excepcion)
+        {
+            AgregarErroresValidacion(excepcion);
+        }
+        catch (Exception excepcion) when (
+            excepcion is ArgumentException or
+            InvalidOperationException)
+        {
+            ModelState.AddModelError(string.Empty, excepcion.Message);
+        }
+
+        if (!await CompletarModeloAnulacionAsync(
+                model,
+                cancellationToken))
+        {
+            return NotFound();
+        }
+
+        return View(model);
+    }
+
     [Authorize(Policy = PoliticasAutorizacion.PacientesEditar)]
     [HttpPost("pacientes/editar")]
     [ValidateAntiForgeryToken]
@@ -425,6 +537,42 @@ public sealed class FacturasController : Controller
         model.Valor = factura.Valor;
         model.Catalogos = await _servicioGestion.ObtenerCatalogosAsync(
             cancellationToken);
+
+        return true;
+    }
+
+    private static FacturaAnulacionViewModel CrearModeloAnulacion(
+        FacturaGestionManualDto factura)
+    {
+        return new FacturaAnulacionViewModel
+        {
+            Id = factura.Id,
+            Paciente = factura.NombreCompleto,
+            Valor = factura.Valor,
+            EstadoId = factura.EstadoId,
+            VersionFilaBase64 = Convert.ToBase64String(
+                factura.VersionFila)
+        };
+    }
+
+    private async Task<bool> CompletarModeloAnulacionAsync(
+        FacturaAnulacionViewModel model,
+        CancellationToken cancellationToken)
+    {
+        var factura = await _servicioGestion.ObtenerPorIdAsync(
+            model.Id,
+            cancellationToken);
+
+        if (factura is null)
+        {
+            return false;
+        }
+
+        model.Paciente = factura.NombreCompleto;
+        model.Valor = factura.Valor;
+        model.EstadoId = factura.EstadoId;
+        model.VersionFilaBase64 = Convert.ToBase64String(
+            factura.VersionFila);
 
         return true;
     }

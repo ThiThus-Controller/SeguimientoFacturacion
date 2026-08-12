@@ -46,7 +46,9 @@ public sealed class
                 "TIPO NOTA",
                 "FECHA NOTA",
                 "NUMERO NOTA",
-                "VALOR NOTA"
+                "VALOR NOTA",
+                "FECHA GLOSA ASOCIADA",
+                "VALOR GLOSA ASOCIADA"
             }
         ];
 
@@ -131,6 +133,36 @@ public sealed class
         Assert.Equal(
             "FECHA RTA GLOSA",
             resultado);
+    }
+
+    [Fact]
+    public void Notas_DebeExigirColumnasDeReferenciaGlosa()
+    {
+        var contrato =
+            ContratosPlantillasImportacion.NotasFactura;
+
+        Assert.Equal(10, contrato.EncabezadosRequeridos.Count);
+        Assert.Contains(
+            "FECHA GLOSA ASOCIADA",
+            contrato.EncabezadosRequeridos);
+        Assert.Contains(
+            "VALOR GLOSA ASOCIADA",
+            contrato.EncabezadosRequeridos);
+
+        var encabezados = contrato.EncabezadosRequeridos;
+
+        Assert.Empty(
+            contrato.ObtenerEncabezadosFaltantes(
+                encabezados));
+
+        Assert.Empty(
+            contrato.ObtenerEncabezadosNoReconocidos(
+                encabezados));
+
+        Assert.Equal(
+            TipoImportacion.NotasFactura,
+            ContratosPlantillasImportacion
+                .Detectar(encabezados)?.Tipo);
     }
 
     [Fact]

@@ -26,8 +26,10 @@ public sealed class
                         "000001",
                         "NC",
                         "NC-001",
-                        100000m,
-                        new DateTime(2026, 2, 1));
+                        10000m,
+                        new DateTime(2026, 7, 20),
+                        new DateTime(2026, 7, 15),
+                        26535m);
 
                     EscribirFila(
                         hoja,
@@ -53,9 +55,10 @@ public sealed class
                     new DateOnly(2026, 1, 11))
             ]);
 
-        var validador =
-            CrearValidador(
-                consultaFacturas);
+        var validador = CrearValidador(
+            consultaFacturas,
+            new ConsultaGlosasControlada(
+                [CrearReferenciaGlosa(0m)]));
 
         var resultado =
             await validador.ValidarAsync(
@@ -68,6 +71,35 @@ public sealed class
         Assert.Equal(1, resultado.NotasDebitoDetectadas);
         Assert.Empty(resultado.Inconsistencias);
         Assert.Equal(1, consultaFacturas.CantidadConsultas);
+    }
+
+    [Fact]
+    public async Task Validar_NotaCreditoSinGlosa_DebeRetornarError()
+    {
+        await using var archivo = CrearArchivo(
+            hoja => EscribirFila(
+                hoja,
+                fila: 2,
+                numeroFactura: "000001",
+                tipo: "NC",
+                numeroNota: "NC-SIN-GLOSA",
+                valor: 10000m,
+                fecha: new DateTime(2026, 7, 20)));
+
+        var resultado = await CrearValidador(
+                new ConsultaFacturasControlada(
+                [
+                    CrearReferenciaFactura(
+                        "FE000001",
+                        1,
+                        new DateOnly(2026, 7, 10))
+                ]))
+            .ValidarAsync(CrearSolicitud(archivo));
+
+        Assert.Contains(
+            resultado.Inconsistencias,
+            inconsistencia => inconsistencia.Codigo ==
+                "NOTA_CREDITO_REQUIERE_GLOSA");
     }
 
     [Fact]
@@ -251,11 +283,83 @@ public sealed class
                 inconsistencia.Fila == 3);
     }
 
+    [Fact]
+    public async Task
+        Validar_NotaAsociadaNoExcedeAceptado_DebeSerValida()
+    {
+        await using var archivo = CrearArchivo(
+            hoja => EscribirFila(
+                hoja,
+                fila: 2,
+                numeroFactura: "000001",
+                tipo: "NC",
+                numeroNota: "NC-GLOSA-001",
+                valor: 10000m,
+                fecha: new DateTime(2026, 7, 20),
+                fechaGlosa: new DateTime(2026, 7, 15),
+                valorGlosa: 26535m));
+
+        var validador = CrearValidador(
+            new ConsultaFacturasControlada(
+                [
+                    CrearReferenciaFactura(
+                        "FE000001",
+                        1,
+                        new DateOnly(2026, 7, 10))
+                ]),
+            new ConsultaGlosasControlada(
+                [CrearReferenciaGlosa(5000m)]));
+
+        var resultado = await validador.ValidarAsync(
+            CrearSolicitud(archivo));
+
+        Assert.True(resultado.EsValido);
+    }
+
+    [Fact]
+    public async Task
+        Validar_NotaAsociadaExcedeAceptado_DebeReportarError()
+    {
+        await using var archivo = CrearArchivo(
+            hoja => EscribirFila(
+                hoja,
+                fila: 2,
+                numeroFactura: "000001",
+                tipo: "NC",
+                numeroNota: "NC-GLOSA-002",
+                valor: 11000m,
+                fecha: new DateTime(2026, 7, 20),
+                fechaGlosa: new DateTime(2026, 7, 15),
+                valorGlosa: 26535m));
+
+        var validador = CrearValidador(
+            new ConsultaFacturasControlada(
+                [
+                    CrearReferenciaFactura(
+                        "FE000001",
+                        1,
+                        new DateOnly(2026, 7, 10))
+                ]),
+            new ConsultaGlosasControlada(
+                [CrearReferenciaGlosa(6000m)]));
+
+        var resultado = await validador.ValidarAsync(
+            CrearSolicitud(archivo));
+
+        Assert.Contains(
+            resultado.Inconsistencias,
+            inconsistencia =>
+                inconsistencia.Codigo ==
+                "NC_EXCEDE_VALOR_ACEPTADO_GLOSA");
+    }
+
     private static
         ValidadorNotasFacturaModularClosedXml
         CrearValidador(
             IConsultaReferenciasFacturasImportacion
-                consultaFacturas)
+                consultaFacturas,
+            IConsultaGlosasNotasCredito?
+                consultaGlosas = null)
     {
         return new
             ValidadorNotasFacturaModularClosedXml(
@@ -264,7 +368,10 @@ public sealed class
 
                 new ConsultaCatalogosControlada(),
 
-                consultaFacturas);
+                consultaFacturas,
+
+                consultaGlosas ??
+                    new ConsultaGlosasControlada());
     }
 
     private static SolicitudAnalisisImportacionDto
@@ -294,6 +401,20 @@ public sealed class
             AseguradoraId = aseguradoraId,
             FechaFactura = fechaFactura,
             EstadoId = estadoId
+        };
+    }
+
+    private static ReferenciaGlosaNotaCreditoDto
+        CrearReferenciaGlosa(decimal notasPrevias)
+    {
+        return new ReferenciaGlosaNotaCreditoDto
+        {
+            GlosaId = Guid.NewGuid(),
+            FacturaId = "FE000001",
+            FechaGlosa = new DateOnly(2026, 7, 15),
+            ValorGlosa = 26535m,
+            ValorAceptado = 15921m,
+            TotalNotasCreditoVigentes = notasPrevias
         };
     }
 
@@ -337,7 +458,9 @@ public sealed class
         string tipo,
         string numeroNota,
         decimal valor,
-        DateTime fecha)
+        DateTime fecha,
+        DateTime? fechaGlosa = null,
+        decimal? valorGlosa = null)
     {
         hoja.Cell(fila, 1).Value =
             $"FE{numeroFactura}";
@@ -349,6 +472,18 @@ public sealed class
         hoja.Cell(fila, 6).Value = fecha;
         hoja.Cell(fila, 7).Value = numeroNota;
         hoja.Cell(fila, 8).Value = valor;
+
+        if (fechaGlosa.HasValue)
+        {
+            hoja.Cell(fila, 9).Value =
+                fechaGlosa.Value;
+        }
+
+        if (valorGlosa.HasValue)
+        {
+            hoja.Cell(fila, 10).Value =
+                valorGlosa.Value;
+        }
     }
 
     private sealed class
@@ -373,6 +508,52 @@ public sealed class
                             }
                     ]
                 });
+        }
+    }
+
+    private sealed class ConsultaGlosasControlada :
+        IConsultaGlosasNotasCredito
+    {
+        private readonly IReadOnlyCollection<
+            ReferenciaGlosaNotaCreditoDto> _referencias;
+
+        public ConsultaGlosasControlada(
+            IReadOnlyCollection<
+                ReferenciaGlosaNotaCreditoDto>? referencias = null)
+        {
+            _referencias = referencias ?? [];
+        }
+
+        public Task<IReadOnlyCollection<
+            ReferenciaGlosaNotaCreditoDto>>
+            ObtenerPorFacturasAsync(
+                IReadOnlyCollection<string> facturaIds,
+                CancellationToken cancellationToken = default)
+        {
+            var solicitados = facturaIds.ToHashSet(
+                StringComparer.OrdinalIgnoreCase);
+
+            return Task.FromResult<IReadOnlyCollection<
+                ReferenciaGlosaNotaCreditoDto>>(
+                    _referencias
+                        .Where(referencia =>
+                            solicitados.Contains(
+                                referencia.FacturaId))
+                        .ToArray());
+        }
+
+        public Task<int> PrepararControlConcurrenciaAsync(
+            IReadOnlyCollection<Guid> glosaIds,
+            DateTimeOffset fecha,
+            string actor,
+            CancellationToken cancellationToken = default)
+        {
+            var disponibles = _referencias
+                .Select(referencia => referencia.GlosaId)
+                .ToHashSet();
+
+            return Task.FromResult(
+                glosaIds.Distinct().Count(disponibles.Contains));
         }
     }
 

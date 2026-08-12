@@ -26,6 +26,9 @@ public sealed class
         IConsultaReferenciasFacturasImportacion
         _consultaFacturas;
 
+    private readonly IConsultaGlosasNotasCredito
+        _consultaGlosas;
+
     /// <summary>
     /// Inicializa el preparador modular de notas.
     /// </summary>
@@ -33,16 +36,19 @@ public sealed class
         IValidadorNotasFacturaModular validador,
         IInspectorEstructuraPlantilla inspector,
         IConsultaReferenciasFacturasImportacion
-            consultaFacturas)
+            consultaFacturas,
+        IConsultaGlosasNotasCredito consultaGlosas)
     {
         ArgumentNullException.ThrowIfNull(validador);
         ArgumentNullException.ThrowIfNull(inspector);
         ArgumentNullException.ThrowIfNull(
             consultaFacturas);
+        ArgumentNullException.ThrowIfNull(consultaGlosas);
 
         _validador = validador;
         _inspector = inspector;
         _consultaFacturas = consultaFacturas;
+        _consultaGlosas = consultaGlosas;
     }
 
     /// <inheritdoc />
@@ -131,10 +137,24 @@ public sealed class
                     referencia.FacturaId,
                 StringComparer.OrdinalIgnoreCase);
 
+        var referenciasGlosas =
+            await _consultaGlosas.ObtenerPorFacturasAsync(
+                filas
+                    .Where(fila =>
+                        fila.Tipo == TipoNotaFactura.Credito &&
+                        fila.FechaGlosaAsociada.HasValue &&
+                        fila.ValorGlosaAsociada.HasValue)
+                    .Select(fila => fila.IdentificadorFe)
+                    .Distinct(
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray(),
+                cancellationToken);
+
         var notas =
             PrepararNotas(
                 filas,
                 indiceReferencias,
+                referenciasGlosas,
                 cancellationToken);
 
         return new ResultadoPreparacionNotasFacturaDto
@@ -245,6 +265,20 @@ public sealed class
                 columnas,
                 "VALOR NOTA");
 
+        var fechaGlosaAsociada =
+            ObtenerFechaOpcional(
+                hoja,
+                numeroFila,
+                columnas,
+                "FECHA GLOSA ASOCIADA");
+
+        var valorGlosaAsociada =
+            ObtenerDecimalOpcional(
+                hoja,
+                numeroFila,
+                columnas,
+                "VALOR GLOSA ASOCIADA");
+
         return new FilaNotaPreparacion(
             hoja.Name,
             numeroFila,
@@ -254,18 +288,23 @@ public sealed class
             tipo,
             fechaNota,
             numeroNota,
-            valorNota);
+            valorNota,
+            fechaGlosaAsociada,
+            valorGlosaAsociada);
     }
 
     private static IReadOnlyCollection<
         NotaFacturaPreparadaImportacionDto>
         PrepararNotas(
-            IEnumerable<FilaNotaPreparacion> filas,
-            IReadOnlyDictionary<
+        IEnumerable<FilaNotaPreparacion> filas,
+        IReadOnlyDictionary<
                 string,
                 ReferenciaFacturaImportacionDto>
                 referencias,
-            CancellationToken cancellationToken)
+        IReadOnlyCollection<
+                ReferenciaGlosaNotaCreditoDto>
+                referenciasGlosas,
+        CancellationToken cancellationToken)
     {
         var notas =
             new List<
@@ -318,11 +357,51 @@ public sealed class
                         fila.NumeroNota,
 
                     ValorNota =
-                        fila.ValorNota
+                        fila.ValorNota,
+
+                    GlosaId =
+                        ResolverGlosaId(
+                            fila,
+                            referenciasGlosas)
                 });
         }
 
         return notas;
+    }
+
+    private static Guid? ResolverGlosaId(
+        FilaNotaPreparacion fila,
+        IEnumerable<ReferenciaGlosaNotaCreditoDto>
+            referenciasGlosas)
+    {
+        if (!fila.FechaGlosaAsociada.HasValue ||
+            !fila.ValorGlosaAsociada.HasValue)
+        {
+            return null;
+        }
+
+        var coincidencias = referenciasGlosas
+            .Where(glosa =>
+                string.Equals(
+                    glosa.FacturaId,
+                    fila.IdentificadorFe,
+                    StringComparison.OrdinalIgnoreCase) &&
+                glosa.FechaGlosa ==
+                    fila.FechaGlosaAsociada.Value &&
+                glosa.ValorGlosa ==
+                    fila.ValorGlosaAsociada.Value)
+            .Select(glosa => glosa.GlosaId)
+            .Distinct()
+            .ToArray();
+
+        if (coincidencias.Length != 1)
+        {
+            throw new InvalidOperationException(
+                "La glosa asociada dejó de estar disponible " +
+                $"para la nota de la fila {fila.NumeroFila}.");
+        }
+
+        return coincidencias[0];
     }
 
     private static string ObtenerTextoRequerido(
@@ -386,6 +465,68 @@ public sealed class
         if (IntentarObtenerDecimal(
                 celda,
                 out var valor))
+        {
+            return valor;
+        }
+
+        throw new InvalidOperationException(
+            $"La columna {nombreColumna} no pudo " +
+            "convertirse después de validar el archivo.");
+    }
+
+    private static DateOnly? ObtenerFechaOpcional(
+        IXLWorksheet hoja,
+        int fila,
+        IReadOnlyDictionary<string, int> columnas,
+        string nombreColumna)
+    {
+        if (!columnas.TryGetValue(
+                nombreColumna,
+                out var numeroColumna))
+        {
+            return null;
+        }
+
+        var celda = hoja.Cell(fila, numeroColumna);
+
+        if (string.IsNullOrWhiteSpace(
+                celda.CachedValue.ToString().Trim()))
+        {
+            return null;
+        }
+
+        if (IntentarObtenerFecha(celda, out var fecha))
+        {
+            return fecha;
+        }
+
+        throw new InvalidOperationException(
+            $"La columna {nombreColumna} no pudo " +
+            "convertirse después de validar el archivo.");
+    }
+
+    private static decimal? ObtenerDecimalOpcional(
+        IXLWorksheet hoja,
+        int fila,
+        IReadOnlyDictionary<string, int> columnas,
+        string nombreColumna)
+    {
+        if (!columnas.TryGetValue(
+                nombreColumna,
+                out var numeroColumna))
+        {
+            return null;
+        }
+
+        var celda = hoja.Cell(fila, numeroColumna);
+
+        if (string.IsNullOrWhiteSpace(
+                celda.CachedValue.ToString().Trim()))
+        {
+            return null;
+        }
+
+        if (IntentarObtenerDecimal(celda, out var valor))
         {
             return valor;
         }
@@ -543,5 +684,7 @@ public sealed class
         TipoNotaFactura Tipo,
         DateOnly FechaNota,
         string NumeroNota,
-        decimal ValorNota);
+        decimal ValorNota,
+        DateOnly? FechaGlosaAsociada,
+        decimal? ValorGlosaAsociada);
 }

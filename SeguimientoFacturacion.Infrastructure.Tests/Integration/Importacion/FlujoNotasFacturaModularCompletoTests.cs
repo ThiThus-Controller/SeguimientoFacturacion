@@ -117,6 +117,8 @@ public sealed class
                     RepositorioPersistenciaNotasFacturaImportacionEfCore(
                         contexto),
                 consultaFacturas,
+                new ConsultaGlosasNotasCreditoEfCore(
+                    contexto),
                 contexto,
                 new
                     SolicitudProcesamientoLoteNotasFacturaDtoValidator(),
@@ -234,17 +236,23 @@ public sealed class
             new ConsultaCatalogosImportacionEfCore(
                 contexto);
 
+        var consultaGlosas =
+            new ConsultaGlosasNotasCreditoEfCore(
+                contexto);
+
         var validador =
             new ValidadorNotasFacturaModularClosedXml(
                 inspector,
                 consultaCatalogos,
-                consultaFacturas);
+                consultaFacturas,
+                consultaGlosas);
 
         var preparador =
             new PreparadorNotasFacturaModularClosedXml(
                 validador,
                 inspector,
-                consultaFacturas);
+                consultaFacturas,
+                consultaGlosas);
 
         var registroAnalisis =
             new ServicioRegistroAnalisisLote(
@@ -293,6 +301,16 @@ public sealed class
                 estadoId: 1,
                 facturadorId: 1);
 
+        var glosa = new Glosa(
+            factura.Id,
+            new DateOnly(2026, 1, 20),
+            150000m);
+
+        glosa.Resolver(
+            EstadoGlosa.Aceptada,
+            new DateOnly(2026, 1, 25),
+            150000m);
+
         var lote =
             new LoteImportacion(
                 TipoImportacion.NotasFactura,
@@ -300,6 +318,10 @@ public sealed class
                 HashValido);
 
         factura.RegistrarCreacion(
+            CrearFecha(9),
+            "usuario-pruebas");
+
+        glosa.RegistrarCreacion(
             CrearFecha(9),
             "usuario-pruebas");
 
@@ -311,6 +333,8 @@ public sealed class
             aseguradora);
 
         await contexto.Facturas.AddAsync(factura);
+
+        await contexto.Glosas.AddAsync(glosa);
 
         await contexto.LotesImportacion.AddAsync(
             lote);
@@ -351,7 +375,9 @@ public sealed class
                 numeroNota: "NC-001",
                 valor: 100000m,
                 fecha:
-                    new DateTime(2026, 2, 1));
+                    new DateTime(2026, 2, 1),
+                fechaGlosa: new DateTime(2026, 1, 20),
+                valorGlosa: 150000m);
 
             EscribirFila(
                 hoja,
@@ -376,7 +402,9 @@ public sealed class
         string tipo,
         string numeroNota,
         decimal valor,
-        DateTime fecha)
+        DateTime fecha,
+        DateTime? fechaGlosa = null,
+        decimal? valorGlosa = null)
     {
         hoja.Cell(fila, 1).Value = "FE000001";
         hoja.Cell(fila, 2).Value = "FE";
@@ -386,6 +414,16 @@ public sealed class
         hoja.Cell(fila, 6).Value = fecha;
         hoja.Cell(fila, 7).Value = numeroNota;
         hoja.Cell(fila, 8).Value = valor;
+
+        if (fechaGlosa.HasValue)
+        {
+            hoja.Cell(fila, 9).Value = fechaGlosa.Value;
+        }
+
+        if (valorGlosa.HasValue)
+        {
+            hoja.Cell(fila, 10).Value = valorGlosa.Value;
+        }
     }
 
     private static SeguimientoDbContext

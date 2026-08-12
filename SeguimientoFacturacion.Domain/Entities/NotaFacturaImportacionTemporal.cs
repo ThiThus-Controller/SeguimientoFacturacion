@@ -33,7 +33,8 @@ public sealed class NotaFacturaImportacionTemporal :
         TipoNotaFactura tipo,
         DateOnly fechaNota,
         string numeroNota,
-        decimal valorNota)
+        decimal valorNota,
+        Guid? glosaId = null)
         : base(Guid.NewGuid())
     {
         LoteImportacionId =
@@ -95,6 +96,9 @@ public sealed class NotaFacturaImportacionTemporal :
 
         ValorNota =
             ValidarValor(valorNota);
+
+        GlosaId =
+            ValidarGlosaId(tipo, glosaId);
     }
 
     /// <summary>
@@ -156,6 +160,12 @@ public sealed class NotaFacturaImportacionTemporal :
     /// Obtiene el valor monetario positivo de la nota.
     /// </summary>
     public decimal ValorNota { get; private set; }
+
+    /// <summary>
+    /// Obtiene la glosa aceptada asociada a la nota crédito.
+    /// Es nulo exclusivamente para notas débito.
+    /// </summary>
+    public Guid? GlosaId { get; private set; }
 
     /// <summary>
     /// Obtiene el impacto esperado sobre el saldo.
@@ -258,6 +268,43 @@ public sealed class NotaFacturaImportacionTemporal :
         }
 
         return valorNota;
+    }
+
+    private static Guid? ValidarGlosaId(
+        TipoNotaFactura tipo,
+        Guid? glosaId)
+    {
+        if (tipo == TipoNotaFactura.Credito &&
+            !glosaId.HasValue)
+        {
+            throw new ArgumentException(
+                "Toda nota crédito temporal debe estar " +
+                "respaldada por una glosa.",
+                nameof(glosaId));
+        }
+
+        if (!glosaId.HasValue)
+        {
+            return null;
+        }
+
+        if (glosaId.Value == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "El identificador de la glosa no puede " +
+                "estar vacío.",
+                nameof(glosaId));
+        }
+
+        if (tipo != TipoNotaFactura.Credito)
+        {
+            throw new ArgumentException(
+                "Solo una nota crédito puede asociarse " +
+                "a una glosa.",
+                nameof(glosaId));
+        }
+
+        return glosaId;
     }
 
     private static void ValidarCorrespondenciaFactura(

@@ -67,6 +67,13 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
     public decimal ValorAceptado { get; private set; }
 
     /// <summary>
+    /// Obtiene la versión de fila utilizada para impedir que
+    /// dos procesos consuman simultáneamente el mismo valor
+    /// aceptado de la glosa.
+    /// </summary>
+    public byte[] VersionFila { get; private set; } = [];
+
+    /// <summary>
     /// Obtiene el valor que continúa pendiente de gestión.
     /// Los estados finales no conservan valor pendiente.
     /// </summary>

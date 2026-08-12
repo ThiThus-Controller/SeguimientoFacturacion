@@ -6,6 +6,7 @@ using SeguimientoFacturacion.Application.DTOs.Facturas;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
 using SeguimientoFacturacion.Application.Interfaces.Services;
 using SeguimientoFacturacion.Domain.Common;
+using SeguimientoFacturacion.Domain.Constants;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Enums;
 
@@ -27,6 +28,9 @@ public sealed class ServicioGestionManualFacturas :
     private const string MotivoActualizacionPaciente =
         "Actualización manual del nombre canónico del paciente.";
 
+    private const string MotivoReclasificacionPago =
+        "Reclasificación a anticipo por anulación de factura.";
+
     private readonly IRepositorioGestionManualFacturas _repositorio;
     private readonly IUnidadTrabajo _unidadTrabajo;
     private readonly IValidator<SolicitudCreacionFacturaManualDto>
@@ -35,6 +39,8 @@ public sealed class ServicioGestionManualFacturas :
         _validadorActualizacionFactura;
     private readonly IValidator<SolicitudActualizacionNombrePacienteDto>
         _validadorActualizacionPaciente;
+    private readonly IValidator<SolicitudAnulacionFacturaDto>
+        _validadorAnulacion;
     private readonly TimeProvider _timeProvider;
 
     public ServicioGestionManualFacturas(
@@ -46,6 +52,8 @@ public sealed class ServicioGestionManualFacturas :
             validadorActualizacionFactura,
         IValidator<SolicitudActualizacionNombrePacienteDto>
             validadorActualizacionPaciente,
+        IValidator<SolicitudAnulacionFacturaDto>
+            validadorAnulacion,
         TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(repositorio);
@@ -55,6 +63,7 @@ public sealed class ServicioGestionManualFacturas :
             validadorActualizacionFactura);
         ArgumentNullException.ThrowIfNull(
             validadorActualizacionPaciente);
+        ArgumentNullException.ThrowIfNull(validadorAnulacion);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         _repositorio = repositorio;
@@ -64,6 +73,7 @@ public sealed class ServicioGestionManualFacturas :
             validadorActualizacionFactura;
         _validadorActualizacionPaciente =
             validadorActualizacionPaciente;
+        _validadorAnulacion = validadorAnulacion;
         _timeProvider = timeProvider;
     }
 
@@ -307,6 +317,130 @@ public sealed class ServicioGestionManualFacturas :
             cancellationToken);
 
         return MapearFactura(factura);
+    }
+
+    /// <inheritdoc />
+    public async Task<ResultadoAnulacionFacturaDto> AnularAsync(
+        string facturaId,
+        SolicitudAnulacionFacturaDto solicitud,
+        string actor,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+        ArgumentNullException.ThrowIfNull(solicitud);
+
+        await ValidarAsync(
+            _validadorAnulacion,
+            solicitud,
+            cancellationToken);
+
+        var actorNormalizado = ValidarActor(actor);
+        var factura = await _repositorio.ObtenerFacturaAsync(
+            facturaId,
+            cancellationToken) ??
+            throw new KeyNotFoundException(
+                "No se encontró la factura solicitada.");
+
+        ValidarVersion(
+            solicitud.VersionFila,
+            factura.VersionFila,
+            nameof(Factura));
+
+        if (CodigosEstadoFactura.EsAnulada(factura.EstadoId))
+        {
+            throw new InvalidOperationException(
+                "La factura ya se encuentra anulada.");
+        }
+
+        if (await _repositorio.TieneMovimientosBloqueantesAsync(
+                factura.Id,
+                cancellationToken))
+        {
+            throw new InvalidOperationException(
+                "La factura no puede anularse porque tiene " +
+                "notas, glosas u otros movimientos que " +
+                "impiden su anulación.");
+        }
+
+        var aplicaciones = await _repositorio
+            .ObtenerAplicacionesPagoAsync(
+                factura.Id,
+                cancellationToken);
+
+        var fecha = _timeProvider.GetUtcNow();
+        var correlacionId = Guid.NewGuid();
+        var aplicacionesReclasificadas = 0;
+        var valorReclasificado = decimal.Zero;
+
+        foreach (var aplicacion in aplicaciones)
+        {
+            if (aplicacion.ValorAplicado <= decimal.Zero)
+            {
+                continue;
+            }
+
+            var datosAnteriores =
+                SerializarAplicacionPago(aplicacion);
+            var importe = aplicacion.ValorAplicado;
+
+            aplicacion.ReclasificarComoAnticipo(importe);
+            RegistrarCambio(
+                aplicacion,
+                fecha,
+                actorNormalizado);
+
+            await AgregarAuditoriaAsync(
+                TipoOperacionAuditoria.Reversion,
+                aplicacion,
+                actorNormalizado,
+                fecha,
+                datosAnteriores,
+                SerializarAplicacionPago(aplicacion),
+                MotivoReclasificacionPago,
+                correlacionId,
+                cancellationToken);
+
+            aplicacionesReclasificadas++;
+            valorReclasificado += importe;
+        }
+
+        var datosAnterioresFactura =
+            SerializarFactura(factura);
+
+        factura.CambiarEstado(CodigosEstadoFactura.Anulada);
+        factura.RetirarRadicacion();
+        RegistrarCambio(factura, fecha, actorNormalizado);
+
+        await AgregarAuditoriaAsync(
+            TipoOperacionAuditoria.Anulacion,
+            factura,
+            actorNormalizado,
+            fecha,
+            datosAnterioresFactura,
+            SerializarFactura(factura),
+            solicitud.Motivo.Trim(),
+            correlacionId,
+            cancellationToken);
+
+        /*
+         * Factura, aplicaciones y auditorías se guardan en
+         * una sola llamada, por lo que EF Core las confirma
+         * o revierte como una única transacción.
+         */
+        await _unidadTrabajo.GuardarCambiosAsync(
+            cancellationToken);
+
+        return new ResultadoAnulacionFacturaDto
+        {
+            FacturaId = factura.Id,
+            EstadoId = factura.EstadoId,
+            AplicacionesReclasificadas =
+                aplicacionesReclasificadas,
+            ValorReclasificadoAnticipo =
+                valorReclasificado,
+            AnuladaPor = actorNormalizado,
+            FechaAnulacionUtc = fecha
+        };
     }
 
     /// <inheritdoc />
@@ -566,6 +700,7 @@ public sealed class ServicioGestionManualFacturas :
             new
             {
                 factura.Id,
+                factura.EstadoId,
                 factura.FechaRadicacion,
                 factura.AtencionId,
                 factura.CostoId,
@@ -577,6 +712,23 @@ public sealed class ServicioGestionManualFacturas :
                 factura.NombreCompleto,
                 factura.FechaModificacionUtc,
                 factura.ModificadoPor
+            });
+    }
+
+    private static string SerializarAplicacionPago(
+        AplicacionPago aplicacion)
+    {
+        return JsonSerializer.Serialize(
+            new
+            {
+                aplicacion.Id,
+                aplicacion.PagoId,
+                aplicacion.FacturaId,
+                aplicacion.ValorRecibido,
+                aplicacion.ValorAplicado,
+                aplicacion.ValorAnticipo,
+                aplicacion.FechaModificacionUtc,
+                aplicacion.ModificadoPor
             });
     }
 

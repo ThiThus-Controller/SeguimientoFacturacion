@@ -144,6 +144,10 @@ public static class DependencyInjection
             IConsultaReferenciasFacturasImportacion,
             ConsultaReferenciasFacturasImportacionEfCore>();
 
+        services.AddScoped<
+            IConsultaGlosasNotasCredito,
+            ConsultaGlosasNotasCreditoEfCore>();
+
         services.AddTransient<
             ICalculadorHashArchivo,
             CalculadorHashArchivoSha256>();

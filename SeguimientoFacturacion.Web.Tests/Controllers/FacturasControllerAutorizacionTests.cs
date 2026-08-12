@@ -54,6 +54,14 @@ public sealed class FacturasControllerAutorizacionTests
         nameof(FacturasController.EditarPaciente),
         false,
         PoliticasAutorizacion.PacientesEditar)]
+    [InlineData(
+        nameof(FacturasController.Anular),
+        true,
+        PoliticasAutorizacion.FacturasAnular)]
+    [InlineData(
+        nameof(FacturasController.Anular),
+        false,
+        PoliticasAutorizacion.FacturasAnular)]
     public void Accion_DebeExigirPoliticaEsperada(
         string nombre,
         bool esGet,
@@ -70,6 +78,7 @@ public sealed class FacturasControllerAutorizacionTests
     [InlineData(nameof(FacturasController.Crear))]
     [InlineData(nameof(FacturasController.Editar))]
     [InlineData(nameof(FacturasController.EditarPaciente))]
+    [InlineData(nameof(FacturasController.Anular))]
     public void AccionPost_DebeValidarAntiforgery(string nombre)
     {
         var metodo = ObtenerAccion(nombre, esGet: false);

@@ -282,17 +282,23 @@ public sealed class
                 ConsultaReferenciasFacturasImportacionEfCore(
                     contexto);
 
+        var consultaGlosas =
+            new ConsultaGlosasNotasCreditoEfCore(
+                contexto);
+
         var validador =
             new ValidadorNotasFacturaModularClosedXml(
                 inspector,
                 consultaCatalogos,
-                consultaFacturas);
+                consultaFacturas,
+                consultaGlosas);
 
         var preparador =
             new PreparadorNotasFacturaModularClosedXml(
                 validador,
                 inspector,
-                consultaFacturas);
+                consultaFacturas,
+                consultaGlosas);
 
         var repositorioTemporal =
             new
@@ -327,6 +333,16 @@ public sealed class
         var factura =
             CrearFactura();
 
+        var glosa = new Glosa(
+            factura.Id,
+            new DateOnly(2026, 1, 20),
+            150000m);
+
+        glosa.Resolver(
+            EstadoGlosa.Aceptada,
+            new DateOnly(2026, 1, 25),
+            150000m);
+
         var lote =
             new LoteImportacion(
                 TipoImportacion.NotasFactura,
@@ -334,6 +350,10 @@ public sealed class
                 HashValido);
 
         factura.RegistrarCreacion(
+            CrearFecha(9),
+            "usuario-pruebas");
+
+        glosa.RegistrarCreacion(
             CrearFecha(9),
             "usuario-pruebas");
 
@@ -346,6 +366,8 @@ public sealed class
 
         await contexto.Facturas
             .AddAsync(factura);
+
+        await contexto.Glosas.AddAsync(glosa);
 
         await contexto.LotesImportacion
             .AddAsync(lote);
@@ -399,7 +421,8 @@ public sealed class
                 fechaNota:
                     new DateOnly(2026, 2, 1),
                 numeroNota: "NC-ANTERIOR",
-                valorNota: 25000m);
+                valorNota: 25000m,
+                glosaId: Guid.NewGuid());
     }
 
     private static
@@ -432,7 +455,9 @@ public sealed class
                         new DateTime(
                             2026,
                             2,
-                            1));
+                            1),
+                    fechaGlosa: new DateTime(2026, 1, 20),
+                    valorGlosa: 150000m);
 
                 EscribirFila(
                     hoja,
@@ -506,7 +531,9 @@ public sealed class
         string tipo,
         string numeroNota,
         decimal valor,
-        DateTime fecha)
+        DateTime fecha,
+        DateTime? fechaGlosa = null,
+        decimal? valorGlosa = null)
     {
         hoja.Cell(fila, 1).Value =
             "FE000001";
@@ -531,6 +558,16 @@ public sealed class
 
         hoja.Cell(fila, 8).Value =
             valor;
+
+        if (fechaGlosa.HasValue)
+        {
+            hoja.Cell(fila, 9).Value = fechaGlosa.Value;
+        }
+
+        if (valorGlosa.HasValue)
+        {
+            hoja.Cell(fila, 10).Value = valorGlosa.Value;
+        }
     }
 
     private static SeguimientoDbContext

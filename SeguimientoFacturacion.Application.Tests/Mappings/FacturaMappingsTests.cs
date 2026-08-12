@@ -17,7 +17,8 @@ public sealed class FacturaMappingsTests
             tipo: TipoNotaFactura.Credito,
             fecha: new DateOnly(2026, 7, 10),
             numero: "NC-100",
-            valor: 200m);
+            valor: 200m,
+            glosaId: Guid.NewGuid());
 
         var notaDebito = new NotaFactura(
             facturaId: factura.Id,

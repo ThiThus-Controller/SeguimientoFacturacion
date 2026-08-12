@@ -173,7 +173,8 @@ public sealed class CalculadoraSaldoFacturaTests
             tipo: TipoNotaFactura.Credito,
             fecha: new DateOnly(2026, 7, 20),
             numero: "NC-999",
-            valor: 100m);
+            valor: 100m,
+            glosaId: Guid.NewGuid());
 
         var accion = () => _calculadora.Calcular(
             factura,
@@ -243,6 +244,9 @@ public sealed class CalculadoraSaldoFacturaTests
             tipo: tipo,
             fecha: new DateOnly(2026, 7, 20),
             numero: $"{prefijo}-100",
-            valor: valor);
+            valor: valor,
+            glosaId: tipo == TipoNotaFactura.Credito
+                ? Guid.NewGuid()
+                : null);
     }
 }

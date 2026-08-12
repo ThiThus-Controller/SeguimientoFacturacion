@@ -94,6 +94,63 @@ public sealed class RepositorioGestionManualFacturasEfCore :
     }
 
     /// <inheritdoc />
+    public async Task<bool> TieneMovimientosBloqueantesAsync(
+        string facturaId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+
+        var idNormalizado = facturaId.Trim().ToUpperInvariant();
+
+        var tieneNotas = await _contexto.NotasFactura
+            .AsNoTracking()
+            .AnyAsync(
+                nota => nota.FacturaId == idNormalizado,
+                cancellationToken);
+
+        if (tieneNotas)
+        {
+            return true;
+        }
+
+        var tieneGlosas = await _contexto.Glosas
+            .AsNoTracking()
+            .AnyAsync(
+                glosa => glosa.FacturaId == idNormalizado,
+                cancellationToken);
+
+        if (tieneGlosas)
+        {
+            return true;
+        }
+
+        return await _contexto.Movimientos
+            .AsNoTracking()
+            .AnyAsync(
+                movimiento =>
+                    movimiento.FacturaId == idNormalizado,
+                cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<AplicacionPago>>
+        ObtenerAplicacionesPagoAsync(
+            string facturaId,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+
+        var idNormalizado = facturaId.Trim().ToUpperInvariant();
+
+        return await _contexto.AplicacionesPago
+            .Where(aplicacion =>
+                aplicacion.FacturaId == idNormalizado)
+            .OrderBy(aplicacion => aplicacion.PagoId)
+            .ThenBy(aplicacion => aplicacion.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task AgregarFacturaAsync(
         Factura factura,
         CancellationToken cancellationToken = default)

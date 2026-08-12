@@ -411,6 +411,9 @@ public sealed class
             fechaNota:
                 new DateOnly(2026, 7, 29),
             numeroNota: numeroNota,
-            valorNota: 100000m);
+            valorNota: 100000m,
+            glosaId: tipo == TipoNotaFactura.Credito
+                ? Guid.NewGuid()
+                : null);
     }
 }

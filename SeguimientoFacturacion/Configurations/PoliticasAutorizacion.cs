@@ -99,6 +99,9 @@ public static class PoliticasAutorizacion
     public const string FacturasEditar =
         PrefijoPermiso + PermisosSistema.Facturas.Editar;
 
+    public const string FacturasAnular =
+        PrefijoPermiso + PermisosSistema.Facturas.Anular;
+
     public const string PacientesEditar =
         PrefijoPermiso + PermisosSistema.Pacientes.Editar;
 

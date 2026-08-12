@@ -79,6 +79,11 @@ internal sealed class GlosaConfiguration :
             .IsRequired();
 
         builder.Property(
+                glosa => glosa.VersionFila)
+            .IsRowVersion()
+            .IsConcurrencyToken();
+
+        builder.Property(
                 glosa => glosa.FechaCreacionUtc)
             .HasPrecision(0)
             .IsRequired();

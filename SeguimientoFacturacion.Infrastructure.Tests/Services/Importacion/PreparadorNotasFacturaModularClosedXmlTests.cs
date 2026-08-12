@@ -27,7 +27,9 @@ public sealed class
                         "NC",
                         "nc-001",
                         100000m,
-                        new DateTime(2026, 2, 1));
+                        new DateTime(2026, 2, 1),
+                        new DateTime(2026, 1, 20),
+                        150000m);
 
                     EscribirFila(
                         hoja,
@@ -183,7 +185,9 @@ public sealed class
                         "CREDITO",
                         "NC-001",
                         100000m,
-                        new DateTime(2026, 2, 1)));
+                        new DateTime(2026, 2, 1),
+                        new DateTime(2026, 1, 20),
+                        150000m));
 
         var consultaFacturas =
             new ConsultaFacturasControlada(
@@ -222,17 +226,21 @@ public sealed class
         var inspector =
             new InspectorEstructuraPlantillaClosedXml();
 
+        var consultaGlosas = new ConsultaGlosasControlada();
+
         var validador =
             new ValidadorNotasFacturaModularClosedXml(
                 inspector,
                 new ConsultaCatalogosControlada(),
-                consultaFacturas);
+                consultaFacturas,
+                consultaGlosas);
 
         return new
             PreparadorNotasFacturaModularClosedXml(
                 validador,
                 inspector,
-                consultaFacturas);
+                consultaFacturas,
+                consultaGlosas);
     }
 
     private static SolicitudAnalisisImportacionDto
@@ -303,7 +311,9 @@ public sealed class
         string tipo,
         string numeroNota,
         decimal valor,
-        DateTime fecha)
+        DateTime fecha,
+        DateTime? fechaGlosa = null,
+        decimal? valorGlosa = null)
     {
         hoja.Cell(fila, 1).Value =
             $"FE{numeroFactura}";
@@ -315,6 +325,16 @@ public sealed class
         hoja.Cell(fila, 6).Value = fecha;
         hoja.Cell(fila, 7).Value = numeroNota;
         hoja.Cell(fila, 8).Value = valor;
+
+        if (fechaGlosa.HasValue)
+        {
+            hoja.Cell(fila, 9).Value = fechaGlosa.Value;
+        }
+
+        if (valorGlosa.HasValue)
+        {
+            hoja.Cell(fila, 10).Value = valorGlosa.Value;
+        }
     }
 
     private sealed class
@@ -340,6 +360,41 @@ public sealed class
                     ]
                 });
         }
+    }
+
+    private sealed class ConsultaGlosasControlada :
+        IConsultaGlosasNotasCredito
+    {
+        private static readonly Guid GlosaId =
+            Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        public Task<IReadOnlyCollection<
+            ReferenciaGlosaNotaCreditoDto>>
+            ObtenerPorFacturasAsync(
+                IReadOnlyCollection<string> facturaIds,
+                CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyCollection<
+                ReferenciaGlosaNotaCreditoDto>>(
+            [
+                new ReferenciaGlosaNotaCreditoDto
+                {
+                    GlosaId = GlosaId,
+                    FacturaId = "FE000001",
+                    FechaGlosa = new DateOnly(2026, 1, 20),
+                    ValorGlosa = 150000m,
+                    ValorAceptado = 150000m,
+                    TotalNotasCreditoVigentes = 0m
+                }
+            ]);
+        }
+
+        public Task<int> PrepararControlConcurrenciaAsync(
+            IReadOnlyCollection<Guid> glosaIds,
+            DateTimeOffset fecha,
+            string actor,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
     }
 
     private sealed class

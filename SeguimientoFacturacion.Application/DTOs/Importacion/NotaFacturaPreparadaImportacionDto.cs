@@ -59,4 +59,10 @@ public sealed class
     /// Obtiene el valor monetario positivo de la nota.
     /// </summary>
     public required decimal ValorNota { get; init; }
+
+    /// <summary>
+    /// Obtiene la glosa cuyo valor aceptado respalda la nota.
+    /// Es nulo para notas independientes.
+    /// </summary>
+    public Guid? GlosaId { get; init; }
 }

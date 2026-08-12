@@ -88,6 +88,20 @@ public sealed class AjustesFacturaConfigurationTests
         Assert.Equal(
             DeleteBehavior.Restrict,
             relacionFactura.DeleteBehavior);
+
+        var relacionGlosa =
+            entidad.GetForeignKeys()
+                .Single(foreignKey =>
+                    foreignKey.PrincipalEntityType.ClrType ==
+                    typeof(Glosa));
+
+        Assert.Equal(
+            nameof(NotaFactura.GlosaId),
+            relacionGlosa.Properties.Single().Name);
+
+        Assert.Equal(
+            DeleteBehavior.Restrict,
+            relacionGlosa.DeleteBehavior);
     }
 
     [Fact]
@@ -150,6 +164,15 @@ public sealed class AjustesFacturaConfigurationTests
         Assert.NotNull(valorAceptado);
         Assert.Equal(18, valorAceptado.GetPrecision());
         Assert.Equal(2, valorAceptado.GetScale());
+
+        var versionFila = entidad.FindProperty(
+            nameof(Glosa.VersionFila));
+
+        Assert.NotNull(versionFila);
+        Assert.True(versionFila.IsConcurrencyToken);
+        Assert.Equal(
+            ValueGenerated.OnAddOrUpdate,
+            versionFila.ValueGenerated);
 
         Assert.Null(
             entidad.FindProperty(

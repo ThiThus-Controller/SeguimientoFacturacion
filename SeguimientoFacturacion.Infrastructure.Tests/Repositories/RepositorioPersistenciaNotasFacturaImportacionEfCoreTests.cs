@@ -261,7 +261,10 @@ public sealed class
                 fecha:
                     new DateOnly(2026, 7, 25),
                 numero: numero,
-                valor: 50000m);
+                valor: 50000m,
+                glosaId: tipo == TipoNotaFactura.Credito
+                    ? Guid.NewGuid()
+                    : null);
 
         nota.RegistrarCreacion(
             FechaAuditoria,

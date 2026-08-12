@@ -179,6 +179,114 @@ public sealed class ServicioGestionManualFacturasTests
         Assert.Equal(1, unidadTrabajo.Guardados);
     }
 
+    [Fact]
+    public async Task Anular_SinMovimientos_DebeCompletarOperacion()
+    {
+        var repositorio = new RepositorioFalso();
+        var factura = CrearFactura("100");
+        var version = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        AsignarVersion(factura, version);
+        repositorio.Facturas.Add(factura);
+
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        var resultado = await servicio.AnularAsync(
+            factura.Id,
+            CrearSolicitudAnulacion(version),
+            "administrador");
+
+        Assert.Equal(5, factura.EstadoId);
+        Assert.Null(factura.FechaRadicacion);
+        Assert.Equal(0, resultado.AplicacionesReclasificadas);
+        Assert.Equal(decimal.Zero, resultado.ValorReclasificadoAnticipo);
+        Assert.Equal(1, unidadTrabajo.Guardados);
+
+        var auditoria = Assert.Single(repositorio.Auditorias);
+        Assert.Equal(
+            TipoOperacionAuditoria.Anulacion,
+            auditoria.TipoOperacion);
+    }
+
+    [Fact]
+    public async Task Anular_ConNotaGlosaOMovimiento_DebeBloquear()
+    {
+        var repositorio = new RepositorioFalso
+        {
+            TieneMovimientosBloqueantes = true
+        };
+        var factura = CrearFactura("100");
+        var version = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        AsignarVersion(factura, version);
+        repositorio.Facturas.Add(factura);
+
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        var excepcion = await Assert.ThrowsAsync<
+            InvalidOperationException>(
+                () => servicio.AnularAsync(
+                    factura.Id,
+                    CrearSolicitudAnulacion(version),
+                    "administrador"));
+
+        Assert.Contains(
+            "impiden su anulación",
+            excepcion.Message,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1, factura.EstadoId);
+        Assert.Equal(0, unidadTrabajo.Guardados);
+        Assert.Empty(repositorio.Auditorias);
+    }
+
+    [Fact]
+    public async Task Anular_SoloConPagos_DebeReclasificarAAnticipo()
+    {
+        var repositorio = new RepositorioFalso();
+        var factura = CrearFactura("100");
+        var version = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        AsignarVersion(factura, version);
+        repositorio.Facturas.Add(factura);
+
+        var aplicacion = new AplicacionPago(
+            Guid.NewGuid(),
+            factura.Id,
+            valorRecibido: 1000m,
+            valorAplicado: 800m,
+            valorAnticipo: 200m);
+        aplicacion.RegistrarCreacion(
+            FechaPrueba.AddDays(-1),
+            "carga-pagos");
+        repositorio.AplicacionesPago.Add(aplicacion);
+
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        var resultado = await servicio.AnularAsync(
+            factura.Id,
+            CrearSolicitudAnulacion(version),
+            "administrador");
+
+        Assert.Equal(decimal.Zero, aplicacion.ValorAplicado);
+        Assert.Equal(1000m, aplicacion.ValorAnticipo);
+        Assert.Equal(1, resultado.AplicacionesReclasificadas);
+        Assert.Equal(800m, resultado.ValorReclasificadoAnticipo);
+        Assert.Equal(1, unidadTrabajo.Guardados);
+        Assert.Equal(2, repositorio.Auditorias.Count);
+        Assert.Contains(
+            repositorio.Auditorias,
+            auditoria => auditoria.TipoOperacion ==
+                TipoOperacionAuditoria.Reversion);
+        Assert.Contains(
+            repositorio.Auditorias,
+            auditoria => auditoria.TipoOperacion ==
+                TipoOperacionAuditoria.Anulacion);
+        Assert.Single(
+            repositorio.Auditorias
+                .Select(auditoria => auditoria.CorrelacionId)
+                .Distinct());
+    }
+
     private static ServicioGestionManualFacturas CrearServicio(
         RepositorioFalso repositorio,
         UnidadTrabajoFalsa unidadTrabajo)
@@ -189,7 +297,18 @@ public sealed class ServicioGestionManualFacturasTests
             new SolicitudCreacionFacturaManualDtoValidator(),
             new SolicitudActualizacionOperativaFacturaDtoValidator(),
             new SolicitudActualizacionNombrePacienteDtoValidator(),
+            new SolicitudAnulacionFacturaDtoValidator(),
             new TimeProviderFalso(FechaPrueba));
+    }
+
+    private static SolicitudAnulacionFacturaDto
+        CrearSolicitudAnulacion(byte[] version)
+    {
+        return new SolicitudAnulacionFacturaDto
+        {
+            Motivo = "Anulación autorizada para prueba.",
+            VersionFila = version
+        };
     }
 
     private static SolicitudCreacionFacturaManualDto CrearSolicitud()
@@ -282,6 +401,8 @@ public sealed class ServicioGestionManualFacturasTests
         public List<Factura> Facturas { get; } = [];
         public List<Paciente> Pacientes { get; } = [];
         public List<RegistroAuditoria> Auditorias { get; } = [];
+        public List<AplicacionPago> AplicacionesPago { get; } = [];
+        public bool TieneMovimientosBloqueantes { get; init; }
 
         public Task<bool> ExisteFacturaAsync(
             string facturaId,
@@ -339,6 +460,27 @@ public sealed class ServicioGestionManualFacturasTests
                 .ToArray();
 
             return Task.FromResult<IReadOnlyList<Factura>>(resultado);
+        }
+
+        public Task<bool> TieneMovimientosBloqueantesAsync(
+            string facturaId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(TieneMovimientosBloqueantes);
+
+        public Task<IReadOnlyList<AplicacionPago>>
+            ObtenerAplicacionesPagoAsync(
+                string facturaId,
+                CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<AplicacionPago> resultado =
+                AplicacionesPago
+                    .Where(aplicacion => string.Equals(
+                        aplicacion.FacturaId,
+                        facturaId,
+                        StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+
+            return Task.FromResult(resultado);
         }
 
         public Task AgregarFacturaAsync(

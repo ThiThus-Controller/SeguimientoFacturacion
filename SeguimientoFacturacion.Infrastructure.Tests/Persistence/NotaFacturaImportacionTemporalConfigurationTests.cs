@@ -200,6 +200,10 @@ public sealed class
         Assert.Contains(
             "CK_NotasFacturaTemporales_FE",
             restricciones);
+
+        Assert.Contains(
+            "CK_NotasFacturaTemporales_Glosa",
+            restricciones);
     }
 
     private static SeguimientoDbContext

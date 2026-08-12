@@ -277,7 +277,9 @@ public sealed class
                             numeroNota:
                                 nota.NumeroNota,
                             valorNota:
-                                nota.ValorNota))
+                                nota.ValorNota,
+                            glosaId:
+                                nota.GlosaId))
             .ToArray();
     }
 

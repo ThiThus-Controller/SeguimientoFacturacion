@@ -1,7 +1,14 @@
+@using Microsoft.AspNetCore.Authorization
+@using SeguimientoFacturacion.Configurations
 @model FacturaEdicionOperativaViewModel
+@inject IAuthorizationService ServicioAutorizacion
 
 @{
     ViewData["Title"] = $"Editar {Model.Id}";
+
+    var puedeAnular = (await ServicioAutorizacion.AuthorizeAsync(
+        User,
+        PoliticasAutorizacion.FacturasAnular)).Succeeded;
 }
 
 <div class="mb-4">
@@ -109,6 +116,14 @@
 
     <div class="card-footer d-flex justify-content-end gap-2">
         <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
+        @if (puedeAnular)
+        {
+            <a asp-action="Anular"
+               asp-route-facturaId="@Model.Id"
+               class="btn btn-outline-danger">
+                Anular factura
+            </a>
+        }
         <button type="submit" class="btn btn-primary">Guardar cambios</button>
     </div>
 </form>

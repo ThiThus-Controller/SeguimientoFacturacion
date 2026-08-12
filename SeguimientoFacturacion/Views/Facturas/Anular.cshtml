@@ -1,0 +1,66 @@
+@model FacturaAnulacionViewModel
+
+@{
+    ViewData["Title"] = $"Anular {Model.Id}";
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">Anular factura @Model.Id</h1>
+    <p class="text-muted mb-0">
+        Esta operación es auditada y no elimina información histórica.
+    </p>
+</div>
+
+<div class="alert alert-warning" role="alert">
+    <strong>Regla de negocio:</strong>
+    la factura solo puede anularse sin movimientos bloqueantes.
+    Si únicamente tiene aplicaciones de pago, el valor aplicado se
+    reclasificará íntegramente como anticipo en la misma transacción.
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <dl class="row mb-4">
+            <dt class="col-sm-3">Factura</dt>
+            <dd class="col-sm-9">@Model.Id</dd>
+            <dt class="col-sm-3">Paciente</dt>
+            <dd class="col-sm-9">@Model.Paciente</dd>
+            <dt class="col-sm-3">Valor</dt>
+            <dd class="col-sm-9">@Model.Valor.ToString("N2")</dd>
+        </dl>
+
+        <form asp-action="Anular"
+              asp-route-facturaId="@Model.Id"
+              method="post">
+            <input asp-for="VersionFilaBase64" type="hidden" />
+
+            <div asp-validation-summary="All"
+                 class="alert alert-danger"
+                 role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="Motivo" class="form-label"></label>
+                <textarea asp-for="Motivo"
+                          class="form-control"
+                          rows="4"></textarea>
+                <span asp-validation-for="Motivo"
+                      class="text-danger"></span>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a asp-action="Editar"
+                   asp-route-facturaId="@Model.Id"
+                   class="btn btn-outline-secondary">
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-danger">
+                    Confirmar anulación
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

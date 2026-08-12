@@ -64,7 +64,9 @@ public static class ContratosPlantillasImportacion
             "TIPO NOTA",
             "FECHA NOTA",
             "NUMERO NOTA",
-            "VALOR NOTA"
+            "VALOR NOTA",
+            "FECHA GLOSA ASOCIADA",
+            "VALOR GLOSA ASOCIADA"
         ]);
 
     /// <summary>
