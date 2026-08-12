@@ -34,6 +34,7 @@ public sealed class GlosaTests
             glosa.ValorAceptado);
 
         Assert.Null(glosa.FechaRespuesta);
+        Assert.Null(glosa.Observacion);
     }
 
     [Fact]
@@ -101,7 +102,8 @@ public sealed class GlosaTests
         glosa.Resolver(
             EstadoGlosa.Aceptada,
             new DateOnly(2026, 7, 20),
-            valorAceptado: 200000m);
+            valorAceptado: 200000m,
+            observacion: "  Aceptación parcial validada.  ");
 
         Assert.Equal(
             EstadoGlosa.Aceptada,
@@ -114,6 +116,68 @@ public sealed class GlosaTests
         Assert.Equal(
             decimal.Zero,
             glosa.ValorPendiente);
+
+        Assert.Equal(
+            "Aceptación parcial validada.",
+            glosa.Observacion);
+    }
+
+    [Fact]
+    public void Resolver_SinObservacion_DebeLanzarExcepcion()
+    {
+        var glosa = CrearGlosaValida();
+
+        var accion = () => glosa.Resolver(
+            EstadoGlosa.Aceptada,
+            new DateOnly(2026, 7, 20),
+            valorAceptado: 200000m,
+            observacion: "  ");
+
+        Assert.Throws<ArgumentException>(accion);
+    }
+
+    [Fact]
+    public void Anular_DebeEliminarImpactoYConservarMotivo()
+    {
+        var glosa = CrearGlosaValida();
+
+        glosa.Resolver(
+            EstadoGlosa.Aceptada,
+            new DateOnly(2026, 7, 20),
+            valorAceptado: 200000m,
+            observacion: "Aceptación inicial.");
+
+        glosa.Anular("  Registro duplicado.  ");
+
+        Assert.Equal(EstadoGlosa.Anulada, glosa.Estado);
+        Assert.Equal(decimal.Zero, glosa.ValorAceptado);
+        Assert.Equal(decimal.Zero, glosa.ValorPendiente);
+        Assert.Equal("Registro duplicado.", glosa.Observacion);
+    }
+
+    [Fact]
+    public void Anular_DosVeces_DebeLanzarExcepcion()
+    {
+        var glosa = CrearGlosaValida();
+        glosa.Anular("Registro erróneo.");
+
+        var accion = () => glosa.Anular("Segundo intento.");
+
+        Assert.Throws<InvalidOperationException>(accion);
+    }
+
+    [Fact]
+    public void CrearGlosa_ConObservacionMuyLarga_DebeLanzarExcepcion()
+    {
+        var accion = () => new Glosa(
+            facturaId: "FE4250",
+            fechaGlosa: new DateOnly(2026, 7, 10),
+            valorGlosa: 300000m,
+            observacion: new string(
+                'A',
+                Glosa.ObservacionLongitudMaxima + 1));
+
+        Assert.Throws<ArgumentException>(accion);
     }
 
     [Fact]

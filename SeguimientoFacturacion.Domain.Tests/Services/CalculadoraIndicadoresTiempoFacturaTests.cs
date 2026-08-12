@@ -181,6 +181,32 @@ public sealed class CalculadoraIndicadoresTiempoFacturaTests
     }
 
     [Fact]
+    public void Calcular_ConGlosaAnulada_DebeExcluirla()
+    {
+        var factura = CrearFactura(
+            fechaFactura: new DateOnly(2026, 1, 1),
+            fechaRadicacion: new DateOnly(2026, 1, 5));
+
+        var glosa = new Glosa(
+            factura.Id,
+            new DateOnly(2026, 1, 10),
+            100m);
+
+        glosa.Anular("Registro duplicado.");
+
+        var resultado = _calculadora.Calcular(
+            factura,
+            new[] { glosa },
+            new DateOnly(2026, 2, 1));
+
+        Assert.Equal(0, resultado.TotalGlosas);
+        Assert.Equal(0, resultado.GlosasPendientes);
+        Assert.Equal(
+            EstadoIndicadorPlazo.NoAplica,
+            resultado.MaximoObjecionARespuesta.Estado);
+    }
+
+    [Fact]
     public void Calcular_GlosaDeOtraFactura_DebeRechazarla()
     {
         var factura = CrearFactura(

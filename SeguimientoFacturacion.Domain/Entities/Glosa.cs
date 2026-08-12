@@ -8,11 +8,19 @@ namespace SeguimientoFacturacion.Domain.Entities;
 /// </summary>
 public sealed class Glosa : EntidadAuditableBase<Guid>
 {
+    private const string ObservacionResolucionSistema =
+        "Resolución registrada por un proceso del sistema.";
+
     /// <summary>
     /// Longitud máxima del identificador de la factura.
     /// </summary>
     public const int FacturaIdLongitudMaxima =
         Factura.IdLongitudMaxima;
+
+    /// <summary>
+    /// Longitud máxima de una observación de gestión.
+    /// </summary>
+    public const int ObservacionLongitudMaxima = 1000;
 
     private Glosa()
     {
@@ -24,12 +32,14 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
     public Glosa(
         string facturaId,
         DateOnly fechaGlosa,
-        decimal valorGlosa)
+        decimal valorGlosa,
+        string? observacion = null)
         : base(Guid.NewGuid())
     {
         FacturaId = ValidarFacturaId(facturaId);
         FechaGlosa = ValidarFechaGlosa(fechaGlosa);
         ValorGlosa = ValidarValorGlosa(valorGlosa);
+        Observacion = ValidarObservacionOpcional(observacion);
         Estado = EstadoGlosa.Abierta;
     }
 
@@ -67,6 +77,12 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
     public decimal ValorAceptado { get; private set; }
 
     /// <summary>
+    /// Obtiene la observación más reciente de la gestión.
+    /// El historial completo permanece en auditoría.
+    /// </summary>
+    public string? Observacion { get; private set; }
+
+    /// <summary>
     /// Obtiene la versión de fila utilizada para impedir que
     /// dos procesos consuman simultáneamente el mismo valor
     /// aceptado de la glosa.
@@ -78,7 +94,7 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
     /// Los estados finales no conservan valor pendiente.
     /// </summary>
     public decimal ValorPendiente =>
-        EsEstadoFinal(Estado)
+        EsEstadoTerminal(Estado)
             ? decimal.Zero
             : ValorGlosa;
 
@@ -91,7 +107,8 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
     /// Registra la respuesta inicial a la glosa.
     /// </summary>
     public void RegistrarRespuesta(
-        DateOnly fechaRespuesta)
+        DateOnly fechaRespuesta,
+        string? observacion = null)
     {
         if (Estado != EstadoGlosa.Abierta)
         {
@@ -102,6 +119,14 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
 
         FechaRespuesta = ValidarFechaRespuesta(
             fechaRespuesta);
+
+        var observacionValidada =
+            ValidarObservacionOpcional(observacion);
+
+        if (observacionValidada is not null)
+        {
+            Observacion = observacionValidada;
+        }
 
         Estado = EstadoGlosa.Respondida;
     }
@@ -115,7 +140,24 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
         DateOnly fechaRespuesta,
         decimal valorAceptado)
     {
-        if (EsEstadoFinal(Estado))
+        Resolver(
+            estadoFinal,
+            fechaRespuesta,
+            valorAceptado,
+            ObservacionResolucionSistema);
+    }
+
+    /// <summary>
+    /// Resuelve la glosa y registra la observación obligatoria
+    /// que explica la decisión.
+    /// </summary>
+    public void Resolver(
+        EstadoGlosa estadoFinal,
+        DateOnly fechaRespuesta,
+        decimal valorAceptado,
+        string observacion)
+    {
+        if (EsEstadoTerminal(Estado))
         {
             throw new InvalidOperationException(
                 "La glosa ya se encuentra resuelta.");
@@ -131,9 +173,33 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
                 estadoFinal,
                 valorAceptado);
 
+        var observacionValidada =
+            ValidarObservacionObligatoria(observacion);
+
         FechaRespuesta = fechaRespuestaValidada;
         ValorAceptado = valorAceptadoValidado;
+        Observacion = observacionValidada;
         Estado = estadoFinal;
+    }
+
+    /// <summary>
+    /// Anula manualmente una glosa registrada por error.
+    /// La capa de aplicación debe comprobar previamente que no
+    /// existan notas crédito vigentes asociadas.
+    /// </summary>
+    public void Anular(string observacion)
+    {
+        if (Estado == EstadoGlosa.Anulada)
+        {
+            throw new InvalidOperationException(
+                "La glosa ya se encuentra anulada.");
+        }
+
+        Observacion =
+            ValidarObservacionObligatoria(observacion);
+
+        ValorAceptado = decimal.Zero;
+        Estado = EstadoGlosa.Anulada;
     }
 
     private static string ValidarFacturaId(
@@ -187,6 +253,48 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
         }
 
         return valorGlosa;
+    }
+
+    private static string? ValidarObservacionOpcional(
+        string? observacion)
+    {
+        if (string.IsNullOrWhiteSpace(observacion))
+        {
+            return null;
+        }
+
+        return ValidarLongitudObservacion(observacion);
+    }
+
+    private static string ValidarObservacionObligatoria(
+        string observacion)
+    {
+        if (string.IsNullOrWhiteSpace(observacion))
+        {
+            throw new ArgumentException(
+                "La observación es obligatoria para resolver " +
+                "o anular la glosa.",
+                nameof(observacion));
+        }
+
+        return ValidarLongitudObservacion(observacion);
+    }
+
+    private static string ValidarLongitudObservacion(
+        string observacion)
+    {
+        var observacionNormalizada = observacion.Trim();
+
+        if (observacionNormalizada.Length >
+            ObservacionLongitudMaxima)
+        {
+            throw new ArgumentException(
+                $"La observación no puede superar los " +
+                $"{ObservacionLongitudMaxima} caracteres.",
+                nameof(observacion));
+        }
+
+        return observacionNormalizada;
     }
 
     private DateOnly ValidarFechaRespuesta(
@@ -249,7 +357,7 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
     private static void ValidarEstadoFinal(
         EstadoGlosa estado)
     {
-        if (!EsEstadoFinal(estado))
+        if (!EsEstadoResuelto(estado))
         {
             throw new ArgumentException(
                 "El estado indicado no corresponde a una " +
@@ -258,12 +366,19 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
         }
     }
 
-    private static bool EsEstadoFinal(
+    private static bool EsEstadoResuelto(
         EstadoGlosa estado)
     {
         return estado is
             EstadoGlosa.Aceptada or
             EstadoGlosa.Levantada or
             EstadoGlosa.Conciliada;
+    }
+
+    private static bool EsEstadoTerminal(
+        EstadoGlosa estado)
+    {
+        return EsEstadoResuelto(estado) ||
+            estado == EstadoGlosa.Anulada;
     }
 }
