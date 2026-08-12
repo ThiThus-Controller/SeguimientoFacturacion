@@ -455,9 +455,7 @@ public sealed class
                         new DateTime(
                             2026,
                             2,
-                            1),
-                    fechaGlosa: new DateTime(2026, 1, 20),
-                    valorGlosa: 150000m);
+                            1));
 
                 EscribirFila(
                     hoja,
@@ -531,9 +529,7 @@ public sealed class
         string tipo,
         string numeroNota,
         decimal valor,
-        DateTime fecha,
-        DateTime? fechaGlosa = null,
-        decimal? valorGlosa = null)
+        DateTime fecha)
     {
         hoja.Cell(fila, 1).Value =
             "FE000001";
@@ -558,16 +554,6 @@ public sealed class
 
         hoja.Cell(fila, 8).Value =
             valor;
-
-        if (fechaGlosa.HasValue)
-        {
-            hoja.Cell(fila, 9).Value = fechaGlosa.Value;
-        }
-
-        if (valorGlosa.HasValue)
-        {
-            hoja.Cell(fila, 10).Value = valorGlosa.Value;
-        }
     }
 
     private static SeguimientoDbContext

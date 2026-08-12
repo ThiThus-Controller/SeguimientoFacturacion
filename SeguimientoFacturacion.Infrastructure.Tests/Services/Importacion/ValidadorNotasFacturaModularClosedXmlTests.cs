@@ -27,9 +27,7 @@ public sealed class
                         "NC",
                         "NC-001",
                         10000m,
-                        new DateTime(2026, 7, 20),
-                        new DateTime(2026, 7, 15),
-                        26535m);
+                        new DateTime(2026, 7, 20));
 
                     EscribirFila(
                         hoja,
@@ -74,7 +72,7 @@ public sealed class
     }
 
     [Fact]
-    public async Task Validar_NotaCreditoSinGlosa_DebeRetornarError()
+    public async Task Validar_FacturaSinGlosa_DebeRetornarError()
     {
         await using var archivo = CrearArchivo(
             hoja => EscribirFila(
@@ -99,7 +97,7 @@ public sealed class
         Assert.Contains(
             resultado.Inconsistencias,
             inconsistencia => inconsistencia.Codigo ==
-                "NOTA_CREDITO_REQUIERE_GLOSA");
+                "FACTURA_SIN_GLOSA_PARA_NC");
     }
 
     [Fact]
@@ -295,9 +293,7 @@ public sealed class
                 tipo: "NC",
                 numeroNota: "NC-GLOSA-001",
                 valor: 10000m,
-                fecha: new DateTime(2026, 7, 20),
-                fechaGlosa: new DateTime(2026, 7, 15),
-                valorGlosa: 26535m));
+                fecha: new DateTime(2026, 7, 20)));
 
         var validador = CrearValidador(
             new ConsultaFacturasControlada(
@@ -328,9 +324,7 @@ public sealed class
                 tipo: "NC",
                 numeroNota: "NC-GLOSA-002",
                 valor: 11000m,
-                fecha: new DateTime(2026, 7, 20),
-                fechaGlosa: new DateTime(2026, 7, 15),
-                valorGlosa: 26535m));
+                fecha: new DateTime(2026, 7, 20)));
 
         var validador = CrearValidador(
             new ConsultaFacturasControlada(
@@ -350,7 +344,98 @@ public sealed class
             resultado.Inconsistencias,
             inconsistencia =>
                 inconsistencia.Codigo ==
-                "NC_EXCEDE_VALOR_ACEPTADO_GLOSA");
+                "GLOSA_SIN_CUPO_SUFICIENTE_NC");
+    }
+
+    [Fact]
+    public async Task
+        Validar_DosNotasSuperanCupoEnArchivo_DebeReportarError()
+    {
+        await using var archivo = CrearArchivo(
+            hoja =>
+            {
+                EscribirFila(
+                    hoja,
+                    fila: 2,
+                    numeroFactura: "000001",
+                    tipo: "NC",
+                    numeroNota: "NC-LOTE-001",
+                    valor: 10000m,
+                    fecha: new DateTime(2026, 7, 20));
+
+                EscribirFila(
+                    hoja,
+                    fila: 3,
+                    numeroFactura: "000001",
+                    tipo: "NC",
+                    numeroNota: "NC-LOTE-002",
+                    valor: 7000m,
+                    fecha: new DateTime(2026, 7, 21));
+            });
+
+        var validador = CrearValidador(
+            new ConsultaFacturasControlada(
+                [
+                    CrearReferenciaFactura(
+                        "FE000001",
+                        1,
+                        new DateOnly(2026, 7, 10))
+                ]),
+            new ConsultaGlosasControlada(
+                [CrearReferenciaGlosa(0m)]));
+
+        var resultado = await validador.ValidarAsync(
+            CrearSolicitud(archivo));
+
+        Assert.Contains(
+            resultado.Inconsistencias,
+            inconsistencia =>
+                inconsistencia.Fila == 3 &&
+                inconsistencia.Codigo ==
+                    "GLOSA_SIN_CUPO_SUFICIENTE_NC");
+    }
+
+    [Fact]
+    public async Task
+        Validar_MultiplesGlosasElegibles_DebeReportarAmbiguedad()
+    {
+        await using var archivo = CrearArchivo(
+            hoja => EscribirFila(
+                hoja,
+                fila: 2,
+                numeroFactura: "000001",
+                tipo: "NC",
+                numeroNota: "NC-AMBIGUA-001",
+                valor: 10000m,
+                fecha: new DateTime(2026, 7, 20)));
+
+        var validador = CrearValidador(
+            new ConsultaFacturasControlada(
+                [
+                    CrearReferenciaFactura(
+                        "FE000001",
+                        1,
+                        new DateOnly(2026, 7, 10))
+                ]),
+            new ConsultaGlosasControlada(
+                [
+                    CrearReferenciaGlosa(
+                        notasPrevias: 0m,
+                        glosaId: Guid.Parse(
+                            "11111111-1111-1111-1111-111111111111")),
+                    CrearReferenciaGlosa(
+                        notasPrevias: 0m,
+                        glosaId: Guid.Parse(
+                            "22222222-2222-2222-2222-222222222222"))
+                ]));
+
+        var resultado = await validador.ValidarAsync(
+            CrearSolicitud(archivo));
+
+        Assert.Contains(
+            resultado.Inconsistencias,
+            inconsistencia => inconsistencia.Codigo ==
+                "GLOSA_AMBIGUA_PARA_NC");
     }
 
     private static
@@ -405,11 +490,13 @@ public sealed class
     }
 
     private static ReferenciaGlosaNotaCreditoDto
-        CrearReferenciaGlosa(decimal notasPrevias)
+        CrearReferenciaGlosa(
+            decimal notasPrevias,
+            Guid? glosaId = null)
     {
         return new ReferenciaGlosaNotaCreditoDto
         {
-            GlosaId = Guid.NewGuid(),
+            GlosaId = glosaId ?? Guid.NewGuid(),
             FacturaId = "FE000001",
             FechaGlosa = new DateOnly(2026, 7, 15),
             ValorGlosa = 26535m,
@@ -458,9 +545,7 @@ public sealed class
         string tipo,
         string numeroNota,
         decimal valor,
-        DateTime fecha,
-        DateTime? fechaGlosa = null,
-        decimal? valorGlosa = null)
+        DateTime fecha)
     {
         hoja.Cell(fila, 1).Value =
             $"FE{numeroFactura}";
@@ -472,18 +557,6 @@ public sealed class
         hoja.Cell(fila, 6).Value = fecha;
         hoja.Cell(fila, 7).Value = numeroNota;
         hoja.Cell(fila, 8).Value = valor;
-
-        if (fechaGlosa.HasValue)
-        {
-            hoja.Cell(fila, 9).Value =
-                fechaGlosa.Value;
-        }
-
-        if (valorGlosa.HasValue)
-        {
-            hoja.Cell(fila, 10).Value =
-                valorGlosa.Value;
-        }
     }
 
     private sealed class

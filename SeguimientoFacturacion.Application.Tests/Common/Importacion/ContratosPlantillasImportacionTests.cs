@@ -46,9 +46,7 @@ public sealed class
                 "TIPO NOTA",
                 "FECHA NOTA",
                 "NUMERO NOTA",
-                "VALOR NOTA",
-                "FECHA GLOSA ASOCIADA",
-                "VALOR GLOSA ASOCIADA"
+                "VALOR NOTA"
             }
         ];
 
@@ -136,16 +134,16 @@ public sealed class
     }
 
     [Fact]
-    public void Notas_DebeExigirColumnasDeReferenciaGlosa()
+    public void Notas_DebeTenerOchoColumnasOperativas()
     {
         var contrato =
             ContratosPlantillasImportacion.NotasFactura;
 
-        Assert.Equal(10, contrato.EncabezadosRequeridos.Count);
-        Assert.Contains(
+        Assert.Equal(8, contrato.EncabezadosRequeridos.Count);
+        Assert.DoesNotContain(
             "FECHA GLOSA ASOCIADA",
             contrato.EncabezadosRequeridos);
-        Assert.Contains(
+        Assert.DoesNotContain(
             "VALOR GLOSA ASOCIADA",
             contrato.EncabezadosRequeridos);
 

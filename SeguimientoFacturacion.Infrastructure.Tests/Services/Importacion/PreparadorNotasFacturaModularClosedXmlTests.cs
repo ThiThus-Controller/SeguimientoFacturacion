@@ -27,9 +27,7 @@ public sealed class
                         "NC",
                         "nc-001",
                         100000m,
-                        new DateTime(2026, 2, 1),
-                        new DateTime(2026, 1, 20),
-                        150000m);
+                        new DateTime(2026, 2, 1));
 
                     EscribirFila(
                         hoja,
@@ -116,6 +114,11 @@ public sealed class
             notaCredito.NumeroNota);
 
         Assert.Equal(
+            Guid.Parse(
+                "11111111-1111-1111-1111-111111111111"),
+            notaCredito.GlosaId);
+
+        Assert.Equal(
             100000m,
             notaCredito.ValorNota);
 
@@ -185,9 +188,7 @@ public sealed class
                         "CREDITO",
                         "NC-001",
                         100000m,
-                        new DateTime(2026, 2, 1),
-                        new DateTime(2026, 1, 20),
-                        150000m));
+                        new DateTime(2026, 2, 1)));
 
         var consultaFacturas =
             new ConsultaFacturasControlada(
@@ -311,9 +312,7 @@ public sealed class
         string tipo,
         string numeroNota,
         decimal valor,
-        DateTime fecha,
-        DateTime? fechaGlosa = null,
-        decimal? valorGlosa = null)
+        DateTime fecha)
     {
         hoja.Cell(fila, 1).Value =
             $"FE{numeroFactura}";
@@ -325,16 +324,6 @@ public sealed class
         hoja.Cell(fila, 6).Value = fecha;
         hoja.Cell(fila, 7).Value = numeroNota;
         hoja.Cell(fila, 8).Value = valor;
-
-        if (fechaGlosa.HasValue)
-        {
-            hoja.Cell(fila, 9).Value = fechaGlosa.Value;
-        }
-
-        if (valorGlosa.HasValue)
-        {
-            hoja.Cell(fila, 10).Value = valorGlosa.Value;
-        }
     }
 
     private sealed class

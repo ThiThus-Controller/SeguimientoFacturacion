@@ -83,6 +83,18 @@ Reglas relevantes:
 - Número y valor de la nota son obligatorios.
 - El valor debe ser mayor que cero.
 - Una nota se identifica por factura, tipo y número.
+- Una nota débito no requiere una glosa.
+- Toda nota crédito debe estar respaldada por una glosa de la misma
+  factura con valor aceptado pendiente.
+- El sistema asocia internamente la nota crédito con la única glosa
+  elegible; el usuario no diligencia fecha ni valor de glosa en esta
+  plantilla.
+- La fecha de la nota crédito no puede ser anterior a la glosa que la
+  respalda.
+- El valor acumulado de las notas crédito vigentes y del mismo archivo
+  no puede superar el valor aceptado de la glosa.
+- Si no existe una glosa elegible o existen varias posibles, el lote se
+  bloquea para evitar una asociación contable arbitraria.
 - Una nota crédito puede agotar el saldo, pero no crea un pago.
 
 ## Glosas

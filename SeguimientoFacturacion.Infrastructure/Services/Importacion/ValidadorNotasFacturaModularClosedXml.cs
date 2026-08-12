@@ -189,13 +189,23 @@ public sealed class
             referencias,
             inconsistencias);
 
+        var facturasAdmitenNotas = referencias
+            .Where(referencia =>
+                !CodigosEstadoFactura.EsAnulada(
+                    referencia.EstadoId))
+            .Select(referencia => referencia.FacturaId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var referenciasGlosas =
             await _consultaGlosas.ObtenerPorFacturasAsync(
                 filas
                     .Where(fila =>
                         fila.Tipo == TipoNotaFactura.Credito &&
-                        fila.FechaGlosaAsociada.HasValue &&
-                        fila.ValorGlosaAsociada.HasValue)
+                        fila.FechaNota.HasValue &&
+                        fila.ValorNota.HasValue &&
+                        fila.ValorNota.Value > decimal.Zero &&
+                        facturasAdmitenNotas.Contains(
+                            fila.IdentificadorFe))
                     .Select(fila => fila.IdentificadorFe)
                     .Distinct(
                         StringComparer.OrdinalIgnoreCase)
@@ -205,6 +215,7 @@ public sealed class
         ValidarRespaldosGlosas(
             filas,
             referenciasGlosas,
+            facturasAdmitenNotas,
             inconsistencias);
 
         return new ResultadoValidacionNotasFacturaDto
@@ -382,29 +393,6 @@ public sealed class
                 fila,
                 inconsistencias);
 
-        var fechaGlosaAsociada =
-            ObtenerFechaOpcional(
-                hoja,
-                fila,
-                columnas,
-                "FECHA GLOSA ASOCIADA",
-                inconsistencias);
-
-        var valorGlosaAsociada =
-            ObtenerValorOpcional(
-                hoja,
-                fila,
-                columnas,
-                "VALOR GLOSA ASOCIADA",
-                inconsistencias);
-
-        ValidarReferenciaGlosaInformada(
-            fila,
-            tipo,
-            fechaGlosaAsociada,
-            valorGlosaAsociada,
-            inconsistencias);
-
         var aseguradoraId =
             ResolverAseguradora(
                 aseguradora,
@@ -440,9 +428,7 @@ public sealed class
             aseguradoraId,
             tipo,
             fechaNota,
-            valorNota,
-            fechaGlosaAsociada,
-            valorGlosaAsociada);
+            valorNota);
     }
 
     private static void ValidarReferencias(
@@ -526,254 +512,39 @@ public sealed class
         IEnumerable<FilaNota> filas,
         IEnumerable<ReferenciaGlosaNotaCreditoDto>
             referenciasGlosas,
+        IReadOnlySet<string> facturasAdmitenNotas,
         ICollection<InconsistenciaImportacionDto>
             inconsistencias)
     {
-        var glosas = referenciasGlosas.ToArray();
-        var filasResueltas = new List<
-            (FilaNota Fila,
-                ReferenciaGlosaNotaCreditoDto Glosa)>();
-
-        foreach (var fila in filas)
-        {
-            if (fila.Tipo != TipoNotaFactura.Credito ||
-                !fila.FechaGlosaAsociada.HasValue ||
-                !fila.ValorGlosaAsociada.HasValue)
-            {
-                continue;
-            }
-
-            var coincidencias = glosas
-                .Where(glosa =>
-                    string.Equals(
-                        glosa.FacturaId,
-                        fila.IdentificadorFe,
-                        StringComparison.OrdinalIgnoreCase) &&
-                    glosa.FechaGlosa ==
-                        fila.FechaGlosaAsociada.Value &&
-                    glosa.ValorGlosa ==
-                        fila.ValorGlosaAsociada.Value)
-                .ToArray();
-
-            if (coincidencias.Length != 1)
-            {
-                AgregarError(
-                    inconsistencias,
+        var solicitudes = filas
+            .Where(fila =>
+                fila.Tipo == TipoNotaFactura.Credito &&
+                fila.FechaNota.HasValue &&
+                fila.ValorNota.HasValue &&
+                fila.ValorNota.Value > decimal.Zero &&
+                facturasAdmitenNotas.Contains(
+                    fila.IdentificadorFe))
+            .Select(fila =>
+                new SolicitudAsignacionGlosa(
                     fila.NumeroFila,
-                    "FECHA GLOSA ASOCIADA",
-                    coincidencias.Length == 0
-                        ? "GLOSA_ASOCIADA_NO_EXISTE"
-                        : "GLOSA_ASOCIADA_AMBIGUA",
-                    coincidencias.Length == 0
-                        ? "No existe una glosa de la factura " +
-                          "con la fecha y el valor informados."
-                        : "La referencia suministrada coincide " +
-                          "con más de una glosa.");
+                    fila.IdentificadorFe,
+                    fila.FechaNota!.Value,
+                    fila.ValorNota!.Value))
+            .ToArray();
 
-                continue;
-            }
+        var resultado = AsignadorGlosasNotasCredito.Resolver(
+            solicitudes,
+            referenciasGlosas);
 
-            var glosa = coincidencias[0];
-
-            if (glosa.ValorAceptado <= decimal.Zero)
-            {
-                AgregarError(
-                    inconsistencias,
-                    fila.NumeroFila,
-                    "VALOR GLOSA ASOCIADA",
-                    "GLOSA_SIN_VALOR_ACEPTADO",
-                    "La glosa seleccionada no tiene un valor " +
-                    "aceptado que pueda respaldar una NC.");
-
-                continue;
-            }
-
-            if (fila.FechaNota.HasValue &&
-                fila.FechaNota.Value < glosa.FechaGlosa)
-            {
-                AgregarError(
-                    inconsistencias,
-                    fila.NumeroFila,
-                    "FECHA NOTA",
-                    "NOTA_ANTERIOR_GLOSA",
-                    "La fecha de la nota crédito no puede ser " +
-                    "anterior a la fecha de la glosa.");
-
-                continue;
-            }
-
-            filasResueltas.Add((fila, glosa));
-        }
-
-        foreach (var grupo in filasResueltas.GroupBy(
-                     elemento => elemento.Glosa.GlosaId))
-        {
-            var referencia = grupo.First().Glosa;
-            var nuevasNotas = grupo
-                .Where(elemento =>
-                    elemento.Fila.ValorNota.HasValue)
-                .Sum(elemento =>
-                    elemento.Fila.ValorNota!.Value);
-
-            var totalRespaldado =
-                referencia.TotalNotasCreditoVigentes +
-                nuevasNotas;
-
-            if (totalRespaldado <= referencia.ValorAceptado)
-            {
-                continue;
-            }
-
-            var exceso =
-                totalRespaldado - referencia.ValorAceptado;
-
-            foreach (var elemento in grupo)
-            {
-                AgregarError(
-                    inconsistencias,
-                    elemento.Fila.NumeroFila,
-                    "VALOR NOTA",
-                    "NC_EXCEDE_VALOR_ACEPTADO_GLOSA",
-                    "La suma de las notas crédito asociadas " +
-                    "supera el valor aceptado de la glosa " +
-                    $"en {exceso:N2}.",
-                    elemento.Fila.ValorNota?.ToString(
-                        "0.00",
-                        CultureInfo.InvariantCulture));
-            }
-        }
-    }
-
-    private static void ValidarReferenciaGlosaInformada(
-        int fila,
-        TipoNotaFactura? tipo,
-        DateOnly? fechaGlosa,
-        decimal? valorGlosa,
-        ICollection<InconsistenciaImportacionDto>
-            inconsistencias)
-    {
-        if (tipo == TipoNotaFactura.Credito &&
-            !fechaGlosa.HasValue &&
-            !valorGlosa.HasValue)
+        foreach (var error in resultado.Errores)
         {
             AgregarError(
                 inconsistencias,
-                fila,
-                "GLOSA ASOCIADA",
-                "NOTA_CREDITO_REQUIERE_GLOSA",
-                "Toda nota crédito debe identificar la " +
-                "glosa que respalda su valor.");
-
-            return;
+                error.NumeroFila,
+                error.Columna,
+                error.Codigo,
+                error.Mensaje);
         }
-
-        if (fechaGlosa.HasValue != valorGlosa.HasValue)
-        {
-            AgregarError(
-                inconsistencias,
-                fila,
-                "GLOSA ASOCIADA",
-                "REFERENCIA_GLOSA_INCOMPLETA",
-                "La fecha y el valor de la glosa asociada " +
-                "deben informarse juntos.");
-
-            return;
-        }
-
-        if (fechaGlosa.HasValue &&
-            tipo.HasValue &&
-            tipo.Value != TipoNotaFactura.Credito)
-        {
-            AgregarError(
-                inconsistencias,
-                fila,
-                "TIPO NOTA",
-                "NOTA_DEBITO_NO_PERMITE_GLOSA",
-                "Solo las notas crédito pueden asociarse " +
-                "a una glosa.");
-        }
-    }
-
-    private static DateOnly? ObtenerFechaOpcional(
-        IXLWorksheet hoja,
-        int fila,
-        IReadOnlyDictionary<string, int> columnas,
-        string nombreColumna,
-        ICollection<InconsistenciaImportacionDto>
-            inconsistencias)
-    {
-        if (!columnas.TryGetValue(
-                nombreColumna,
-                out var numeroColumna))
-        {
-            return null;
-        }
-
-        var celda = hoja.Cell(fila, numeroColumna);
-        var texto = celda.CachedValue.ToString().Trim();
-
-        if (string.IsNullOrWhiteSpace(texto))
-        {
-            return null;
-        }
-
-        if (IntentarObtenerFecha(celda, out var fecha))
-        {
-            return fecha;
-        }
-
-        AgregarError(
-            inconsistencias,
-            fila,
-            nombreColumna,
-            "FECHA_GLOSA_ASOCIADA_INVALIDA",
-            "El valor no corresponde a una fecha válida.",
-            SanitizadorValorPresentadoImportacion
-                .Sanitizar(texto));
-
-        return null;
-    }
-
-    private static decimal? ObtenerValorOpcional(
-        IXLWorksheet hoja,
-        int fila,
-        IReadOnlyDictionary<string, int> columnas,
-        string nombreColumna,
-        ICollection<InconsistenciaImportacionDto>
-            inconsistencias)
-    {
-        if (!columnas.TryGetValue(
-                nombreColumna,
-                out var numeroColumna))
-        {
-            return null;
-        }
-
-        var celda = hoja.Cell(fila, numeroColumna);
-        var texto = celda.CachedValue.ToString().Trim();
-
-        if (string.IsNullOrWhiteSpace(texto))
-        {
-            return null;
-        }
-
-        if (!IntentarObtenerDecimal(celda, out var valor) ||
-            valor <= decimal.Zero)
-        {
-            AgregarError(
-                inconsistencias,
-                fila,
-                nombreColumna,
-                "VALOR_GLOSA_ASOCIADA_INVALIDO",
-                "El valor de la glosa asociada debe ser " +
-                "numérico y mayor que cero.",
-                SanitizadorValorPresentadoImportacion
-                    .Sanitizar(texto));
-
-            return null;
-        }
-
-        return valor;
     }
 
     private static DateOnly? ObtenerFecha(
@@ -1170,7 +941,5 @@ public sealed class
         int? AseguradoraId,
         TipoNotaFactura? Tipo,
         DateOnly? FechaNota,
-        decimal? ValorNota,
-        DateOnly? FechaGlosaAsociada,
-        decimal? ValorGlosaAsociada);
+        decimal? ValorNota);
 }
