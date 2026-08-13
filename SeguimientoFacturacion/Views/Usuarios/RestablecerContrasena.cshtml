@@ -4,64 +4,131 @@
     ViewData["Title"] = "Restablecer contraseña";
 }
 
+<!-- Estilos corporativos específicos de la vista -->
+<style>
+    .card-corporativa {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+        .card-corporativa .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--azul-rey);
+            padding: 1rem 1.5rem;
+        }
+
+    .btn-naranja {
+        background-color: var(--naranja);
+        color: var(--blanco);
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+        .btn-naranja:hover {
+            background-color: #e66d00;
+            color: var(--blanco);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(255, 121, 0, 0.3);
+        }
+
+    .usuario-badge {
+        background-color: rgba(11, 59, 134, 0.05);
+        border: 1px solid rgba(11, 59, 134, 0.15);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+    }
+</style>
+
 <div class="row justify-content-center py-3">
     <div class="col-12 col-md-8 col-lg-6">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white">
-                <h1 class="h4 mb-0">Restablecer contraseña</h1>
+
+        <!-- CABECERA DE LA PÁGINA -->
+        <div class="mb-4 border-bottom pb-3">
+            <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                <i class="bi bi-key me-2 text-secondary opacity-75"></i>Restablecer contraseña
+            </h1>
+            <p class="text-secondary mb-0">
+                Asigne una nueva clave de acceso para el usuario seleccionado.
+            </p>
+        </div>
+
+        <!-- TARJETA DEL FORMULARIO -->
+        <div class="card card-corporativa shadow-sm mb-5">
+            <div class="card-header">
+                <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-shield-lock me-2 text-secondary"></i>Cambio de clave de acceso
+                </h2>
             </div>
+
             <div class="card-body p-4">
-                <p>
-                    Usuario: <strong>@Model.NombreUsuario</strong>
-                </p>
-                <p class="text-muted small">
-                    Al guardar, todas las sesiones anteriores de esta
-                    cuenta quedarán invalidadas.
-                </p>
+
+                <!-- DATOS DEL USUARIO OBJETIVO -->
+                <div class="usuario-badge mb-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small d-block">Usuario a actualizar</span>
+                        <strong class="fs-6" style="color: var(--azul-rey);">
+                            <i class="bi bi-person-circle me-1"></i>@Model.NombreUsuario
+                        </strong>
+                    </div>
+                    <span class="badge bg-secondary-subtle text-secondary border">Cuenta del sistema</span>
+                </div>
+
+                <!-- ALERTA DE ADVERTENCIA DE SESIÓN -->
+                <div class="alert alert-warning shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+                    <div>
+                        <strong class="d-block text-dark mb-0">Atención de seguridad:</strong>
+                        <span class="text-dark opacity-75 small">Al guardar, todas las sesiones anteriores activas de esta cuenta quedarán invalidadas automáticamente.</span>
+                    </div>
+                </div>
 
                 <form asp-action="RestablecerContrasena"
                       asp-route-usuarioId="@Model.UsuarioId"
                       method="post"
                       autocomplete="off">
+
                     <input asp-for="UsuarioId" type="hidden" />
 
-                    <div asp-validation-summary="ModelOnly"
-                         class="alert alert-danger"
-                         role="alert">
-                    </div>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm border-0 rounded-3 mb-4" role="alert"></div>
 
                     <div class="mb-3">
-                        <label asp-for="NuevaContrasena"
-                               class="form-label"></label>
-                        <input asp-for="NuevaContrasena"
-                               class="form-control"
-                               autocomplete="new-password" />
-                        <span asp-validation-for="NuevaContrasena"
-                              class="text-danger"></span>
+                        <label asp-for="NuevaContrasena" class="form-label fw-semibold text-dark"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-lock text-muted"></i></span>
+                            <input asp-for="NuevaContrasena"
+                                   class="form-control border-secondary-subtle"
+                                   autocomplete="new-password"
+                                   placeholder="Ingrese la nueva contraseña" />
+                        </div>
+                        <span asp-validation-for="NuevaContrasena" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <div class="mb-4">
-                        <label asp-for="ConfirmacionContrasena"
-                               class="form-label"></label>
-                        <input asp-for="ConfirmacionContrasena"
-                               class="form-control"
-                               autocomplete="new-password" />
-                        <span asp-validation-for="ConfirmacionContrasena"
-                              class="text-danger"></span>
+                        <label asp-for="ConfirmacionContrasena" class="form-label fw-semibold text-dark"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-shield-lock text-muted"></i></span>
+                            <input asp-for="ConfirmacionContrasena"
+                                   class="form-control border-secondary-subtle"
+                                   autocomplete="new-password"
+                                   placeholder="Confirme la nueva contraseña" />
+                        </div>
+                        <span asp-validation-for="ConfirmacionContrasena" class="text-danger small mt-1 d-block"></span>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2">
-                        <a asp-action="Index"
-                           class="btn btn-outline-secondary">
-                            Cancelar
+                    <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                        <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-x-circle me-1"></i> Cancelar
                         </a>
-                        <button type="submit" class="btn btn-warning">
-                            Restablecer contraseña
+                        <button type="submit" class="btn btn-naranja px-4 shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Restablecer contraseña
                         </button>
                     </div>
                 </form>
             </div>
         </div>
+
     </div>
 </div>
 

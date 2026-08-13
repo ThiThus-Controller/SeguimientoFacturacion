@@ -107,7 +107,7 @@ public sealed class
 
     [Fact]
     public void
-        Crear_GlosaAceptada_DebeConservarResolucion()
+        Crear_GlosaAceptadaParcial_DebeNormalizarNegociacion()
     {
         var registro =
             CrearRegistro(
@@ -118,11 +118,32 @@ public sealed class
                 valorAceptado: 60000m);
 
         Assert.Equal(
-            EstadoGlosa.Aceptada,
+            EstadoGlosa.EnNegociacion,
             registro.Estado);
 
         Assert.Equal(
             60000m,
+            registro.ValorAceptado);
+    }
+
+    [Fact]
+    public void
+        Crear_GlosaAceptadaTotal_DebeConservarEstadoAceptada()
+    {
+        var registro =
+            CrearRegistro(
+                fechaRespuesta:
+                    new DateOnly(2026, 7, 20),
+                estado:
+                    EstadoGlosa.Aceptada,
+                valorAceptado: 100000m);
+
+        Assert.Equal(
+            EstadoGlosa.Aceptada,
+            registro.Estado);
+
+        Assert.Equal(
+            100000m,
             registro.ValorAceptado);
     }
 

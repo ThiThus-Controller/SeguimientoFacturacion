@@ -24,184 +24,258 @@
 
     static string ClaseEstado(EstadoGlosa estado) => estado switch
     {
-        EstadoGlosa.Abierta => "text-bg-warning",
-        EstadoGlosa.Respondida => "text-bg-info",
-        EstadoGlosa.Aceptada => "text-bg-danger",
-        EstadoGlosa.Levantada => "text-bg-success",
-        EstadoGlosa.Conciliada => "text-bg-primary",
-        EstadoGlosa.Anulada => "text-bg-secondary",
-        _ => "text-bg-light"
+        EstadoGlosa.Abierta => "bg-warning text-dark",
+        EstadoGlosa.Respondida => "bg-info text-dark",
+        EstadoGlosa.Aceptada => "bg-danger text-white",
+        EstadoGlosa.Levantada => "bg-success text-white",
+        EstadoGlosa.Conciliada => "bg-primary text-white",
+        EstadoGlosa.Anulada => "bg-secondary text-white",
+        EstadoGlosa.EnNegociacion => "bg-warning text-dark",
+        _ => "bg-light text-dark border"
+    };
+
+    static string DescripcionEstado(EstadoGlosa estado) => estado switch
+    {
+        EstadoGlosa.EnNegociacion => "En negociación",
+        _ => estado.ToString()
     };
 }
 
-<div class="d-flex justify-content-between align-items-start mb-4">
-    <div>
-        <h1 class="h3 mb-1">Glosas de la factura @Model.FacturaId</h1>
-        <p class="text-muted mb-0">
-            Consulte tiempos y gestione el ciclo de cada objeción.
-        </p>
-    </div>
+<!-- Estilos corporativos específicos de la vista -->
+<style>
+    .card-corporativa {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
 
-    <a asp-controller="Facturas"
-       asp-action="Index"
-       asp-route-textoBusqueda="@Model.FacturaId"
-       class="btn btn-outline-secondary">
-        Volver a facturas
-    </a>
-</div>
+        .card-corporativa .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--azul-rey);
+            padding: 1rem 1.25rem;
+        }
 
-@if (ViewData["MensajeExito"] is string mensajeExito)
-{
-    <div class="alert alert-success" role="alert">@mensajeExito</div>
-}
+    .tabla-glosas th,
+    .tabla-glosas td {
+        padding: 0.65rem 0.5rem !important;
+        font-size: 0.875rem;
+    }
 
-@if (ViewData["MensajeError"] is string mensajeError)
-{
-    <div class="alert alert-warning" role="alert">@mensajeError</div>
-}
+    .table-hover tbody tr:hover {
+        background-color: rgba(11, 59, 134, 0.03);
+    }
+</style>
 
-<div class="alert alert-info" role="alert">
-    Los indicadores corresponden a días calendario. Una glosa con nota
-    crédito vigente no puede anularse.
-</div>
+<div class="row py-3">
+    <div class="col-12">
 
-<div class="card">
-    <div class="card-header d-flex justify-content-between">
-        <strong>Glosas registradas</strong>
-        <span class="badge text-bg-secondary">@Model.Glosas.Count</span>
-    </div>
+        <!-- CABECERA DE LA PÁGINA -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 border-bottom pb-3">
+            <div class="mb-3 mb-md-0">
+                <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-shield-exclamation me-2 text-secondary opacity-75"></i>Glosas de la factura @Model.FacturaId
+                </h1>
+                <p class="text-secondary mb-0">
+                    Consulte tiempos y gestione el ciclo de cada objeción.
+                </p>
+            </div>
 
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>Fecha glosa</th>
-                    <th>Estado</th>
-                    <th class="text-end">Valor glosado</th>
-                    <th class="text-end">Valor aceptado</th>
-                    <th class="text-end">Valor pendiente</th>
-                    <th>Fecha respuesta</th>
-                    <th class="text-end">Radicación a objeción</th>
-                    <th class="text-end">Objeción a respuesta</th>
-                    <th>Nota crédito</th>
-                    <th>Observación</th>
-                    <th class="text-end">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-            @if (Model.Glosas.Count == 0)
-            {
-                <tr>
-                    <td colspan="11" class="text-center text-muted py-4">
-                        La factura no tiene glosas registradas.
-                    </td>
-                </tr>
-            }
-            else
-            {
-                @foreach (var glosa in Model.Glosas)
-                {
-                    var permiteResolucion = glosa.Estado is
-                        EstadoGlosa.Abierta or EstadoGlosa.Respondida;
+            <a asp-controller="Facturas"
+               asp-action="Index"
+               asp-route-textoBusqueda="@Model.FacturaId"
+               class="btn btn-outline-secondary px-4">
+                <i class="bi bi-arrow-left me-1"></i> Volver a facturas
+            </a>
+        </div>
 
-                    <tr>
-                        <td>@glosa.FechaGlosa.ToString("yyyy-MM-dd")</td>
-                        <td>
-                            <span class="badge @ClaseEstado(glosa.Estado)">
-                                @glosa.Estado
-                            </span>
-                            @if (glosa.RespuestaPendiente)
+        <!-- ALERTAS DE ESTADO -->
+        @if (ViewData["MensajeExito"] is string mensajeExito)
+        {
+            <div class="alert alert-success shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
+                <div class="fw-medium">@mensajeExito</div>
+            </div>
+        }
+
+        @if (ViewData["MensajeError"] is string mensajeError)
+        {
+            <div class="alert alert-warning shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+                <div class="fw-medium">@mensajeError</div>
+            </div>
+        }
+
+        <!-- INFORMACIÓN GENERAL -->
+        <div class="alert alert-info shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
+            <div>
+                <strong class="d-block text-dark mb-0">Reglas de glosas e indicadores:</strong>
+                <span class="text-secondary">Los indicadores corresponden a días calendario. Una glosa con nota crédito vigente no puede anularse. Una aceptación parcial permanece en negociación hasta que el valor restante sea reconocido o aceptado.</span>
+            </div>
+        </div>
+
+        <!-- TABLA DE GLOSAS -->
+        <div class="card card-corporativa shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-list-check me-2 text-secondary"></i>Glosas registradas
+                </h2>
+                <span class="badge rounded-pill px-3 py-2 text-primary" style="background-color: rgba(11, 59, 134, 0.1); font-size: 0.85rem;">
+                    @Model.Glosas.Count glosa(s)
+                </span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle tabla-glosas mb-0">
+                    <thead style="background-color: #f1f5f9;">
+                        <tr>
+                            <th scope="col" class="ps-3">Fecha glosa</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col" class="text-end">Valor glosado</th>
+                            <th scope="col" class="text-end">Valor aceptado</th>
+                            <th scope="col" class="text-end">Valor pendiente</th>
+                            <th scope="col" class="text-end">Valor reconocido</th>
+                            <th scope="col" class="text-center">Fecha respuesta</th>
+                            <th scope="col" class="text-center">Rad. a objeción</th>
+                            <th scope="col" class="text-center">Obj. a respuesta</th>
+                            <th scope="col" class="text-center">Nota crédito</th>
+                            <th scope="col">Observación</th>
+                            <th scope="col" class="text-center pe-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Glosas.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="12" class="text-center py-5">
+                                    <i class="bi bi-inbox text-muted" style="font-size: 3rem; opacity: 0.5;"></i>
+                                    <p class="mt-3 text-muted fw-medium fs-5">La factura no tiene glosas registradas.</p>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var glosa in Model.Glosas)
                             {
-                                <div class="small text-danger mt-1">
-                                    Respuesta pendiente
-                                </div>
-                            }
-                        </td>
-                        <td class="text-end">@glosa.ValorGlosa.ToString("N2")</td>
-                        <td class="text-end">@glosa.ValorAceptado.ToString("N2")</td>
-                        <td class="text-end">@glosa.ValorPendiente.ToString("N2")</td>
-                        <td>
-                            @(glosa.FechaRespuesta?.ToString("yyyy-MM-dd")
-                                ?? "Pendiente")
-                        </td>
-                        <td class="text-end">
-                            @(glosa.DiasRadicacionAObjecion?.ToString()
-                                ?? "No disponible")
-                        </td>
-                        <td class="text-end">
-                            @(glosa.DiasObjecionARespuesta?.ToString()
-                                ?? "Pendiente")
-                        </td>
-                        <td>
-                            @if (glosa.TieneNotaCreditoVigente)
-                            {
-                                <span class="badge text-bg-success">Vigente</span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">No asociada</span>
-                            }
-                        </td>
-                        <td class="text-break">
-                            @(string.IsNullOrWhiteSpace(glosa.Observacion)
-                                ? "—"
-                                : glosa.Observacion)
-                        </td>
-                        <td class="text-end text-nowrap">
-                            @if (puedeResponder &&
-                                glosa.Estado == EstadoGlosa.Abierta)
-                            {
-                                <a asp-action="Responder"
-                                   asp-route-glosaId="@glosa.Id"
-                                   class="btn btn-sm btn-outline-info">
-                                    Responder
-                                </a>
-                            }
+                                var permiteResolucion = glosa.Estado is
+                                    EstadoGlosa.Abierta or
+                                    EstadoGlosa.Respondida or
+                                    EstadoGlosa.EnNegociacion;
 
-                            @if (puedeResolver && permiteResolucion)
-                            {
-                                <a asp-action="Resolver"
-                                   asp-route-glosaId="@glosa.Id"
-                                   class="btn btn-sm btn-outline-primary">
-                                    Resolver
-                                </a>
-                            }
+                                <tr>
+                                    <td class="ps-3 text-nowrap">
+                                        <i class="bi bi-calendar3 small text-secondary me-1"></i>
+                                        @glosa.FechaGlosa.ToString("yyyy-MM-dd")
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <span class="badge @ClaseEstado(glosa.Estado) px-2 py-1">
+                                            @DescripcionEstado(glosa.Estado)
+                                        </span>
+                                        @if (glosa.RespuestaPendiente)
+                                        {
+                                            <div class="small text-danger fw-semibold mt-1" style="font-size: 0.75rem;">
+                                                <i class="bi bi-clock-history me-1"></i>Respuesta pendiente
+                                            </div>
+                                        }
+                                    </td>
+                                    <td class="text-end fw-semibold text-nowrap">
+                                        $@glosa.ValorGlosa.ToString("N2")
+                                    </td>
+                                    <td class="text-end fw-semibold text-nowrap text-danger">
+                                        $@glosa.ValorAceptado.ToString("N2")
+                                    </td>
+                                    <td class="text-end fw-semibold text-nowrap text-warning-emphasis">
+                                        $@glosa.ValorPendiente.ToString("N2")
+                                    </td>
+                                    <td class="text-end fw-semibold text-nowrap text-success">
+                                        $@glosa.ValorReconocido.ToString("N2")
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        @(glosa.FechaRespuesta?.ToString("yyyy-MM-dd") ?? "Pendiente")
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        @(glosa.DiasRadicacionAObjecion?.ToString() ?? "No disponible")
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        @(glosa.DiasObjecionARespuesta?.ToString() ?? "Pendiente")
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        @if (glosa.TieneNotaCreditoVigente)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Vigente</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">No asociada</span>
+                                        }
+                                    </td>
+                                    <td class="text-break" style="max-width: 200px;">
+                                        @(string.IsNullOrWhiteSpace(glosa.Observacion) ? "—" : glosa.Observacion)
+                                    </td>
+                                    <td class="text-center text-nowrap pe-3">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            @if (puedeResponder && glosa.Estado == EstadoGlosa.Abierta)
+                                            {
+                                                <a asp-action="Responder"
+                                                   asp-route-glosaId="@glosa.Id"
+                                                   class="btn btn-outline-info text-dark"
+                                                   title="Responder glosa">
+                                                    <i class="bi bi-reply-fill"></i>
+                                                </a>
+                                            }
 
-                            @if (puedeConciliar && permiteResolucion)
-                            {
-                                <a asp-action="Conciliar"
-                                   asp-route-glosaId="@glosa.Id"
-                                   class="btn btn-sm btn-outline-success">
-                                    Conciliar
-                                </a>
-                            }
+                                            @if (puedeResolver && permiteResolucion)
+                                            {
+                                                <a asp-action="Resolver"
+                                                   asp-route-glosaId="@glosa.Id"
+                                                   class="btn btn-outline-primary"
+                                                   title="Resolver glosa">
+                                                    <i class="bi bi-check2-square"></i>
+                                                </a>
+                                            }
 
-                            @if (puedeAnular &&
-                                glosa.Estado != EstadoGlosa.Anulada)
-                            {
-                                @if (glosa.TieneNotaCreditoVigente)
-                                {
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-danger"
-                                            title="Tiene una nota crédito vigente"
-                                            disabled>
-                                        Anular
-                                    </button>
-                                }
-                                else
-                                {
-                                    <a asp-action="Anular"
-                                       asp-route-glosaId="@glosa.Id"
-                                       class="btn btn-sm btn-outline-danger">
-                                        Anular
-                                    </a>
-                                }
+                                            <!-- 🔥 Ícono de Conciliar corregido y compatible: bi-check2-all -->
+                                            @if (puedeConciliar && permiteResolucion)
+                                            {
+                                                <a asp-action="Conciliar"
+                                                   asp-route-glosaId="@glosa.Id"
+                                                   class="btn btn-outline-success"
+                                                   title="Conciliar glosa">
+                                                    <i class="bi bi-check2-all"></i>
+                                                </a>
+                                            }
+
+                                            @if (puedeAnular && glosa.Estado != EstadoGlosa.Anulada)
+                                            {
+                                                @if (glosa.TieneNotaCreditoVigente)
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-danger"
+                                                            title="Tiene una nota crédito vigente"
+                                                            disabled>
+                                                        <i class="bi bi-trash3"></i>
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <a asp-action="Anular"
+                                                       asp-route-glosaId="@glosa.Id"
+                                                       class="btn btn-outline-danger"
+                                                       title="Anular glosa">
+                                                        <i class="bi bi-trash3"></i>
+                                                    </a>
+                                                }
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
                             }
-                        </td>
-                    </tr>
-                }
-            }
-            </tbody>
-        </table>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>

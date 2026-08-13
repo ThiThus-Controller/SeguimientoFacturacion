@@ -1,8 +1,30 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Inicio";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container-fluid py-5">
+    <div class="row justify-content-center align-items-center" style="min-height: 65vh;">
+        <div class="col-md-8 col-lg-6 text-center">
+
+            <div class="p-5 bg-white rounded-4 shadow-sm border">
+                <!-- Icono sutil de bienvenida -->
+                <div class="mb-4">
+                    <i class="bi bi-layers text-primary" style="font-size: 4rem; opacity: 0.7;"></i>
+                </div>
+
+                <h2 class="fw-bold text-dark mb-2">Panel de Control</h2>
+
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <h5 class="text-secondary fw-normal mb-4">Bienvenido(a), <strong>@User.Identity.Name</strong></h5>
+                }
+
+                <p class="text-muted px-md-4">
+                    Seleccione un módulo en el menú superior para comenzar a trabajar.
+                    Toda la información y herramientas están disponibles en la barra de navegación.
+                </p>
+            </div>
+
+        </div>
+    </div>
 </div>

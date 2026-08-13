@@ -1,80 +1,122 @@
 @model UsuarioFormularioViewModel
 
-<div asp-validation-summary="ModelOnly"
-     class="alert alert-danger"
-     role="alert">
-</div>
+<!-- Estilos específicos para la sección de roles y permisos -->
+<style>
+    .seccion-titulo-form {
+        color: var(--azul-rey);
+        font-weight: 700;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .card-rol-item {
+        transition: all 0.2s ease-in-out;
+        background-color: #ffffff;
+        border-color: #cbd5e1 !important;
+    }
+
+        .card-rol-item:hover {
+            border-color: var(--azul-rey) !important;
+            background-color: rgba(11, 59, 134, 0.02);
+        }
+
+    .input-readonly-custom {
+        background-color: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+        color: #334155 !important;
+        font-weight: 600;
+    }
+</style>
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm border-0 rounded-3 mb-4" role="alert"></div>
 
 @if (Model.Id.HasValue)
 {
     <input asp-for="Id" type="hidden" />
 }
 
-<div class="row g-3">
+<!-- SECCIÓN 1: DATOS BÁSICOS DEL USUARIO -->
+<div class="row g-3 mb-4">
     <div class="col-12 col-md-6">
-        <label asp-for="NombreUsuario" class="form-label"></label>
-        <input asp-for="NombreUsuario"
-               class="form-control"
-               readonly="@Model.EsEdicion"
-               autocomplete="off" />
-        <span asp-validation-for="NombreUsuario"
-              class="text-danger"></span>
+        <label asp-for="NombreUsuario" class="form-label fw-semibold text-dark"></label>
+        <div class="input-group">
+            <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-person-badge text-muted"></i></span>
+            <input asp-for="NombreUsuario"
+                   class="form-control border-secondary-subtle @(Model.EsEdicion ? "input-readonly-custom" : "")"
+                   readonly="@Model.EsEdicion"
+                   autocomplete="off"
+                   placeholder="Nombre de usuario" />
+        </div>
+        <span asp-validation-for="NombreUsuario" class="text-danger small mt-1 d-block"></span>
     </div>
 
     <div class="col-12 col-md-6">
-        <label asp-for="NombreCompleto" class="form-label"></label>
-        <input asp-for="NombreCompleto"
-               class="form-control"
-               autocomplete="off" />
-        <span asp-validation-for="NombreCompleto"
-              class="text-danger"></span>
+        <label asp-for="NombreCompleto" class="form-label fw-semibold text-dark"></label>
+        <div class="input-group">
+            <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-person text-muted"></i></span>
+            <input asp-for="NombreCompleto"
+                   class="form-control border-secondary-subtle"
+                   autocomplete="off"
+                   placeholder="Nombre y apellidos completos" />
+        </div>
+        <span asp-validation-for="NombreCompleto" class="text-danger small mt-1 d-block"></span>
     </div>
 
     @if (!Model.EsEdicion)
     {
         <div class="col-12 col-md-6">
-            <label asp-for="Contrasena" class="form-label"></label>
-            <input asp-for="Contrasena"
-                   class="form-control"
-                   autocomplete="new-password" />
-            <span asp-validation-for="Contrasena"
-                  class="text-danger"></span>
+            <label asp-for="Contrasena" class="form-label fw-semibold text-dark"></label>
+            <div class="input-group">
+                <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-lock text-muted"></i></span>
+                <input asp-for="Contrasena"
+                       class="form-control border-secondary-subtle"
+                       autocomplete="new-password"
+                       placeholder="Ingrese la contraseña" />
+            </div>
+            <span asp-validation-for="Contrasena" class="text-danger small mt-1 d-block"></span>
         </div>
 
         <div class="col-12 col-md-6">
-            <label asp-for="ConfirmacionContrasena"
-                   class="form-label"></label>
-            <input asp-for="ConfirmacionContrasena"
-                   class="form-control"
-                   autocomplete="new-password" />
-            <span asp-validation-for="ConfirmacionContrasena"
-                  class="text-danger"></span>
+            <label asp-for="ConfirmacionContrasena" class="form-label fw-semibold text-dark"></label>
+            <div class="input-group">
+                <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-shield-lock text-muted"></i></span>
+                <input asp-for="ConfirmacionContrasena"
+                       class="form-control border-secondary-subtle"
+                       autocomplete="new-password"
+                       placeholder="Confirme la contraseña" />
+            </div>
+            <span asp-validation-for="ConfirmacionContrasena" class="text-danger small mt-1 d-block"></span>
         </div>
     }
 </div>
 
-<hr class="my-4" />
+<hr class="my-4 text-secondary opacity-25" />
 
-<fieldset>
-    <legend class="h5">Roles asignados</legend>
-    <p class="text-muted small">
+<!-- SECCIÓN 2: ROLES ASIGNADOS -->
+<fieldset class="mb-4">
+    <legend class="seccion-titulo-form mb-1">
+        <i class="bi bi-shield-check" style="color: var(--naranja);"></i> Roles asignados
+    </legend>
+    <p class="text-secondary small mb-3">
         Los roles aportan los permisos predeterminados del usuario.
     </p>
 
-    <div class="row g-2">
+    <div class="row g-3">
         @foreach (var rol in Enum.GetValues<RolUsuario>())
         {
             var seleccionado = Model.RolesSeleccionados.Contains(rol);
 
             <div class="col-12 col-sm-6 col-lg-4">
-                <div class="form-check border rounded p-3 ps-5 h-100">
+                <div class="form-check card-rol-item border rounded-3 p-3 ps-5 h-100 shadow-sm">
                     <input class="form-check-input"
                            type="checkbox"
                            name="RolesSeleccionados"
                            value="@rol"
                            id="rol-@((int)rol)"
                            checked="@seleccionado" />
-                    <label class="form-check-label"
+                    <label class="form-check-label fw-medium text-dark user-select-none"
                            for="rol-@((int)rol)">
                         @rol
                     </label>
@@ -84,40 +126,41 @@
     </div>
 </fieldset>
 
-<hr class="my-4" />
+<hr class="my-4 text-secondary opacity-25" />
 
+<!-- SECCIÓN 3: EXCEPCIONES DE PERMISOS -->
 <fieldset>
-    <legend class="h5">Excepciones de permisos</legend>
-    <p class="text-muted small">
-        “Según el rol” conserva la configuración predeterminada. Una
-        revocación individual prevalece sobre cualquier rol asignado.
+    <legend class="seccion-titulo-form mb-1">
+        <i class="bi bi-sliders" style="color: var(--naranja);"></i> Excepciones de permisos
+    </legend>
+    <p class="text-secondary small mb-3">
+        “Según el rol” conserva la configuración predeterminada. Una revocación individual prevalece sobre cualquier rol asignado.
     </p>
 
-    <div class="table-responsive permisos-usuario-tabla">
-        <table class="table table-sm table-bordered align-middle">
-            <thead class="table-light">
+    <div class="table-responsive permisos-usuario-tabla rounded-3 border shadow-sm">
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #f1f5f9;">
                 <tr>
-                    <th>Módulo</th>
-                    <th>Acción</th>
-                    <th>Decisión particular</th>
+                    <th scope="col" class="ps-3" style="color: var(--azul-rey);">Módulo</th>
+                    <th scope="col" style="color: var(--azul-rey);">Acción</th>
+                    <th scope="col" style="width: 240px; color: var(--azul-rey);">Decisión particular</th>
                 </tr>
             </thead>
             <tbody>
-                @for (var indice = 0;
-                      indice < Model.Permisos.Count;
-                      indice++)
+                @for (var indice = 0; indice < Model.Permisos.Count; indice++)
                 {
                     <tr>
-                        <td>@Model.Permisos[indice].Modulo</td>
-                        <td>
-                            @Model.Permisos[indice].Accion
-                            <input asp-for="Permisos[indice].Codigo"
-                                   type="hidden" />
+                        <td class="ps-3 fw-semibold text-dark">
+                            <i class="bi bi-folder2-open text-secondary me-2"></i>@Model.Permisos[indice].Modulo
                         </td>
                         <td>
+                            <span class="text-secondary">@Model.Permisos[indice].Accion</span>
+                            <input asp-for="Permisos[indice].Codigo" type="hidden" />
+                        </td>
+                        <td class="pe-3">
                             <select asp-for="Permisos[indice].Estado"
                                     asp-items="Html.GetEnumSelectList<EstadoAsignacionPermisoViewModel>()"
-                                    class="form-select form-select-sm">
+                                    class="form-select form-select-sm border-secondary-subtle fw-medium">
                             </select>
                         </td>
                     </tr>

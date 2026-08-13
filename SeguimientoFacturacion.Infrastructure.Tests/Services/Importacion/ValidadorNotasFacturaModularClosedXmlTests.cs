@@ -314,6 +314,43 @@ public sealed class
 
     [Fact]
     public async Task
+        Validar_SegundaNotaTrasAmpliarAceptacion_DebeSerValida()
+    {
+        await using var archivo = CrearArchivo(
+            hoja => EscribirFila(
+                hoja,
+                fila: 2,
+                numeroFactura: "000001",
+                tipo: "NC",
+                numeroNota: "NC-GLOSA-SEGUNDA",
+                valor: 200000m,
+                fecha: new DateTime(2026, 7, 25)));
+
+        var validador = CrearValidador(
+            new ConsultaFacturasControlada(
+                [
+                    CrearReferenciaFactura(
+                        "FE000001",
+                        1,
+                        new DateOnly(2026, 7, 10))
+                ]),
+            new ConsultaGlosasControlada(
+                [
+                    CrearReferenciaGlosa(
+                        notasPrevias: 130000m,
+                        valorAceptado: 330000m,
+                        valorGlosa: 330000m)
+                ]));
+
+        var resultado = await validador.ValidarAsync(
+            CrearSolicitud(archivo));
+
+        Assert.True(resultado.EsValido);
+        Assert.Empty(resultado.Inconsistencias);
+    }
+
+    [Fact]
+    public async Task
         Validar_NotaAsociadaExcedeAceptado_DebeReportarError()
     {
         await using var archivo = CrearArchivo(
@@ -492,15 +529,17 @@ public sealed class
     private static ReferenciaGlosaNotaCreditoDto
         CrearReferenciaGlosa(
             decimal notasPrevias,
-            Guid? glosaId = null)
+            Guid? glosaId = null,
+            decimal valorAceptado = 15921m,
+            decimal valorGlosa = 26535m)
     {
         return new ReferenciaGlosaNotaCreditoDto
         {
             GlosaId = glosaId ?? Guid.NewGuid(),
             FacturaId = "FE000001",
             FechaGlosa = new DateOnly(2026, 7, 15),
-            ValorGlosa = 26535m,
-            ValorAceptado = 15921m,
+            ValorGlosa = valorGlosa,
+            ValorAceptado = valorAceptado,
             TotalNotasCreditoVigentes = notasPrevias
         };
     }

@@ -41,7 +41,22 @@ internal sealed class GlosaConfiguration :
 
                 tableBuilder.HasCheckConstraint(
                     "CK_Glosas_Estado",
-                    "[Estado] BETWEEN 1 AND 6");
+                    "[Estado] BETWEEN 1 AND 7");
+
+                tableBuilder.HasCheckConstraint(
+                    "CK_Glosas_Resolucion",
+                    "([Estado] IN (1, 2) AND " +
+                    "[ValorAceptado] = 0) OR " +
+                    "([Estado] = 3 AND " +
+                    "[ValorAceptado] = [ValorGlosa]) OR " +
+                    "([Estado] = 4 AND " +
+                    "[ValorAceptado] = 0) OR " +
+                    "([Estado] = 5) OR " +
+                    "([Estado] = 6 AND " +
+                    "[ValorAceptado] = 0) OR " +
+                    "([Estado] = 7 AND " +
+                    "[ValorAceptado] > 0 AND " +
+                    "[ValorAceptado] < [ValorGlosa])");
 
                 tableBuilder.HasCheckConstraint(
                     "CK_Glosas_ObservacionResolucion",
@@ -127,6 +142,9 @@ internal sealed class GlosaConfiguration :
 
         builder.Ignore(
             glosa => glosa.ValorPendiente);
+
+        builder.Ignore(
+            glosa => glosa.ValorReconocido);
 
         builder.HasOne(
                 glosa => glosa.Factura)

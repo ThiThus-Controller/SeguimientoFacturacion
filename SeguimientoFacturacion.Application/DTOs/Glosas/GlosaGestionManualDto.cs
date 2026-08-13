@@ -15,6 +15,7 @@ public sealed record GlosaGestionManualDto
     public required EstadoGlosa Estado { get; init; }
     public required decimal ValorAceptado { get; init; }
     public required decimal ValorPendiente { get; init; }
+    public required decimal ValorReconocido { get; init; }
     public string? Observacion { get; init; }
     public int? DiasRadicacionAObjecion { get; init; }
     public int? DiasObjecionARespuesta { get; init; }

@@ -17,7 +17,7 @@ public enum EstadoGlosa
     Respondida = 2,
 
     /// <summary>
-    /// El valor glosado fue aceptado total o parcialmente.
+    /// El valor glosado fue aceptado totalmente.
     /// </summary>
     Aceptada = 3,
 
@@ -35,5 +35,11 @@ public enum EstadoGlosa
     /// La glosa fue anulada manualmente por haberse registrado
     /// de manera errónea.
     /// </summary>
-    Anulada = 6
+    Anulada = 6,
+
+    /// <summary>
+    /// Existe una aceptación parcial y el valor restante continúa
+    /// pendiente de negociación con la entidad responsable.
+    /// </summary>
+    EnNegociacion = 7
 }

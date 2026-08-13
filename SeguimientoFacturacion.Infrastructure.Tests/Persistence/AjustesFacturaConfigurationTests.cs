@@ -187,6 +187,10 @@ public sealed class AjustesFacturaConfigurationTests
         Assert.Null(
             entidad.FindProperty(
                 nameof(Glosa.ValorPendiente)));
+
+        Assert.Null(
+            entidad.FindProperty(
+                nameof(Glosa.ValorReconocido)));
     }
 
     [Fact]

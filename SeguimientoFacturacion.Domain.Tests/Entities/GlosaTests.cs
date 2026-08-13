@@ -95,7 +95,7 @@ public sealed class GlosaTests
     }
 
     [Fact]
-    public void ResolverComoAceptada_DebeFinalizarGlosa()
+    public void ResolverAceptacionParcial_DebeContinuarEnNegociacion()
     {
         var glosa = CrearGlosaValida();
 
@@ -106,7 +106,7 @@ public sealed class GlosaTests
             observacion: "  Aceptación parcial validada.  ");
 
         Assert.Equal(
-            EstadoGlosa.Aceptada,
+            EstadoGlosa.EnNegociacion,
             glosa.Estado);
 
         Assert.Equal(
@@ -114,12 +114,102 @@ public sealed class GlosaTests
             glosa.ValorAceptado);
 
         Assert.Equal(
-            decimal.Zero,
+            100000m,
             glosa.ValorPendiente);
+
+        Assert.Equal(decimal.Zero, glosa.ValorReconocido);
 
         Assert.Equal(
             "Aceptación parcial validada.",
             glosa.Observacion);
+    }
+
+    [Fact]
+    public void AmpliarAceptacion_DebeHabilitarNuevoCupoYFinalizar()
+    {
+        var glosa = CrearGlosaValida();
+
+        glosa.Resolver(
+            EstadoGlosa.Aceptada,
+            new DateOnly(2026, 7, 20),
+            valorAceptado: 100000m,
+            observacion: "Aceptación parcial inicial.");
+
+        glosa.Resolver(
+            EstadoGlosa.Aceptada,
+            new DateOnly(2026, 7, 25),
+            valorAceptado: 300000m,
+            observacion: "Aceptación total posterior.");
+
+        Assert.Equal(EstadoGlosa.Aceptada, glosa.Estado);
+        Assert.Equal(300000m, glosa.ValorAceptado);
+        Assert.Equal(decimal.Zero, glosa.ValorPendiente);
+        Assert.Equal(decimal.Zero, glosa.ValorReconocido);
+    }
+
+    [Fact]
+    public void ConciliarAceptacionParcial_DebeReconocerDiferencia()
+    {
+        var glosa = CrearGlosaValida();
+
+        glosa.Resolver(
+            EstadoGlosa.Aceptada,
+            new DateOnly(2026, 7, 20),
+            valorAceptado: 100000m,
+            observacion: "Aceptación parcial inicial.");
+
+        glosa.Resolver(
+            EstadoGlosa.Conciliada,
+            new DateOnly(2026, 7, 25),
+            valorAceptado: 100000m,
+            observacion: "Diferencia reconocida a favor.");
+
+        Assert.Equal(EstadoGlosa.Conciliada, glosa.Estado);
+        Assert.Equal(decimal.Zero, glosa.ValorPendiente);
+        Assert.Equal(200000m, glosa.ValorReconocido);
+    }
+
+    [Fact]
+    public void ConciliarAmpliandoAceptacion_DebeCerrarResultadoMixto()
+    {
+        var glosa = CrearGlosaValida();
+
+        glosa.Resolver(
+            EstadoGlosa.Aceptada,
+            new DateOnly(2026, 7, 20),
+            valorAceptado: 100000m,
+            observacion: "Aceptación parcial inicial.");
+
+        glosa.Resolver(
+            EstadoGlosa.Conciliada,
+            new DateOnly(2026, 7, 25),
+            valorAceptado: 200000m,
+            observacion: "Acuerdo mixto definitivo.");
+
+        Assert.Equal(EstadoGlosa.Conciliada, glosa.Estado);
+        Assert.Equal(200000m, glosa.ValorAceptado);
+        Assert.Equal(decimal.Zero, glosa.ValorPendiente);
+        Assert.Equal(100000m, glosa.ValorReconocido);
+    }
+
+    [Fact]
+    public void Negociacion_NoDebePermitirReducirValorAceptado()
+    {
+        var glosa = CrearGlosaValida();
+
+        glosa.Resolver(
+            EstadoGlosa.Aceptada,
+            new DateOnly(2026, 7, 20),
+            valorAceptado: 100000m,
+            observacion: "Aceptación parcial inicial.");
+
+        var accion = () => glosa.Resolver(
+            EstadoGlosa.Conciliada,
+            new DateOnly(2026, 7, 25),
+            valorAceptado: 99999m,
+            observacion: "Intento inválido.");
+
+        Assert.Throws<ArgumentException>(accion);
     }
 
     [Fact]

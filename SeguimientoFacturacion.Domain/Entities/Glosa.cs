@@ -90,13 +90,32 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
     public byte[] VersionFila { get; private set; } = [];
 
     /// <summary>
-    /// Obtiene el valor que continúa pendiente de gestión.
-    /// Los estados finales no conservan valor pendiente.
+    /// Obtiene el valor que continúa pendiente de decisión.
+    /// Una aceptación parcial conserva en negociación la diferencia
+    /// entre el valor glosado y el valor aceptado acumulado.
     /// </summary>
     public decimal ValorPendiente =>
-        EsEstadoTerminal(Estado)
-            ? decimal.Zero
-            : ValorGlosa;
+        Estado switch
+        {
+            EstadoGlosa.Abierta or
+            EstadoGlosa.Respondida => ValorGlosa,
+
+            EstadoGlosa.EnNegociacion =>
+                ValorGlosa - ValorAceptado,
+
+            _ => decimal.Zero
+        };
+
+    /// <summary>
+    /// Obtiene el valor cerrado a favor de la institución. Solo se
+    /// determina al finalizar la glosa y no afecta directamente el
+    /// saldo de cartera hasta que se registre el pago correspondiente.
+    /// </summary>
+    public decimal ValorReconocido =>
+        EsEstadoTerminal(Estado) &&
+        Estado != EstadoGlosa.Anulada
+            ? ValorGlosa - ValorAceptado
+            : decimal.Zero;
 
     /// <summary>
     /// Obtiene la factura asociada.
@@ -173,13 +192,17 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
                 estadoFinal,
                 valorAceptado);
 
+        var estadoValidado = NormalizarEstadoResolucion(
+            estadoFinal,
+            valorAceptadoValidado);
+
         var observacionValidada =
             ValidarObservacionObligatoria(observacion);
 
         FechaRespuesta = fechaRespuestaValidada;
         ValorAceptado = valorAceptadoValidado;
         Observacion = observacionValidada;
-        Estado = estadoFinal;
+        Estado = estadoValidado;
     }
 
     /// <summary>
@@ -333,6 +356,15 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
                 "y el valor de la glosa.");
         }
 
+        if (Estado == EstadoGlosa.EnNegociacion &&
+            valorAceptado < ValorAceptado)
+        {
+            throw new ArgumentException(
+                "El valor aceptado acumulado no puede disminuir. " +
+                "Podría dejar notas crédito vigentes sin respaldo.",
+                nameof(valorAceptado));
+        }
+
         if (estadoFinal == EstadoGlosa.Aceptada &&
             valorAceptado <= decimal.Zero)
         {
@@ -352,6 +384,19 @@ public sealed class Glosa : EntidadAuditableBase<Guid>
         }
 
         return valorAceptado;
+    }
+
+    private EstadoGlosa NormalizarEstadoResolucion(
+        EstadoGlosa estadoFinal,
+        decimal valorAceptado)
+    {
+        if (estadoFinal == EstadoGlosa.Aceptada &&
+            valorAceptado < ValorGlosa)
+        {
+            return EstadoGlosa.EnNegociacion;
+        }
+
+        return estadoFinal;
     }
 
     private static void ValidarEstadoFinal(

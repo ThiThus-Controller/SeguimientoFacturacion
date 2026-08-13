@@ -25,199 +25,292 @@
             PoliticasAutorizacion.GlosasConsultar)).Succeeded;
 }
 
-<div class="d-flex justify-content-between align-items-start mb-4">
-    <div>
-        <h1 class="h3 mb-1">Gestión manual de facturas</h1>
-        <p class="text-muted mb-0">
-            Consulte facturas y realice ajustes operativos controlados.
-        </p>
-    </div>
-
-    @if (puedeCrear)
-    {
-        <a asp-action="Crear" class="btn btn-primary">
-            Crear factura
-        </a>
+<style>
+    .card-corporativa {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        overflow: hidden;
     }
-</div>
 
-@if (ViewData["MensajeExito"] is string mensajeExito)
-{
-    <div class="alert alert-success" role="alert">@mensajeExito</div>
-}
+        .card-corporativa .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--azul-rey); /* Cambiado de naranja a azul para más sobriedad */
+            padding: 1rem 1.5rem;
+        }
 
-@if (ViewData["MensajeError"] is string mensajeError)
-{
-    <div class="alert alert-warning" role="alert">@mensajeError</div>
-}
+        .card-corporativa .card-footer {
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            padding: 1rem 1.5rem;
+        }
 
-<form method="get" class="card card-body mb-4">
-    <div asp-validation-summary="ModelOnly"
-         class="alert alert-danger"
-         role="alert"></div>
-
-    <div class="row g-3 align-items-end">
-        <div class="col-12 col-lg-4">
-            <label asp-for="TextoBusqueda" class="form-label"></label>
-            <input asp-for="TextoBusqueda"
-                   class="form-control"
-                   placeholder="FE, factura, paciente o documento" />
-        </div>
-
-        <div class="col-6 col-lg-2">
-            <label asp-for="FechaDesde" class="form-label"></label>
-            <input asp-for="FechaDesde" class="form-control" />
-        </div>
-
-        <div class="col-6 col-lg-2">
-            <label asp-for="FechaHasta" class="form-label"></label>
-            <input asp-for="FechaHasta" class="form-control" />
-        </div>
-
-        <div class="col-12 col-lg-2">
-            <div class="form-check mb-2">
-                <input asp-for="SoloConSaldo"
-                       class="form-check-input" />
-                <label asp-for="SoloConSaldo"
-                       class="form-check-label"></label>
-            </div>
-        </div>
-
-        <div class="col-12 col-lg-2 d-grid">
-            <button type="submit" class="btn btn-outline-primary">
-                Buscar
-            </button>
-        </div>
-    </div>
-</form>
-
-<div class="card">
-    <div class="card-header d-flex justify-content-between">
-        <strong>Facturas encontradas</strong>
-        <span class="badge text-bg-secondary">
-            @Model.TotalRegistros
-        </span>
-    </div>
-
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>FE</th>
-                    <th>Fecha</th>
-                    <th>Paciente</th>
-                    <th>Aseguradora</th>
-                    <th class="text-end">Valor</th>
-                    <th class="text-end">Saldo</th>
-                    <th>Estado</th>
-                    <th class="text-end">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-            @if (Model.Facturas.Count == 0)
-            {
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-4">
-                        No se encontraron facturas.
-                    </td>
-                </tr>
-            }
-            else
-            {
-                @foreach (var factura in Model.Facturas)
-                {
-                    <tr>
-                        <td>
-                            <strong>@factura.Id</strong>
-                            <div class="small text-muted">
-                                @factura.Prefijo - @factura.Numero
-                            </div>
-                        </td>
-                        <td>@factura.FechaFactura.ToString("yyyy-MM-dd")</td>
-                        <td>
-                            @factura.NombreCompleto
-                            <div class="small text-muted">
-                                @factura.TipoDocumentoSigla
-                                @factura.NumeroDocumento
-                            </div>
-                        </td>
-                        <td>@factura.Aseguradora</td>
-                        <td class="text-end">
-                            @factura.Valor.ToString("N2")
-                        </td>
-                        <td class="text-end">
-                            @factura.SaldoCartera.ToString("N2")
-                        </td>
-                        <td>@factura.Estado</td>
-                        <td class="text-end text-nowrap">
-                            @if (puedeEditar)
-                            {
-                                <a asp-action="Editar"
-                                   asp-route-facturaId="@factura.Id"
-                                   class="btn btn-sm btn-outline-primary">
-                                    Editar
-                                </a>
-                            }
-
-                            @if (puedeEditarPaciente)
-                            {
-                                <a asp-action="EditarPaciente"
-                                   asp-route-tipoDocumentoId="@factura.TipoDocumentoId"
-                                   asp-route-numeroDocumento="@factura.NumeroDocumento"
-                                   class="btn btn-sm btn-outline-secondary">
-                                    Paciente
-                                </a>
-                            }
-
-                            @if (puedeConsultarGlosas)
-                            {
-                                <a asp-controller="Glosas"
-                                   asp-action="Index"
-                                   asp-route-facturaId="@factura.Id"
-                                   class="btn btn-sm btn-outline-warning">
-                                    Glosas
-                                </a>
-                            }
-                        </td>
-                    </tr>
-                }
-            }
-            </tbody>
-        </table>
-    </div>
-
-    @if (Model.TotalPaginas > 1)
-    {
-        <div class="card-footer d-flex justify-content-between">
-            <span>
-                Página @Model.Pagina de @Model.TotalPaginas
-            </span>
-
-            <div class="btn-group">
-                <a asp-action="Index"
-                   asp-route-textoBusqueda="@Model.TextoBusqueda"
-                   asp-route-fechaDesde="@Model.FechaDesde"
-                   asp-route-fechaHasta="@Model.FechaHasta"
-                   asp-route-soloConSaldo="@Model.SoloConSaldo"
-                   asp-route-pagina="@(Model.Pagina - 1)"
-                   asp-route-tamanoPagina="@Model.TamanoPagina"
-                   class="btn btn-sm btn-outline-secondary
-                          @(Model.Pagina <= 1 ? "disabled" : string.Empty)">
-                    Anterior
-                </a>
-
-                <a asp-action="Index"
-                   asp-route-textoBusqueda="@Model.TextoBusqueda"
-                   asp-route-fechaDesde="@Model.FechaDesde"
-                   asp-route-fechaHasta="@Model.FechaHasta"
-                   asp-route-soloConSaldo="@Model.SoloConSaldo"
-                   asp-route-pagina="@(Model.Pagina + 1)"
-                   asp-route-tamanoPagina="@Model.TamanoPagina"
-                   class="btn btn-sm btn-outline-secondary
-                          @(Model.Pagina >= Model.TotalPaginas ? "disabled" : string.Empty)">
-                    Siguiente
-                </a>
-            </div>
-        </div>
+    .btn-azul-rey {
+        background-color: var(--azul-rey);
+        color: var(--blanco);
+        font-weight: 500;
+        transition: all 0.2s;
     }
+
+        .btn-azul-rey:hover {
+            background-color: #082a61;
+            color: var(--blanco);
+        }
+
+    .btn-naranja {
+        background-color: var(--naranja);
+        color: var(--blanco);
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+        .btn-naranja:hover {
+            background-color: #e66d00;
+            color: var(--blanco);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(255, 121, 0, 0.3);
+        }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(11, 59, 134, 0.03);
+    }
+</style>
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-xl-11">
+
+        <!-- CABECERA DE LA PÁGINA -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 border-bottom pb-3">
+            <div class="mb-3 mb-md-0">
+                <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-receipt me-2 text-secondary opacity-75"></i>Gestión manual de facturas
+                </h1>
+                <p class="text-secondary mb-0">
+                    Consulte facturas y realice ajustes operativos controlados.
+                </p>
+            </div>
+
+            @if (puedeCrear)
+            {
+                <a asp-action="Crear" class="btn btn-naranja px-4 rounded-pill">
+                    <i class="bi bi-plus-circle me-1"></i> Crear factura
+                </a>
+            }
+        </div>
+
+        <!-- ALERTAS -->
+        @if (ViewData["MensajeExito"] is string mensajeExito)
+        {
+            <div class="alert alert-success shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
+                <div class="fw-medium">@mensajeExito</div>
+            </div>
+        }
+
+        @if (ViewData["MensajeError"] is string mensajeError)
+        {
+            <div class="alert alert-warning shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+                <div class="fw-medium">@mensajeError</div>
+            </div>
+        }
+
+        <!-- FORMULARIO DE FILTROS -->
+        <div class="card card-corporativa mb-4">
+            <div class="card-header">
+                <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-funnel me-2 text-secondary"></i>Filtros de búsqueda
+                </h2>
+            </div>
+
+            <form method="get" class="card-body p-4">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm border-0 rounded-3" role="alert"></div>
+
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-lg-4">
+                        <label asp-for="TextoBusqueda" class="form-label fw-semibold text-dark">Término de búsqueda</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-search text-muted"></i></span>
+                            <input asp-for="TextoBusqueda" class="form-control border-secondary-subtle" placeholder="FE, factura, paciente o documento" />
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-2">
+                        <label asp-for="FechaDesde" class="form-label fw-semibold text-dark">Desde</label>
+                        <input asp-for="FechaDesde" class="form-control border-secondary-subtle" />
+                    </div>
+
+                    <div class="col-6 col-lg-2">
+                        <label asp-for="FechaHasta" class="form-label fw-semibold text-dark">Hasta</label>
+                        <input asp-for="FechaHasta" class="form-control border-secondary-subtle" />
+                    </div>
+
+                    <div class="col-12 col-lg-2 pb-1">
+                        <div class="form-check form-switch fs-6 mb-2">
+                            <input asp-for="SoloConSaldo" class="form-check-input" role="switch" />
+                            <label asp-for="SoloConSaldo" class="form-check-label ms-1 user-select-none text-dark"></label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-2 d-grid">
+                        <button type="submit" class="btn btn-azul-rey">
+                            Buscar <i class="bi bi-arrow-right-short ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- TABLA DE RESULTADOS -->
+        <div class="card card-corporativa shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-list-check me-2 text-secondary"></i>Facturas encontradas
+                </h2>
+                <!-- Etiqueta de registros en azul claro más sobrio -->
+                <span class="badge rounded-pill px-3 py-2 text-primary" style="background-color: rgba(11, 59, 134, 0.1); font-size: 0.85rem;">
+                    @Model.TotalRegistros registros
+                </span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead style="background-color: #f1f5f9;">
+                        <tr>
+                            <th scope="col" class="ps-4">FE</th>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Paciente</th>
+                            <th scope="col">Aseguradora</th>
+                            <th scope="col" class="text-end">Valor</th>
+                            <th scope="col" class="text-end">Saldo</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col" class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Facturas.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <i class="bi bi-inbox text-muted" style="font-size: 3rem; opacity: 0.5;"></i>
+                                    <p class="mt-3 text-muted fw-medium fs-5">No se encontraron facturas con los filtros aplicados.</p>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var factura in Model.Facturas)
+                            {
+                                <tr>
+                                    <td class="ps-4 text-nowrap">
+                                        <strong style="color: var(--azul-rey);">@factura.Id</strong>
+                                        <div class="small text-muted">
+                                            @factura.Prefijo - @factura.Numero
+                                        </div>
+                                    </td>
+                                    <!-- FECHA SIN CORTAR (text-nowrap) -->
+                                    <td class="text-nowrap">
+                                        <i class="bi bi-calendar3 small text-secondary me-1"></i>
+                                        @factura.FechaFactura.ToString("yyyy-MM-dd")
+                                    </td>
+                                    <td>
+                                        <span class="fw-medium text-dark">@factura.NombreCompleto</span>
+                                        <div class="small text-muted">
+                                            <i class="bi bi-person-badge me-1"></i>
+                                            @factura.TipoDocumentoSigla @factura.NumeroDocumento
+                                        </div>
+                                    </td>
+                                    <!-- ASEGURADORA LIMPIA (sin recuadro) -->
+                                    <td>
+                                        <span class="small fw-medium text-secondary">
+                                            @factura.Aseguradora
+                                        </span>
+                                    </td>
+                                    <td class="text-end fw-semibold text-nowrap">
+                                        $@factura.Valor.ToString("N2")
+                                    </td>
+                                    <td class="text-end fw-semibold text-nowrap @(factura.SaldoCartera > 0 ? "text-danger" : "text-success")">
+                                        $@factura.SaldoCartera.ToString("N2")
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary text-white rounded-pill px-2">@factura.Estado</span>
+                                    </td>
+                                    <td class="text-end text-nowrap pe-4">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            @if (puedeEditar)
+                                            {
+                                                <a asp-action="Editar"
+                                                   asp-route-facturaId="@factura.Id"
+                                                   class="btn btn-outline-primary"
+                                                   title="Editar factura">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </a>
+                                            }
+
+                                            @if (puedeEditarPaciente)
+                                            {
+                                                <a asp-action="EditarPaciente"
+                                                   asp-route-tipoDocumentoId="@factura.TipoDocumentoId"
+                                                   asp-route-numeroDocumento="@factura.NumeroDocumento"
+                                                   class="btn btn-outline-secondary"
+                                                   title="Editar paciente">
+                                                    <i class="bi bi-person-gear"></i>
+                                                </a>
+                                            }
+
+                                            @if (puedeConsultarGlosas)
+                                            {
+                                                <a asp-controller="Glosas"
+                                                   asp-action="Index"
+                                                   asp-route-facturaId="@factura.Id"
+                                                   class="btn btn-outline-warning text-dark"
+                                                   title="Ver glosas">
+                                                    <i class="bi bi-shield-exclamation"></i>
+                                                </a>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINACIÓN -->
+            @if (Model.TotalPaginas > 1)
+            {
+                <div class="card-footer d-flex flex-column flex-sm-row justify-content-between align-items-center">
+                    <span class="text-muted small mb-3 mb-sm-0 fw-medium">
+                        Página <strong class="text-dark">@Model.Pagina</strong> de <strong class="text-dark">@Model.TotalPaginas</strong>
+                    </span>
+
+                    <div class="btn-group shadow-sm">
+                        <a asp-action="Index"
+                           asp-route-textoBusqueda="@Model.TextoBusqueda"
+                           asp-route-fechaDesde="@Model.FechaDesde"
+                           asp-route-fechaHasta="@Model.FechaHasta"
+                           asp-route-soloConSaldo="@Model.SoloConSaldo"
+                           asp-route-pagina="@(Model.Pagina - 1)"
+                           asp-route-tamanoPagina="@Model.TamanoPagina"
+                           class="btn btn-sm btn-outline-secondary @(Model.Pagina <= 1 ? "disabled" : string.Empty)">
+                            <i class="bi bi-chevron-left me-1"></i> Anterior
+                        </a>
+
+                        <a asp-action="Index"
+                           asp-route-textoBusqueda="@Model.TextoBusqueda"
+                           asp-route-fechaDesde="@Model.FechaDesde"
+                           asp-route-fechaHasta="@Model.FechaHasta"
+                           asp-route-soloConSaldo="@Model.SoloConSaldo"
+                           asp-route-pagina="@(Model.Pagina + 1)"
+                           asp-route-tamanoPagina="@Model.TamanoPagina"
+                           class="btn btn-sm btn-outline-secondary @(Model.Pagina >= Model.TotalPaginas ? "disabled" : string.Empty)">
+                            Siguiente <i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
 </div>

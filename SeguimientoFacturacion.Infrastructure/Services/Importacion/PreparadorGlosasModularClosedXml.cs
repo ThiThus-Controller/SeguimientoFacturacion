@@ -455,6 +455,8 @@ public sealed class
             "3" or "ACEPTADA" => EstadoGlosa.Aceptada,
             "4" or "LEVANTADA" => EstadoGlosa.Levantada,
             "5" or "CONCILIADA" => EstadoGlosa.Conciliada,
+            "7" or "EN NEGOCIACION" =>
+                EstadoGlosa.EnNegociacion,
 
             _ => throw new InvalidOperationException(
                 "El estado de la glosa no pudo convertirse " +

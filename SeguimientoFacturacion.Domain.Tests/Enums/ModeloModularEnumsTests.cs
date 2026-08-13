@@ -38,6 +38,10 @@ public sealed class ModeloModularEnumsTests
         Assert.Equal(
             5,
             (int)EstadoGlosa.Conciliada);
+
+        Assert.Equal(
+            7,
+            (int)EstadoGlosa.EnNegociacion);
     }
 
     [Fact]

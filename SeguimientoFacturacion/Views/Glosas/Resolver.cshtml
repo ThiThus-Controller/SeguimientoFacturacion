@@ -12,8 +12,10 @@
 </div>
 
 <div class="alert alert-info" role="alert">
-    Aceptar reconoce total o parcialmente el valor glosado. Levantar deja
-    el valor aceptado en cero. La conciliación utiliza su propia acción.
+    Una aceptación parcial conservará la glosa en negociación. Podrá
+    ampliar posteriormente el valor aceptado y emitir otra nota crédito
+    hasta completar ese nuevo cupo. La conciliación cierra a favor de la
+    institución la diferencia no aceptada.
 </div>
 
 <form asp-action="Resolver"
@@ -48,9 +50,12 @@
                     <option value="@((int)EstadoGlosa.Aceptada)">
                         Aceptada
                     </option>
-                    <option value="@((int)EstadoGlosa.Levantada)">
-                        Levantada
-                    </option>
+                    @if (Model.ValorAceptado == decimal.Zero)
+                    {
+                        <option value="@((int)EstadoGlosa.Levantada)">
+                            Levantada
+                        </option>
+                    }
                 </select>
                 <span asp-validation-for="EstadoFinal"
                       class="text-danger"></span>
@@ -72,6 +77,13 @@
                        step="0.01" />
                 <span asp-validation-for="ValorAceptado"
                       class="text-danger"></span>
+                @if (Model.ValorAceptado > decimal.Zero)
+                {
+                    <div class="form-text">
+                        Valor aceptado acumulado actual:
+                        @Model.ValorAceptado.ToString("N2"). No puede disminuirse.
+                    </div>
+                }
             </div>
             <div class="col-md-8">
                 <label asp-for="Observacion" class="form-label"></label>
