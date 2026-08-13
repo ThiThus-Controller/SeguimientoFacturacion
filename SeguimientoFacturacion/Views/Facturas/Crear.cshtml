@@ -4,139 +4,215 @@
     ViewData["Title"] = "Crear factura";
 }
 
-<div class="mb-4">
-    <h1 class="h3 mb-1">Crear factura</h1>
-    <p class="text-muted mb-0">
-        Registre la factura y su paciente en una sola operación auditada.
-    </p>
+<!-- Estilos corporativos específicos de la vista -->
+<style>
+    .card-corporativa {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+
+        .card-corporativa .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--azul-rey);
+            padding: 1rem 1.5rem;
+        }
+
+        .card-corporativa .card-footer {
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            padding: 1.25rem 1.5rem;
+        }
+
+    .seccion-titulo {
+        color: var(--azul-rey);
+        font-weight: 700;
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+        margin-top: 2rem;
+    }
+
+        .seccion-titulo:first-of-type {
+            margin-top: 0;
+        }
+
+    .btn-naranja {
+        background-color: var(--naranja);
+        color: var(--blanco);
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+        .btn-naranja:hover {
+            background-color: #e66d00;
+            color: var(--blanco);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(255, 121, 0, 0.3);
+        }
+</style>
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-xl-10">
+
+        <!-- CABECERA DE LA PÁGINA -->
+        <div class="mb-4 border-bottom pb-3">
+            <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                <i class="bi bi-file-earmark-plus me-2 text-secondary opacity-75"></i>Crear factura
+            </h1>
+            <p class="text-secondary mb-0">
+                Registre la factura y su paciente en una sola operación auditada.
+            </p>
+        </div>
+
+        <!-- FORMULARIO PRINCIPAL -->
+        <form asp-action="Crear" method="post" class="card card-corporativa mb-5">
+            <div class="card-body p-4 pt-4">
+
+                <div asp-validation-summary="All" class="alert alert-danger shadow-sm border-0 rounded-3 mb-4" role="alert"></div>
+
+                <!-- SECCIÓN 1: FACTURA -->
+                <h2 class="h5 seccion-titulo">
+                    <i class="bi bi-receipt me-2" style="color: var(--naranja);"></i>Datos de la Factura
+                </h2>
+                <div class="row g-4">
+                    <div class="col-md-2">
+                        <label asp-for="Prefijo" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="Prefijo" class="form-control border-secondary-subtle" placeholder="Ej. FE" />
+                        <span asp-validation-for="Prefijo" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Numero" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="Numero" class="form-control border-secondary-subtle" placeholder="Ej. 12345" />
+                        <span asp-validation-for="Numero" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="FechaFactura" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="FechaFactura" class="form-control border-secondary-subtle" />
+                        <span asp-validation-for="FechaFactura" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="AseguradoraId" class="form-label fw-semibold text-dark"></label>
+                        <select asp-for="AseguradoraId"
+                                class="form-select border-secondary-subtle"
+                                asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Aseguradoras, "Id", "Nombre"))">
+                            <option value="">Seleccione aseguradora...</option>
+                        </select>
+                        <span asp-validation-for="AseguradoraId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Valor" class="form-label fw-semibold text-dark"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-secondary-subtle">$</span>
+                            <input asp-for="Valor"
+                                   class="form-control border-secondary-subtle"
+                                   inputmode="decimal"
+                                   data-decimal-flexible="true"
+                                   placeholder="0.00" />
+                        </div>
+                        <span asp-validation-for="Valor" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="FechaRadicacion" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="FechaRadicacion" class="form-control border-secondary-subtle" />
+                        <span asp-validation-for="FechaRadicacion" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="EstadoId" class="form-label fw-semibold text-dark"></label>
+                        <select asp-for="EstadoId"
+                                class="form-select border-secondary-subtle"
+                                asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Estados, "Id", "Nombre"))">
+                            <option value="">Seleccione estado...</option>
+                        </select>
+                        <span asp-validation-for="EstadoId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="FacturadorId" class="form-label fw-semibold text-dark"></label>
+                        <select asp-for="FacturadorId"
+                                class="form-select border-secondary-subtle"
+                                asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Facturadores, "Id", "Nombre"))">
+                            <option value="">Seleccione facturador...</option>
+                        </select>
+                        <span asp-validation-for="FacturadorId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 2: PACIENTE -->
+                <h2 class="h5 seccion-titulo">
+                    <i class="bi bi-person-vcard me-2" style="color: var(--naranja);"></i>Paciente
+                </h2>
+                <div class="row g-4">
+                    <div class="col-md-3">
+                        <label asp-for="TipoDocumentoId" class="form-label fw-semibold text-dark"></label>
+                        <select asp-for="TipoDocumentoId"
+                                class="form-select border-secondary-subtle"
+                                asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.TiposDocumento, "Id", "Nombre"))">
+                            <option value="">Seleccione...</option>
+                        </select>
+                        <span asp-validation-for="TipoDocumentoId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="NumeroDocumento" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="NumeroDocumento" class="form-control border-secondary-subtle" />
+                        <span asp-validation-for="NumeroDocumento" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="NombreCompleto" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="NombreCompleto" class="form-control border-secondary-subtle" placeholder="Apellidos y nombres completos" />
+                        <span asp-validation-for="NombreCompleto" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 3: ATENCIÓN Y ADMISIÓN -->
+                <h2 class="h5 seccion-titulo">
+                    <i class="bi bi-clipboard2-pulse me-2" style="color: var(--naranja);"></i>Atención y Admisión
+                </h2>
+                <div class="row g-4 mb-2">
+                    <div class="col-md-3">
+                        <label asp-for="AtencionId" class="form-label fw-semibold text-dark"></label>
+                        <select asp-for="AtencionId"
+                                class="form-select border-secondary-subtle"
+                                asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Atenciones, "Id", "Nombre"))">
+                            <option value="">Seleccione atención...</option>
+                        </select>
+                        <span asp-validation-for="AtencionId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="CostoId" class="form-label fw-semibold text-dark"></label>
+                        <select asp-for="CostoId"
+                                class="form-select border-secondary-subtle"
+                                asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Costos, "Id", "Nombre"))">
+                            <option value="">Seleccione centro...</option>
+                        </select>
+                        <span asp-validation-for="CostoId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="NumeroAdmision" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="NumeroAdmision" class="form-control border-secondary-subtle" />
+                        <span asp-validation-for="NumeroAdmision" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="FechaAdmision" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="FechaAdmision" class="form-control border-secondary-subtle" />
+                        <span asp-validation-for="FechaAdmision" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTONERA DE ACCIÓN -->
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                    <i class="bi bi-x-circle me-1"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-naranja px-4 shadow-sm">
+                    <i class="bi bi-floppy me-1"></i> Guardar factura
+                </button>
+            </div>
+        </form>
+
+    </div>
 </div>
-
-<form asp-action="Crear" method="post" class="card">
-    <div class="card-body">
-        <div asp-validation-summary="All"
-             class="alert alert-danger"
-             role="alert"></div>
-
-        <h2 class="h5">Factura</h2>
-        <div class="row g-3 mb-4">
-            <div class="col-md-2">
-                <label asp-for="Prefijo" class="form-label"></label>
-                <input asp-for="Prefijo" class="form-control" />
-                <span asp-validation-for="Prefijo" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label asp-for="Numero" class="form-label"></label>
-                <input asp-for="Numero" class="form-control" />
-                <span asp-validation-for="Numero" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label asp-for="FechaFactura" class="form-label"></label>
-                <input asp-for="FechaFactura" class="form-control" />
-                <span asp-validation-for="FechaFactura" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="AseguradoraId" class="form-label"></label>
-                <select asp-for="AseguradoraId"
-                        class="form-select"
-                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Aseguradoras, "Id", "Nombre"))">
-                    <option value="">Seleccione</option>
-                </select>
-                <span asp-validation-for="AseguradoraId" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label asp-for="Valor" class="form-label"></label>
-                <input asp-for="Valor"
-                       class="form-control"
-                       inputmode="decimal"
-                       data-decimal-flexible="true" />
-                <span asp-validation-for="Valor" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label asp-for="FechaRadicacion" class="form-label"></label>
-                <input asp-for="FechaRadicacion" class="form-control" />
-                <span asp-validation-for="FechaRadicacion" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label asp-for="EstadoId" class="form-label"></label>
-                <select asp-for="EstadoId"
-                        class="form-select"
-                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Estados, "Id", "Nombre"))">
-                    <option value="">Seleccione</option>
-                </select>
-                <span asp-validation-for="EstadoId" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label asp-for="FacturadorId" class="form-label"></label>
-                <select asp-for="FacturadorId"
-                        class="form-select"
-                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Facturadores, "Id", "Nombre"))">
-                    <option value="">Seleccione</option>
-                </select>
-                <span asp-validation-for="FacturadorId" class="text-danger"></span>
-            </div>
-        </div>
-
-        <h2 class="h5">Paciente</h2>
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <label asp-for="TipoDocumentoId" class="form-label"></label>
-                <select asp-for="TipoDocumentoId"
-                        class="form-select"
-                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.TiposDocumento, "Id", "Nombre"))">
-                    <option value="">Seleccione</option>
-                </select>
-                <span asp-validation-for="TipoDocumentoId" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label asp-for="NumeroDocumento" class="form-label"></label>
-                <input asp-for="NumeroDocumento" class="form-control" />
-                <span asp-validation-for="NumeroDocumento" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="NombreCompleto" class="form-label"></label>
-                <input asp-for="NombreCompleto" class="form-control" />
-                <span asp-validation-for="NombreCompleto" class="text-danger"></span>
-            </div>
-        </div>
-
-        <h2 class="h5">Atención y admisión</h2>
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label asp-for="AtencionId" class="form-label"></label>
-                <select asp-for="AtencionId"
-                        class="form-select"
-                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Atenciones, "Id", "Nombre"))">
-                    <option value="">Seleccione</option>
-                </select>
-                <span asp-validation-for="AtencionId" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label asp-for="CostoId" class="form-label"></label>
-                <select asp-for="CostoId"
-                        class="form-select"
-                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Costos, "Id", "Nombre"))">
-                    <option value="">Seleccione</option>
-                </select>
-                <span asp-validation-for="CostoId" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label asp-for="NumeroAdmision" class="form-label"></label>
-                <input asp-for="NumeroAdmision" class="form-control" />
-                <span asp-validation-for="NumeroAdmision" class="text-danger"></span>
-            </div>
-            <div class="col-md-3">
-                <label asp-for="FechaAdmision" class="form-label"></label>
-                <input asp-for="FechaAdmision" class="form-control" />
-                <span asp-validation-for="FechaAdmision" class="text-danger"></span>
-            </div>
-        </div>
-    </div>
-
-    <div class="card-footer d-flex justify-content-end gap-2">
-        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
-        <button type="submit" class="btn btn-primary">Crear factura</button>
-    </div>
-</form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

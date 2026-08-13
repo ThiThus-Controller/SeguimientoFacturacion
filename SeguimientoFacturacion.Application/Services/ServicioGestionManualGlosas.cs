@@ -343,6 +343,7 @@ public sealed class ServicioGestionManualGlosas :
             Estado = glosa.Estado,
             ValorAceptado = glosa.ValorAceptado,
             ValorPendiente = glosa.ValorPendiente,
+            ValorReconocido = glosa.ValorReconocido,
             Observacion = glosa.Observacion,
             DiasRadicacionAObjecion = anulada
                 ? null
@@ -449,6 +450,8 @@ public sealed class ServicioGestionManualGlosas :
                 glosa.FechaRespuesta,
                 glosa.Estado,
                 glosa.ValorAceptado,
+                glosa.ValorPendiente,
+                glosa.ValorReconocido,
                 glosa.Observacion,
                 glosa.FechaModificacionUtc,
                 glosa.ModificadoPor

@@ -83,9 +83,10 @@ public sealed class ServicioGestionManualGlosasTests
             },
             "supervisor");
 
-        Assert.Equal(EstadoGlosa.Aceptada, resultado.Estado);
+        Assert.Equal(EstadoGlosa.EnNegociacion, resultado.Estado);
         Assert.Equal(400m, resultado.ValorAceptado);
-        Assert.Equal(decimal.Zero, resultado.ValorPendiente);
+        Assert.Equal(600m, resultado.ValorPendiente);
+        Assert.Equal(decimal.Zero, resultado.ValorReconocido);
         Assert.Equal(1, unidadTrabajo.Guardados);
         Assert.Single(repositorio.Auditorias);
     }

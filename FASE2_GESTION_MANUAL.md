@@ -300,8 +300,10 @@ trazabilidad; no sustituyen el historial inmutable.
 ## Gestión manual de glosas y respuestas
 
 La glosa utiliza los estados `Abierta`, `Respondida`, `Aceptada`,
-`Levantada`, `Conciliada` y `Anulada`. El estado `Anulada` es exclusivo
-de la operación manual y no forma parte de las plantillas de importación.
+`Levantada`, `Conciliada`, `Anulada` y `EnNegociacion`. El estado
+`Anulada` es exclusivo de la operación manual. `EnNegociacion` identifica
+una aceptación parcial cuyo valor restante todavía no tiene una decisión
+definitiva.
 
 La observación admite hasta 1.000 caracteres. Es opcional al crear o
 responder, y obligatoria al aceptar, levantar, conciliar o anular.
@@ -314,6 +316,18 @@ concurrencia optimista y auditoría inmutable.
 Una glosa aceptada o conciliada no reduce directamente la cartera ni
 genera automáticamente una nota crédito. El sistema mostrará el valor
 aceptado pendiente de respaldo hasta registrar la nota correspondiente.
+
+Una aceptación parcial conserva como pendiente la diferencia entre el
+valor glosado y el valor aceptado acumulado. El valor aceptado nunca puede
+disminuir, porque podría dejar notas crédito vigentes sin respaldo. Puede
+ampliarse posteriormente y ese incremento habilita nuevo cupo para otra
+nota crédito asociada a la misma glosa.
+
+Si la institución gana la discusión, la glosa se concilia conservando el
+valor aceptado acumulado; la diferencia queda reconocida a su favor y se
+aplicará a cartera únicamente cuando se registre el pago. Si pierde la
+discusión, el valor aceptado puede ampliarse hasta el valor total glosado y
+la nueva nota crédito consumirá exclusivamente ese cupo adicional.
 
 ## Decisiones funcionales propuestas
 

@@ -38,150 +38,160 @@
             PoliticasAutorizacion.FacturasConsultar))
         .Succeeded;
 }
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0" />
-
-    <title>
-        @ViewData["Title"] - SeguimientoFacturacion
-    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SeguimientoFacturacion</title>
 
     <script type="importmap"></script>
 
-    <link rel="stylesheet"
-          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/SeguimientoFacturacion.styles.css" asp-append-version="true" />
 
-    <link rel="stylesheet"
-          href="~/css/site.css"
-          asp-append-version="true" />
+    <!-- 🔥 Librería de Íconos de Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <link rel="stylesheet"
-          href="~/SeguimientoFacturacion.styles.css"
-          asp-append-version="true" />
+    <style>
+            /* =======================================================
+                       PALETA INSTITUCIONAL: Azul Rey, Naranja y Blanco
+             ======================================================= */
+            :root {
+                --azul-rey: #0B3B86; /* Azul corporativo profundo */
+                --naranja: #FF7900; /* Naranja vibrante */
+                --blanco: #FFFFFF;
+            }
+
+            /* Estilo de la Barra de Navegación */
+            .navbar-institucional {
+                background-color: var(--azul-rey) !important;
+                border-bottom: 4px solid var(--naranja) !important; /* Línea inferior decorativa */
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+
+                /* Colores de textos y enlaces en la barra */
+                .navbar-institucional .navbar-brand,
+                .navbar-institucional .nav-link,
+                .navbar-institucional .navbar-text,
+                .navbar-institucional .btn-link {
+                    color: var(--blanco) !important;
+                    transition: all 0.2s ease-in-out;
+                    font-weight: 500;
+                }
+
+                    /* Efecto Hover (Al pasar el mouse) -> Cambia a Naranja */
+                    .navbar-institucional .nav-link:hover,
+                    .navbar-institucional .btn-link:hover {
+                        color: var(--naranja) !important;
+                        transform: translateY(-1px);
+                    }
+
+            /* Acentos de íconos en Naranja */
+            .icon-acento {
+                color: var(--naranja) !important;
+            }
+
+            /* Botón de cerrar sesión un poco más fuerte al hover */
+            .btn-cerrar-sesion:hover {
+                color: #ff4d4d !important;
+            }
+    </style>
 </head>
-
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-light
-            bg-white border-bottom box-shadow mb-3">
+        <!-- 🔥 Aplicamos la clase navbar-institucional y navbar-dark -->
+        <nav class="navbar navbar-expand-sm navbar-dark navbar-institucional mb-4 py-3">
             <div class="container-fluid">
-                <a class="navbar-brand"
-                   asp-controller="Home"
-                   asp-action="Index">
-                    SeguimientoFacturacion
+
+                <!-- Marca / Logo textual con ícono Naranja -->
+                <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-box-seam icon-acento me-2"></i>SeguimientoFacturacion
                 </a>
 
-                <button class="navbar-toggler"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target=".navbar-collapse"
-                        aria-controls="navbarPrincipal"
-                        aria-expanded="false"
-                        aria-label="Mostrar navegación">
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarPrincipal" aria-expanded="false" aria-label="Mostrar navegación">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <div id="navbarPrincipal"
-                     class="navbar-collapse collapse
-                    d-sm-inline-flex
-                    justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <div id="navbarPrincipal" class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1 ms-3">
+
+                        <!-- 🔥 Restaurada la validación correcta sin el error de sintaxis -->
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                        <li class="nav-item">
-                            <a class="nav-link text-dark"
-                               asp-controller="Home"
-                               asp-action="Index">
-                                Inicio
-                            </a>
-                        </li>
+                           @*  <li class="nav-item me-1">
+                                <a class="nav-link" asp-controller="Home" asp-action="Index">
+                                    <i class="bi bi-house-door me-1"></i> Inicio
+                                </a>
+                            </li> *@
 
-                        @if (puedeImportar)
-                        {
+                            @if (puedeImportar)
+                            {
+                                <li class="nav-item me-1">
+                                    <a class="nav-link" asp-controller="Importacion" asp-action="Index">
+                                        <i class="bi bi-file-earmark-bar-graph me-1"></i> Analizar importación
+                                    </a>
+                                </li>
+                            }
+
+                            @if (puedeConsultarFacturas)
+                            {
+                                <li class="nav-item me-1">
+                                    <a class="nav-link" asp-controller="Facturas" asp-action="Index">
+                                        <i class="bi bi-receipt me-1"></i> Facturas
+                                    </a>
+                                </li>
+                            }
+
+                            @if (puedeAdministrarUsuarios)
+                            {
+                                <li class="nav-item me-1">
+                                    <a class="nav-link" asp-controller="Usuarios" asp-action="Index">
+                                        <i class="bi bi-people me-1"></i> Usuarios
+                                    </a>
+                                </li>
+                            }
+
+                            @if (puedeAdministrarFacturadores)
+                            {
+                                <li class="nav-item me-1">
+                                    <a class="nav-link" asp-controller="Facturadores" asp-action="Index">
+                                        <i class="bi bi-person-vcard me-1"></i> Facturadores
+                                    </a>
+                                </li>
+                            }
+
+                            @if (puedeAdministrarAseguradoras)
+                            {
+                                <li class="nav-item me-1">
+                                    <a class="nav-link" asp-controller="Aseguradoras" asp-action="Index">
+                                        <i class="bi bi-shield-plus me-1"></i> Aseguradoras
+                                    </a>
+                                </li>
+                            }
+
                             <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                   asp-controller="Importacion"
-                                   asp-action="Index">
-                                    Analizar importación
+                                <a class="nav-link" asp-controller="Home" asp-action="Privacy">
+                                    <i class="bi bi-shield-lock me-1"></i> Privacidad
                                 </a>
                             </li>
-                        }
-
-                        @if (puedeConsultarFacturas)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                   asp-controller="Facturas"
-                                   asp-action="Index">
-                                    Facturas
-                                </a>
-                            </li>
-                        }
-
-                        @if (puedeAdministrarUsuarios)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                   asp-controller="Usuarios"
-                                   asp-action="Index">
-                                    Usuarios
-                                </a>
-                            </li>
-                        }
-
-                        @if (puedeAdministrarFacturadores)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                   asp-controller="Facturadores"
-                                   asp-action="Index">
-                                    Facturadores
-                                </a>
-                            </li>
-                        }
-
-                        @if (puedeAdministrarAseguradoras)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                   asp-controller="Aseguradoras"
-                                   asp-action="Index">
-                                    Aseguradoras
-                                </a>
-                            </li>
-                        }
-
-                        <li class="nav-item">
-                            <a class="nav-link text-dark"
-                               asp-controller="Home"
-                               asp-action="Privacy">
-                                Privacidad
-                            </a>
-                        </li>
                         }
                     </ul>
 
                     <ul class="navbar-nav align-items-sm-center">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item">
-                                <span class="navbar-text me-sm-3">
-                                    @User.Identity.Name
+                            <li class="nav-item border-end border-light pe-3 me-2">
+                                <span class="navbar-text fw-medium">
+                                    <i class="bi bi-person-circle icon-acento me-1"></i> @User.Identity.Name
                                 </span>
                             </li>
 
                             <li class="nav-item">
-                                <form asp-controller="Cuenta"
-                                      asp-action="CerrarSesion"
-                                      method="post">
-                                    <button type="submit"
-                                            class="btn btn-link nav-link text-dark">
-                                        Cerrar sesión
+                                <form asp-controller="Cuenta" asp-action="CerrarSesion" method="post">
+                                    <button type="submit" class="btn btn-link nav-link fw-bold btn-cerrar-sesion text-decoration-none">
+                                        <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
                                     </button>
                                 </form>
                             </li>
@@ -189,10 +199,8 @@
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                   asp-controller="Cuenta"
-                                   asp-action="IniciarSesion">
-                                    Iniciar sesión
+                                <a class="nav-link fw-bold" asp-controller="Cuenta" asp-action="IniciarSesion">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar sesión
                                 </a>
                             </li>
                         }
@@ -208,23 +216,16 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - SeguimientoFacturacion - Departamento de sistemas
+    <footer class="border-top footer text-muted mt-5">
+        <div class="container text-center py-3">
+            &copy; @DateTime.Now.Year - SeguimientoFacturacion - Departamento de sistemas
         </div>
     </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
 
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js">
-    </script>
-
-    <script src="~/js/site.js"
-            asp-append-version="true">
-    </script>
-
-    @await RenderSectionAsync(
-        "Scripts",
-        required: false)
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

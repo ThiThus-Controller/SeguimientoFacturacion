@@ -1,70 +1,737 @@
 @model SeguimientoFacturacion.ViewModels.Seguridad.InicioSesionViewModel
 
 @{
-    ViewData["Title"] = "Iniciar sesión";
+    // Desactiva el Layout principal para que el diseño cósmico ocupe toda la pantalla
+    Layout = null;
+    ViewData["Title"] = "Iniciar Sesión";
 }
 
-<div class="row justify-content-center py-4">
-    <div class="col-12 col-sm-10 col-md-7 col-lg-5">
-        <div class="card shadow-sm login-card">
-            <div class="card-body p-4 p-md-5">
-                <div class="text-center mb-4">
-                    <h1 class="h3 mb-2">SeguimientoFacturacion</h1>
-                    <p class="text-muted mb-0">
-                        Ingrese con su cuenta autorizada.
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SeguimientoFacturacion</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+            body.login-body {
+                margin: 0;
+                padding: 0;
+                min-height: 100vh;
+                font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+                background-color: #050E1D !important;
+            }
+
+            .login-wrapper {
+                display: flex;
+                min-height: 100vh;
+                width: 100%;
+            }
+
+            /* PANEL IZQUIERDO: FONDO CÓSMICO */
+            .login-left-panel {
+                flex: 1.1;
+                background: radial-gradient(circle at 50% 50%, #0F2B57 0%, #0B1D3A 60%, #050E1D 100%) !important;
+                color: #FFFFFF !important;
+                padding: 40px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
+                position: relative !important;
+                overflow: hidden !important;
+            }
+
+            #galaxyCanvas {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                z-index: 1 !important;
+                pointer-events: none !important;
+            }
+
+            .left-content-wrap {
+                position: relative !important;
+                z-index: 2 !important;
+                width: 100% !important;
+                max-width: 480px !important;
+                margin: 0 auto !important;
+                text-align: center !important;
+            }
+
+            /* BRANDING Y LOGO (TARJETA REDONDA) */
+            .brand-logo {
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                width: 130px !important; /* Ancho del círculo */
+                height: 130px !important; /* Alto del círculo */
+                margin: 0 auto 16px auto !important;
+                background: #FFFFFF !important; /* Fondo blanco */
+                border-radius: 50% !important; /* Círculo perfecto */
+                padding: 15px !important; /* "Pestaña" o espacio interior */
+                box-shadow: 0 10px 25px rgba(0,0,0,0.5), 0 0 0 5px rgba(255,255,255,0.08) !important;
+                position: relative;
+                z-index: 10;
+                transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+
+            .brand-logo {
+                max-width: 100% !important;
+                max-height: 100% !important;
+                object-fit: contain !important;
+                /* Se eliminan los filtros espaciales para que el logo se vea nítido y con sus colores originales sobre el blanco */
+                filter: none !important;
+                mix-blend-mode: normal !important;
+            }
+
+            /* El brillo de éxito ahora se aplica al círculo blanco */
+            .brand-logo.logo-glow-success {
+                box-shadow: 0 0 35px #38BDF8, 0 0 70px #00B7B3, 0 0 0 5px rgba(56, 189, 248, 0.6) !important;
+                transform: scale(1.08) !important;
+            }
+
+                .logo-system.logo-glow-success {
+                    filter: contrast(150%) brightness(160%) drop-shadow(0 0 35px #38BDF8) drop-shadow(0 0 70px #00B7B3) !important;
+                    transform: scale(1.05) !important;
+                }
+
+            .brand-tagline {
+                text-align: center !important;
+                display: block !important;
+                width: 100% !important;
+                font-size: 13px !important;
+                letter-spacing: 3px !important;
+                color: #38BDF8 !important;
+                font-weight: 700 !important;
+                margin-top: 8px !important;
+                text-shadow: 0 0 12px rgba(56, 189, 248, 0.4) !important;
+            }
+
+            .brand-titles {
+                text-align: center;
+                max-width: 400px;
+                margin: 16px auto 24px auto !important;
+            }
+
+            .system-title {
+                font-size: 1.6rem !important;
+                font-weight: 800 !important;
+                line-height: 1.25 !important;
+                color: #FFFFFF !important;
+                letter-spacing: -0.2px !important;
+                margin: 0 0 6px 0 !important;
+                text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+            }
+
+            .system-subtitle {
+                font-size: 0.95rem !important;
+                font-weight: 600 !important;
+                color: #38BDF8 !important;
+                letter-spacing: 0.2px !important;
+                margin: 0 0 10px 0 !important;
+                text-shadow: 0 0 10px rgba(56, 189, 248, 0.3) !important;
+            }
+
+            .system-description {
+                color: #94A3B8 !important;
+                font-size: 0.88rem !important;
+                line-height: 1.5 !important;
+                font-weight: 400 !important;
+                margin: 0 auto !important;
+                max-width: 360px !important;
+            }
+
+            /* TARJETAS GLASSMORPHISM */
+            .features-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+                width: 100%;
+                margin-top: 24px !important;
+            }
+
+            .feature-card {
+                background: rgba(255, 255, 255, 0.04) !important;
+                border: 1px solid rgba(56, 189, 248, 0.25) !important;
+                backdrop-filter: blur(8px) !important;
+                -webkit-backdrop-filter: blur(8px) !important;
+                border-radius: 12px !important;
+                padding: 20px 16px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: center !important;
+                gap: 10px !important;
+                transition: all 0.25s ease !important;
+            }
+
+                .feature-card:hover {
+                    background: rgba(255, 255, 255, 0.08) !important;
+                    border-color: #38BDF8 !important;
+                    transform: translateY(-2px);
+                }
+
+                .feature-card i {
+                    color: #38BDF8 !important;
+                    font-size: 30px !important;
+                }
+
+                .feature-card span {
+                    font-size: 13.5px !important;
+                    font-weight: 600 !important;
+                    color: #F1F5F9 !important;
+                    line-height: 1.35;
+                }
+
+            /* PANEL DERECHO */
+            .login-right-panel {
+                flex: 0.9;
+                background: radial-gradient(circle at top right, #EBF3FF 0%, #F1F5F9 60%, #E2E8F0 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 40px;
+                position: relative;
+                z-index: 2;
+            }
+
+            .login-card {
+                background: #FFFFFF !important;
+                border-radius: 18px !important;
+                width: 100%;
+                max-width: 430px;
+                padding: 42px 38px !important;
+                border: 1px solid #E2E8F0 !important;
+                box-shadow: 0 20px 40px -15px rgba(11, 29, 58, 0.12) !important;
+            }
+
+            .badge-welcome {
+                background: #E0EDFF !important;
+                color: #2D7FF9 !important;
+                padding: 6px 18px !important;
+                border-radius: 20px !important;
+                font-size: 12.5px !important;
+                font-weight: 700 !important;
+                display: inline-block;
+            }
+
+            .card-title {
+                color: #0B1D3A !important;
+                font-weight: 800 !important;
+                font-size: 1.65rem !important;
+            }
+
+            .divider-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+            }
+
+                .divider-icon .line {
+                    height: 1px;
+                    background: #E2E8F0;
+                    flex: 1;
+                }
+
+                .divider-icon .icon {
+                    color: #2D7FF9;
+                    font-size: 14px;
+                }
+
+            .card-instruction {
+                color: #64748B;
+                font-size: 13.5px;
+                line-height: 1.5;
+            }
+
+            .input-label {
+                font-size: 13px !important;
+                font-weight: 700 !important;
+                color: #0B1D3A !important;
+            }
+
+            .custom-input-group {
+                display: flex;
+                align-items: center;
+                border: 1.5px solid #CBD5E1 !important;
+                border-radius: 8px !important;
+                background: #FFFFFF !important;
+                transition: all 0.2s ease !important;
+                overflow: hidden;
+            }
+
+                .custom-input-group:focus-within {
+                    border-color: #2D7FF9 !important;
+                    box-shadow: 0 0 0 4px rgba(45, 127, 249, 0.15) !important;
+                }
+
+            .input-icon {
+                padding: 10px 14px;
+                color: #94A3B8;
+                font-size: 18px;
+            }
+
+            .custom-input {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 10px 12px 10px 0 !important;
+                font-size: 14px !important;
+                color: #1B1F24 !important;
+            }
+
+            .btn-toggle-pwd {
+                background: none;
+                border: none;
+                padding: 10px 14px;
+                color: #94A3B8;
+                cursor: pointer;
+            }
+
+            .btn-tithus-primary {
+                background: linear-gradient(135deg, #1E3A8A 0%, #2D7FF9 100%) !important;
+                color: #FFFFFF !important;
+                border: none !important;
+                font-weight: 700 !important;
+                border-radius: 8px !important;
+                box-shadow: 0 4px 14px rgba(30, 58, 138, 0.3) !important;
+                transition: all 0.2s ease !important;
+            }
+
+                .btn-tithus-primary:hover {
+                    transform: translateY(-1px) !important;
+                    box-shadow: 0 6px 20px rgba(30, 58, 138, 0.4) !important;
+                }
+
+            .card-footer-info {
+                border-top: 1px solid #F1F5F9;
+                font-size: 12px;
+                color: #94A3B8;
+                font-weight: 500;
+            }
+
+            .login-wrapper {
+                opacity: 1;
+                transition: opacity 0.5s ease-in-out !important;
+            }
+
+                .login-wrapper.page-fade-out {
+                    opacity: 0 !important;
+                }
+
+            @@media (max-width: 991px) {
+                .login-wrapper {
+                    flex-direction: column;
+                }
+
+                .login-left-panel {
+                    padding: 40px 24px !important;
+                    min-height: 550px;
+                }
+
+                .login-right-panel {
+                    padding: 24px 16px !important;
+                }
+            }
+    </style>
+</head>
+<body class="login-body">
+
+    <div class="login-wrapper">
+
+        <!-- PANEL IZQUIERDO -->
+        <div class="login-left-panel">
+            <canvas id="galaxyCanvas"></canvas>
+            <div class="left-content-wrap">
+                <div class="brand-logo mb-2">
+                    <img src="~/images/logo.png" alt="SeguimientoFacturacion" class="img-fluid logo-system" onerror="this.style.display='none'" />
+                </div>
+                <p class="brand-tagline">DEPARTAMENTO DE SISTEMAS</p>
+                <div class="brand-titles">
+                    <h1 class="system-title">Seguimiento de Facturas</h1>
+                    <p class="system-subtitle">Control y Trazabilidad Inteligente.</p>
+                    <p class="system-description">
+                        Plataforma centralizada para el control, auditoría y seguimiento del ciclo de facturación corporativo.
                     </p>
                 </div>
-
-                <form asp-controller="Cuenta"
-                      asp-action="IniciarSesion"
-                      method="post"
-                      autocomplete="on">
-                    <input asp-for="ReturnUrl" type="hidden" />
-
-                    <div asp-validation-summary="ModelOnly"
-                         class="alert alert-danger"
-                         role="alert">
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <i class="bi bi-receipt"></i>
+                        <span>Control de<br>Facturación</span>
                     </div>
-
-                    <div class="mb-3">
-                        <label asp-for="NombreUsuario"
-                               class="form-label">
-                        </label>
-
-                        <input asp-for="NombreUsuario"
-                               class="form-control"
-                               autocomplete="username"
-                               autofocus />
-
-                        <span asp-validation-for="NombreUsuario"
-                              class="text-danger">
-                        </span>
+                    <div class="feature-card">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        <span>Reportes en<br>Tiempo Real</span>
                     </div>
-
-                    <div class="mb-4">
-                        <label asp-for="Contrasena"
-                               class="form-label">
-                        </label>
-
-                        <input asp-for="Contrasena"
-                               class="form-control"
-                               autocomplete="current-password" />
-
-                        <span asp-validation-for="Contrasena"
-                              class="text-danger">
-                        </span>
+                    <div class="feature-card">
+                        <i class="bi bi-shield-check"></i>
+                        <span>Auditoría<br>Financiera</span>
                     </div>
-
-                    <button type="submit"
-                            class="btn btn-primary w-100">
-                        Iniciar sesión
-                    </button>
-                </form>
+                    <div class="feature-card">
+                        <i class="bi bi-wallet2"></i>
+                        <span>Trazabilidad<br>de Pagos</span>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-@section Scripts {
+        <!-- PANEL DERECHO -->
+        <div class="login-right-panel">
+            <div class="login-card shadow-lg">
+                <div class="text-center mb-3">
+                    <span class="badge-welcome">Portal Financiero</span>
+                </div>
+                <h2 class="card-title text-center">Acceso al Sistema</h2>
+                <div class="divider-icon my-3">
+                    <span class="line"></span>
+                    <i class="bi bi-cash-stack icon"></i>
+                    <span class="line"></span>
+                </div>
+                <p class="card-instruction text-center mb-4">
+                    Ingrese con su cuenta autorizada.
+                </p>
+
+                <!-- FORMULARIO CON TUS TAG HELPERS ORIGINALES (asp-for, asp-validation) -->
+                <form asp-controller="Cuenta" asp-action="IniciarSesion" method="post" autocomplete="on" id="loginForm">
+                    <input asp-for="ReturnUrl" type="hidden" />
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3 py-2 small" role="alert"></div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="NombreUsuario" class="input-label mb-1"></label>
+                        <div class="custom-input-group">
+                            <span class="input-icon"><i class="bi bi-person"></i></span>
+                            <input asp-for="NombreUsuario" class="form-control custom-input" placeholder="Ingrese su usuario" autocomplete="username" autofocus />
+                        </div>
+                        <span asp-validation-for="NombreUsuario" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label asp-for="Contrasena" class="input-label mb-1"></label>
+                        <div class="custom-input-group">
+                            <span class="input-icon"><i class="bi bi-lock"></i></span>
+                            <input asp-for="Contrasena" id="inputPassword" class="form-control custom-input" placeholder="Ingrese su contraseña" autocomplete="current-password" />
+                            <button type="button" class="btn-toggle-pwd" id="togglePassword" tabindex="-1">
+                                <i class="bi bi-eye" id="eyeIcon"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Contrasena" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-tithus-primary w-100 py-2.5" id="submitBtn">
+                        <i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión
+                    </button>
+                </form>
+
+                <div class="card-footer-info d-flex justify-content-between align-items-center mt-4 pt-3">
+                    <span><i class="bi bi-shield-lock me-1"></i> Entorno seguro</span>
+                    <span>Versión 1.0.0</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SCRIPTS DE VALIDACIÓN CLIENT-SIDE ORIGINALES DE ASP.NET -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <partial name="_ValidationScriptsPartial" />
-}
+
+    <!-- CANVAS INTERACTIVO CON GALAXIA, CONSTELACIONES Y ANIMACIÓN -->
+    <script>
+            (function() {
+                const canvas = document.getElementById('galaxyCanvas');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+
+                let width, height, centerX, centerY;
+                let stars = [];
+                let nebulaClouds = []; // 🔥 Nueva matriz para la galaxia
+                let isConverging = false;
+                let logoTargetX = 0;
+                let logoTargetY = 0;
+
+                function resize() {
+                    const parent = canvas.parentElement;
+                    width = canvas.width = parent ? parent.clientWidth : window.innerWidth / 2;
+                    height = canvas.height = parent ? parent.clientHeight : window.innerHeight;
+                    centerX = width / 2;
+                    centerY = height / 2;
+
+                    const logo = document.querySelector('.brand-logo');
+                    if (logo) {
+                        const rect = logo.getBoundingClientRect();
+                        const parentRect = canvas.getBoundingClientRect();
+                        logoTargetX = (rect.left + rect.width / 2) - parentRect.left;
+                        logoTargetY = (rect.top + rect.height / 2) - parentRect.top;
+                    } else {
+                        logoTargetX = centerX;
+                        logoTargetY = centerY;
+                    }
+                }
+
+                // ==========================================
+                // 1. CLASE GALAXIA / NEBULOSA (Nubes de gas)
+                // ==========================================
+                class NebulaCloud {
+                    constructor() { this.init(); }
+
+                    init() {
+                        this.angle = Math.random() * Math.PI * 2;
+                        this.dist = Math.random() * (Math.min(width, height) * 0.45);
+                        this.speed = (0.0001 + Math.random() * 0.0002) * (Math.random() < 0.5 ? 1 : -1);
+                        this.baseRadius = 250 + Math.random() * 250;
+                        this.pulseSpeed = 0.003 + Math.random() * 0.005;
+                        this.pulsePhase = Math.random() * Math.PI * 2;
+
+                        // Tonos galácticos: Turquesa, Azul profundo y Celeste
+                        const colors = [
+                            { r: 0, g: 183, b: 179 },
+                            { r: 45, g: 127, b: 249 },
+                            { r: 15, g: 43, b: 87 }
+                        ];
+                        this.color = colors[Math.floor(Math.random() * colors.length)];
+                    }
+
+                    update() {
+                        this.angle += this.speed;
+                        this.pulsePhase += this.pulseSpeed;
+                        this.x = centerX + Math.cos(this.angle) * this.dist;
+                        this.y = centerY + Math.sin(this.angle) * this.dist;
+                        this.currentRadius = this.baseRadius + Math.sin(this.pulsePhase) * 40;
+                    }
+
+                    draw() {
+                        ctx.save();
+                        ctx.globalCompositeOperation = 'screen';
+                        const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.currentRadius);
+                        const { r, g, b } = this.color;
+
+                        // Opacidad tenue para que sea un fondo elegante
+                        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.15)`);
+                        grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.05)`);
+                        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+                        ctx.fillStyle = grad;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                }
+
+                // ==========================================
+                // 2. CLASE ESTRELLAS (Múltiples tamaños y velocidades)
+                // ==========================================
+                class Star {
+                    constructor() { this.init(); }
+
+                    init() {
+                        this.radius = Math.random() * Math.max(width, height) * 0.85;
+                        this.angle = Math.random() * Math.PI * 2;
+
+                        // 🔥 Velocidades muy variables (algunas lentas, otras rápidas)
+                        this.speed = (0.00005 + Math.random() * 0.0004) * (Math.random() < 0.5 ? 1 : -1);
+
+                        // 🔥 Más estrellas pero más finas/pequeñas (0.4 a 1.2px)
+                        this.size = 0.4 + Math.random() * 0.8;
+
+                        this.alpha = 0.1 + Math.random() * 0.7;
+                        this.pulseSpeed = 0.01 + Math.random() * 0.03;
+
+                        const colors = ['#38BDF8', '#00B7B3', '#93C5FD', '#FFFFFF'];
+                        this.color = colors[Math.floor(Math.random() * colors.length)];
+
+                        this.x = centerX + Math.cos(this.angle) * this.radius;
+                        this.y = centerY + Math.sin(this.angle) * this.radius;
+                    }
+
+                    update() {
+                        if (isConverging) {
+                            this.x += (logoTargetX - this.x) * 0.09;
+                            this.y += (logoTargetY - this.y) * 0.09;
+                            this.alpha = Math.min(1, this.alpha + 0.03);
+                        } else {
+                            this.angle += this.speed;
+                            this.alpha += Math.sin(Date.now() * this.pulseSpeed) * 0.005;
+                            if (this.alpha < 0.1) this.alpha = 0.1;
+                            if (this.alpha > 0.9) this.alpha = 0.9;
+
+                            this.x = centerX + Math.cos(this.angle) * this.radius;
+                            this.y = centerY + Math.sin(this.angle) * this.radius;
+                        }
+                    }
+
+                    draw() {
+                        ctx.save();
+                        ctx.globalAlpha = this.alpha;
+                        ctx.fillStyle = this.color;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                }
+
+                function createCosmos() {
+                    stars = [];
+                    nebulaClouds = [];
+
+                    // 5 nubes de galaxia de fondo
+                    for (let i = 0; i < 5; i++) nebulaClouds.push(new NebulaCloud());
+
+                    // 🔥 160 estrellas (más cantidad)
+                    for (let i = 0; i < 160; i++) stars.push(new Star());
+                }
+
+                function drawConstellations() {
+                    // 🔥 Distancia ajustada para no saturar la pantalla con 160 estrellas
+                    const maxDist = isConverging ? 170 : 95;
+
+                    for (let i = 0; i < stars.length; i++) {
+                        for (let j = i + 1; j < stars.length; j++) {
+                            const dx = stars[i].x - stars[j].x;
+                            const dy = stars[i].y - stars[j].y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+
+                            if (dist < maxDist) {
+                                const lineAlpha = (1 - dist / maxDist) * (isConverging ? 0.40 : 0.15);
+                                ctx.save();
+                                ctx.strokeStyle = '#38BDF8';
+                                ctx.globalAlpha = lineAlpha;
+                                ctx.lineWidth = isConverging ? 1.2 : 0.5; // Líneas finas
+                                ctx.beginPath();
+                                ctx.moveTo(stars[i].x, stars[i].y);
+                                ctx.lineTo(stars[j].x, stars[j].y);
+                                ctx.stroke();
+                                ctx.restore();
+                            }
+                        }
+                    }
+                }
+
+                function animate() {
+                    ctx.clearRect(0, 0, width, height);
+
+                    // 1. Dibuja Galaxia (Capa más profunda)
+                    nebulaClouds.forEach(cloud => {
+                        cloud.update();
+                        cloud.draw();
+                    });
+
+                    // 2. Dibuja Constelaciones
+                    drawConstellations();
+
+                    // 3. Dibuja Estrellas (Capa frontal)
+                    stars.forEach(star => {
+                        star.update();
+                        star.draw();
+                    });
+
+                    requestAnimationFrame(animate);
+                }
+
+                function playSuccessAnimation(redirectUrl) {
+                    resize();
+                    isConverging = true;
+
+                    setTimeout(() => {
+                        const logo = document.querySelector('.brand-logo');
+                        if (logo) logo.classList.add('logo-glow-success');
+                    }, 200);
+
+                    setTimeout(() => {
+                        const wrapper = document.querySelector('.login-wrapper');
+                        if (wrapper) wrapper.classList.add('page-fade-out');
+                    }, 600);
+
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 1050);
+                }
+
+                window.addEventListener('resize', () => {
+                    resize();
+                    createCosmos();
+                });
+
+                resize();
+                createCosmos();
+                animate();
+
+                // Toggle Contraseña
+                document.getElementById('togglePassword')?.addEventListener('click', function() {
+                    const passwordInput = document.getElementById('inputPassword');
+                    const eyeIcon = document.getElementById('eyeIcon');
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        eyeIcon.classList.replace('bi-eye', 'bi-eye-slash');
+                    } else {
+                        passwordInput.type = 'password';
+                        eyeIcon.classList.replace('bi-eye-slash', 'bi-eye');
+                    }
+                });
+
+                // PROCESAMIENTO ASÍNCRONO DE AUTENTICACIÓN
+                const loginForm = document.getElementById('loginForm');
+                if (loginForm) {
+                    loginForm.addEventListener('submit', function(e) {
+                        if ($(loginForm).valid && !$(loginForm).valid()) {
+                            return;
+                        }
+
+                        e.preventDefault();
+
+                        const submitBtn = document.getElementById('submitBtn');
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verificando...';
+                        }
+
+                        const formData = new FormData(loginForm);
+
+                        fetch(loginForm.action || window.location.href, {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                            .then(response => {
+                                if (response.redirected) {
+                                    playSuccessAnimation(response.url);
+                                } else {
+                                    return response.text().then(html => {
+                                        if (submitBtn) {
+                                            submitBtn.disabled = false;
+                                            submitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión';
+                                        }
+                                        const parser = new DOMParser();
+                                        const doc = parser.parseFromString(html, 'text/html');
+                                        const newCard = doc.querySelector('.login-card');
+                                        if (newCard) {
+                                            document.querySelector('.login-card').innerHTML = newCard.innerHTML;
+                                        } else {
+                                            window.location.reload();
+                                        }
+                                    });
+                                }
+                            })
+                            .catch(err => {
+                                console.error("Error al iniciar sesión:", err);
+                                if (submitBtn) {
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión';
+                                }
+                                HTMLFormElement.prototype.submit.call(loginForm);
+                            });
+                    });
+                }
+            })();
+    </script>
+</body>
+</html>

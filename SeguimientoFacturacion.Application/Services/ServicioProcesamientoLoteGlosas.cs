@@ -268,8 +268,9 @@ public sealed class
             TotalGlosasAceptadasImportadas =
                 glosasNuevas.Count(
                     glosa =>
-                        glosa.Estado ==
-                        EstadoGlosa.Aceptada),
+                        glosa.Estado is
+                            EstadoGlosa.Aceptada or
+                            EstadoGlosa.EnNegociacion),
 
             TotalGlosasLevantadasImportadas =
                 glosasNuevas.Count(
@@ -594,8 +595,11 @@ public sealed class
                 case EstadoGlosa.Aceptada:
                 case EstadoGlosa.Levantada:
                 case EstadoGlosa.Conciliada:
+                case EstadoGlosa.EnNegociacion:
                     glosa.Resolver(
-                        registro.Estado,
+                        registro.Estado == EstadoGlosa.EnNegociacion
+                            ? EstadoGlosa.Aceptada
+                            : registro.Estado,
                         registro.FechaRespuesta!.Value,
                         registro.ValorAceptado);
                     break;

@@ -1,7 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Authorization
 @using SeguimientoFacturacion.Application.DTOs.Importacion
 @using SeguimientoFacturacion.Configurations
-@using SeguimientoFacturacion.Domain.Constants
 @using SeguimientoFacturacion.Domain.Enums
 @model SeguimientoFacturacion.ViewModels.Importacion.AnalisisImportacionViewModel
 @inject IAuthorizationService ServicioAutorizacion
@@ -11,67 +10,92 @@
     var resultado = Model.Resultado;
 }
 
-<div class="row justify-content-center">
-    <div class="col-12 col-xl-11">
-        <div class="mb-4">
-            <h1 class="h2 mb-2">
-                Importación masiva modular
-            </h1>
+<!-- Agregamos unos estilos rápidos específicos para esta vista basados en tu paleta -->
+<style>
+    .card-corporativa {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    .card-corporativa .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid var(--naranja);
+        padding: 1rem 1.5rem;
+    }
+    .btn-azul-rey {
+        background-color: var(--azul-rey);
+        color: var(--blanco);
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .btn-azul-rey:hover {
+        background-color: #082a61; /* Un azul un poco más oscuro */
+        color: var(--naranja);
+    }
+    .indicador-card {
+        border-bottom: 3px solid var(--azul-rey);
+        transition: transform 0.2s;
+    }
+    .indicador-card:hover {
+        transform: translateY(-3px);
+        border-bottom-color: var(--naranja);
+    }
+</style>
 
+<div class="row justify-content-center py-4">
+    <div class="col-12 col-xl-11">
+        
+        <!-- TÍTULO DE LA PÁGINA -->
+        <div class="mb-4 border-bottom pb-3">
+            <h1 class="h3 fw-bold" style="color: var(--azul-rey);">
+                <i class="bi bi-cloud-arrow-up me-2" style="color: var(--naranja);"></i>Importación masiva modular
+            </h1>
             <p class="text-secondary mb-0">
-                Seleccione el proceso y cargue la plantilla
-                correspondiente.
+                Seleccione el proceso y cargue la plantilla correspondiente para su validación.
             </p>
         </div>
 
-        <div class="alert alert-info" role="alert">
-            <strong>Etapa de análisis:</strong>
-            el archivo se valida y sus datos se almacenan
-            únicamente en staging. Todavía no se modifican
-            las tablas definitivas de facturación y cartera.
+        <div class="alert alert-info d-flex align-items-center shadow-sm border-0 rounded-3" role="alert">
+            <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
+            <div>
+                <strong class="d-block text-dark">Etapa de análisis:</strong>
+                <span class="text-secondary">El archivo se valida y sus datos se almacenan únicamente en staging. Todavía no se modifican las tablas definitivas de facturación y cartera.</span>
+            </div>
         </div>
 
         @if (TempData["ErrorImportacion"] is string error)
         {
-            <div class="alert alert-danger" role="alert">
-                @error
+            <div class="alert alert-danger shadow-sm border-0 rounded-3 d-flex align-items-center" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                <div>@error</div>
             </div>
         }
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white">
-                <h2 class="h5 mb-0">
-                    Seleccionar plantilla
+        <!-- FORMULARIO DE CARGA -->
+        <div class="card card-corporativa mb-5">
+            <div class="card-header">
+                <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i>Seleccionar plantilla
                 </h2>
             </div>
 
-            <div class="card-body">
+            <div class="card-body p-4">
                 <form asp-controller="Importacion"
                       asp-action="Analizar"
                       method="post"
                       enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
 
-                    <div asp-validation-summary="ModelOnly"
-                         class="alert alert-danger"
-                         role="alert">
-                    </div>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-                    <div class="row g-3">
+                    <div class="row g-4 align-items-end">
                         <div class="col-12 col-lg-5">
-                            <label asp-for="Tipo"
-                                   class="form-label">
-                            </label>
+                            <label asp-for="Tipo" class="form-label fw-semibold text-dark">Proceso a importar</label>
+                            <select asp-for="Tipo" id="tipoImportacion" class="form-select border-secondary-subtle">
+                                <option value="">Seleccione un proceso...</option>
 
-                            <select asp-for="Tipo"
-                                    id="tipoImportacion"
-                                    class="form-select">
-                                <option value="">
-                                    Seleccione un proceso
-                                </option>
-
-                                @if (Model.TiposPermitidos.Contains(
-                                    TipoImportacion.Facturas))
+                                @if (Model.TiposPermitidos.Contains(TipoImportacion.Facturas))
                                 {
                                     <option value="@((int)TipoImportacion.Facturas)"
                                             data-plantilla-url="@Url.Action("DescargarPlantilla", "Importacion", new { tipo = (int)TipoImportacion.Facturas })">
@@ -79,8 +103,7 @@
                                     </option>
                                 }
 
-                                @if (Model.TiposPermitidos.Contains(
-                                    TipoImportacion.NotasFactura))
+                                @if (Model.TiposPermitidos.Contains(TipoImportacion.NotasFactura))
                                 {
                                     <option value="@((int)TipoImportacion.NotasFactura)"
                                             data-plantilla-url="@Url.Action("DescargarPlantilla", "Importacion", new { tipo = (int)TipoImportacion.NotasFactura })">
@@ -88,8 +111,7 @@
                                     </option>
                                 }
 
-                                @if (Model.TiposPermitidos.Contains(
-                                    TipoImportacion.Glosas))
+                                @if (Model.TiposPermitidos.Contains(TipoImportacion.Glosas))
                                 {
                                     <option value="@((int)TipoImportacion.Glosas)"
                                             data-plantilla-url="@Url.Action("DescargarPlantilla", "Importacion", new { tipo = (int)TipoImportacion.Glosas })">
@@ -97,8 +119,7 @@
                                     </option>
                                 }
 
-                                @if (Model.TiposPermitidos.Contains(
-                                    TipoImportacion.Pagos))
+                                @if (Model.TiposPermitidos.Contains(TipoImportacion.Pagos))
                                 {
                                     <option value="@((int)TipoImportacion.Pagos)"
                                             data-plantilla-url="@Url.Action("DescargarPlantilla", "Importacion", new { tipo = (int)TipoImportacion.Pagos })">
@@ -106,66 +127,51 @@
                                     </option>
                                 }
                             </select>
-
-                            <span asp-validation-for="Tipo"
-                                  class="text-danger">
-                            </span>
+                            <span asp-validation-for="Tipo" class="text-danger small mt-1 d-block"></span>
                         </div>
 
                         <div class="col-12 col-lg-7">
-                            <label asp-for="Archivo"
-                                   class="form-label">
-                            </label>
-
+                            <label asp-for="Archivo" class="form-label fw-semibold text-dark">Archivo Excel (XLSX)</label>
                             <input asp-for="Archivo"
                                    type="file"
-                                   class="form-control"
+                                   class="form-control border-secondary-subtle"
                                    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
-
-                            <span asp-validation-for="Archivo"
-                                  class="text-danger">
-                            </span>
+                            <span asp-validation-for="Archivo" class="text-danger small mt-1 d-block"></span>
                         </div>
                     </div>
 
-                    <div class="form-text mt-3">
-                        Únicamente archivos XLSX. Tamaño
-                        máximo: @Model.TamanoMaximoMegabytes MB.
-                        El tipo seleccionado debe coincidir
-                        con la estructura de la plantilla.
+                    <div class="form-text mt-3 text-secondary">
+                        <i class="bi bi-shield-check me-1 text-success"></i> Únicamente archivos XLSX. Tamaño máximo: <strong>@Model.TamanoMaximoMegabytes MB</strong>. El tipo seleccionado debe coincidir con la estructura de la plantilla.
                     </div>
 
-                    <div class="mt-3 d-flex flex-wrap gap-2">
-                        <button type="submit"
-                                class="btn btn-primary">
-                            Registrar y analizar archivo
+                    <div class="mt-4 d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-azul-rey px-4">
+                            <i class="bi bi-search me-2"></i> Registrar y analizar archivo
                         </button>
 
                         <a id="descargarPlantilla"
-                           class="btn btn-outline-success disabled"
+                           class="btn btn-outline-secondary px-4 disabled"
                            href="#"
                            aria-disabled="true"
                            tabindex="-1">
-                            Descargar formato seleccionado
+                            <i class="bi bi-download me-2"></i> Descargar formato seleccionado
                         </a>
                     </div>
 
-                    <div class="form-text mt-2">
-                        La plantilla descargada incluye notas
-                        aclaratorias en sus encabezados y listas
-                        desplegables para los estados cerrados.
+                    <div class="form-text mt-3 small text-muted">
+                        * La plantilla descargada incluye notas aclaratorias en sus encabezados y listas desplegables para los estados cerrados.
                     </div>
                 </form>
             </div>
         </div>
 
+        <!-- SECCIÓN DE RESULTADOS -->
         @if (resultado is not null)
         {
             var puedeConfirmar =
                 (await ServicioAutorizacion.AuthorizeAsync(
                     User,
-                    PoliticasAutorizacion.ParaConfirmacion(
-                        resultado.Tipo)))
+                    PoliticasAutorizacion.ParaConfirmacion(resultado.Tipo)))
                 .Succeeded;
 
             var descripcionTipo = resultado.Tipo switch
@@ -177,66 +183,60 @@
                 _ => "importación"
             };
 
-            var claseResultado =
-                resultado.EsValido
-                    ? "alert-success"
-                    : "alert-danger";
+            var claseResultado = resultado.EsValido ? "alert-success" : "alert-danger";
+            var iconResultado = resultado.EsValido ? "bi-check-circle-fill" : "bi-x-octagon-fill";
+            var textoResultado = resultado.EsValido
+                ? "El archivo superó el análisis y su staging fue preparado exitosamente."
+                : "El archivo contiene errores que impiden confirmarlo.";
 
-            var textoResultado =
-                resultado.EsValido
-                    ? "El archivo superó el análisis y su staging fue preparado."
-                    : "El archivo contiene errores que impiden confirmarlo.";
-
-            <div class="alert @claseResultado"
-                 role="alert">
-                <strong>Resultado:</strong>
-                @textoResultado
+            <div class="alert @claseResultado shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+                <i class="bi @iconResultado fs-3 me-3"></i>
+                <div>
+                    <strong class="d-block">Resultado del Análisis:</strong>
+                    @textoResultado
+                </div>
             </div>
 
             @if (resultado.PuedeConfirmarse && puedeConfirmar)
             {
-                <div class="alert alert-warning"
-                     role="alert">
-                    <strong>Lote preparado:</strong>
-                    los datos todavía no han sido trasladados
-                    a las tablas definitivas. Revise los
-                    indicadores antes de confirmar.
+                <div class="alert alert-warning shadow-sm border-0 rounded-3 mb-4" role="alert">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+                        <div>
+                            <strong>Lote preparado pendiente de confirmación:</strong><br/>
+                            Los datos todavía no han sido trasladados a las tablas definitivas. Revise los indicadores antes de confirmar.
+                        </div>
+                    </div>
 
                     <form asp-controller="Importacion"
                           asp-action="ConfirmarLote"
                           method="post"
-                          class="mt-3"
-                          onsubmit="return confirm('¿Confirma que revisó el lote y desea autorizar su procesamiento?');">
+                          class="mt-3 text-end"
+                          onsubmit="return confirm('¿Confirma que revisó el lote y desea autorizar su procesamiento definitivo?');">
                         @Html.AntiForgeryToken()
 
-                        <input type="hidden"
-                               name="loteId"
-                               value="@resultado.LoteId" />
+                        <input type="hidden" name="loteId" value="@resultado.LoteId" />
+                        <input type="hidden" name="tipo" value="@((int)resultado.Tipo)" />
 
-                        <input type="hidden"
-                               name="tipo"
-                               value="@((int)resultado.Tipo)" />
-
-                        <button type="submit"
-                                class="btn btn-warning">
-                            Confirmar lote de @descripcionTipo
+                        <button type="submit" class="btn btn-warning fw-bold px-4">
+                            <i class="bi bi-check2-all me-2"></i> Confirmar lote de @descripcionTipo
                         </button>
                     </form>
                 </div>
             }
 
-            <div class="row g-3 mb-4">
-                @foreach (var indicador in
-                    resultado.Indicadores)
+            <!-- INDICADORES (TARJETAS) -->
+            <h3 class="h5 fw-bold mb-3 mt-4" style="color: var(--azul-rey);">Resumen de Operación</h3>
+            <div class="row g-3 mb-5">
+                @foreach (var indicador in resultado.Indicadores)
                 {
                     <div class="col-12 col-sm-6 col-lg-3">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <div class="text-secondary small">
+                        <div class="card h-100 card-corporativa indicador-card">
+                            <div class="card-body text-center py-4">
+                                <div class="text-secondary small fw-semibold text-uppercase mb-2">
                                     @indicador.Etiqueta
                                 </div>
-
-                                <div class="fs-4 fw-semibold">
+                                <div class="fs-3 fw-bold" style="color: var(--azul-rey);">
                                     @indicador.Valor
                                 </div>
                             </div>
@@ -245,194 +245,125 @@
                 }
             </div>
 
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white">
-                    <h2 class="h5 mb-0">
-                        Información del lote
+            <!-- INFORMACIÓN DEL LOTE -->
+            <div class="card card-corporativa mb-5">
+                <div class="card-header">
+                    <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                        <i class="bi bi-list-columns-reverse me-2"></i>Información detallada del lote
                     </h2>
                 </div>
 
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-4">
-                            Identificador del lote
-                        </dt>
-
-                        <dd class="col-sm-8">
-                            <code>@resultado.LoteId</code>
-                        </dd>
-
-                        <dt class="col-sm-4">
-                            Tipo
-                        </dt>
-
-                        <dd class="col-sm-8">
-                            @resultado.Tipo
-                        </dd>
-
-                        <dt class="col-sm-4">
-                            Estado
-                        </dt>
-
-                        <dd class="col-sm-8">
-                            @resultado.EstadoLote
-                        </dd>
-
-                        <dt class="col-sm-4">
-                            Archivo
-                        </dt>
-
-                        <dd class="col-sm-8">
-                            @resultado.NombreArchivo
-                        </dd>
-
-                        <dt class="col-sm-4">
-                            Hojas
-                        </dt>
-
-                        <dd class="col-sm-8">
-                            @if (resultado.HojasDetectadas.Count > 0)
-                            {
-                                @string.Join(
-                                    ", ",
-                                    resultado.HojasDetectadas)
-                            }
-                            else
-                            {
-                                <span>No detectadas</span>
-                            }
-                        </dd>
-
-                        <dt class="col-sm-4">
-                            Filas analizadas
-                        </dt>
-
-                        <dd class="col-sm-8">
-                            @resultado.TotalFilasAnalizadas.ToString("N0")
-                        </dd>
-
-                        <dt class="col-sm-4">
-                            Errores
-                        </dt>
-
-                        <dd class="col-sm-8">
-                            @resultado.TotalErrores.ToString("N0")
-                        </dd>
-
-                        <dt class="col-sm-4">
-                            Advertencias
-                        </dt>
-
-                        <dd class="col-sm-8">
-                            @resultado.TotalAdvertencias.ToString("N0")
-                        </dd>
-
-                        <dt class="col-sm-4">
-                            Catálogos sin mapear
-                        </dt>
-
-                        <dd class="col-sm-8">
-                            @resultado.CatalogosNoMapeados.ToString("N0")
-                        </dd>
-                    </dl>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-striped mb-0">
+                            <tbody>
+                                <tr>
+                                    <th class="ps-4 w-25 text-secondary">Identificador del lote</th>
+                                    <td><code class="bg-light px-2 py-1 rounded text-dark border">@resultado.LoteId</code></td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-4 text-secondary">Tipo</th>
+                                    <td class="fw-medium">@resultado.Tipo</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-4 text-secondary">Estado</th>
+                                    <td><span class="badge bg-secondary">@resultado.EstadoLote</span></td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-4 text-secondary">Archivo original</th>
+                                    <td><i class="bi bi-file-excel text-success me-1"></i> @resultado.NombreArchivo</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-4 text-secondary">Hojas detectadas</th>
+                                    <td>
+                                        @if (resultado.HojasDetectadas.Count > 0)
+                                        {
+                                            @string.Join(", ", resultado.HojasDetectadas)
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">No detectadas</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-4 text-secondary">Filas analizadas</th>
+                                    <td class="fw-bold">@resultado.TotalFilasAnalizadas.ToString("N0")</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-4 text-secondary">Errores</th>
+                                    <td class="text-danger fw-bold">@resultado.TotalErrores.ToString("N0")</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-4 text-secondary">Advertencias</th>
+                                    <td class="text-warning fw-bold">@resultado.TotalAdvertencias.ToString("N0")</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-4 text-secondary">Catálogos sin mapear</th>
+                                    <td>@resultado.CatalogosNoMapeados.ToString("N0")</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h2 class="h5 mb-0">
-                        Inconsistencias encontradas
+            <!-- TABLA DE INCONSISTENCIAS -->
+            <div class="card card-corporativa shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                        <i class="bi bi-bug me-2"></i>Inconsistencias encontradas
                     </h2>
+                    <span class="badge bg-danger rounded-pill">@resultado.Inconsistencias.Count</span>
                 </div>
 
                 <div class="card-body p-0">
                     @if (resultado.Inconsistencias.Count == 0)
                     {
-                        <div class="p-4 text-center text-success">
-                            No se encontraron inconsistencias.
+                        <div class="p-5 text-center">
+                            <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                            <p class="mt-3 text-success fw-medium fs-5">No se encontraron inconsistencias. El archivo está limpio.</p>
                         </div>
                     }
                     else
                     {
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead style="background-color: #f1f5f9;">
                                     <tr>
-                                        <th scope="col">
-                                            Severidad
-                                        </th>
-                                        <th scope="col">
-                                            Código
-                                        </th>
-                                        <th scope="col">
-                                            Fila
-                                        </th>
-                                        <th scope="col">
-                                            Columna
-                                        </th>
-                                        <th scope="col">
-                                            Valor presentado
-                                        </th>
-                                        <th scope="col">
-                                            Mensaje
-                                        </th>
+                                        <th scope="col" class="ps-4">Severidad</th>
+                                        <th scope="col">Código</th>
+                                        <th scope="col">Fila</th>
+                                        <th scope="col">Columna</th>
+                                        <th scope="col">Valor presentado</th>
+                                        <th scope="col">Mensaje / Detalle</th>
                                     </tr>
                                 </thead>
-
                                 <tbody>
-                                    @foreach (var inconsistencia in
-                                        resultado.Inconsistencias
-                                            .OrderByDescending(
-                                                elemento =>
-                                                    elemento.Severidad)
-                                            .ThenBy(
-                                                elemento =>
-                                                    elemento.Fila))
+                                    @foreach (var inconsistencia in resultado.Inconsistencias
+                                        .OrderByDescending(e => e.Severidad)
+                                        .ThenBy(e => e.Fila))
                                     {
-                                        var esError =
-                                            inconsistencia.Severidad ==
-                                            SeveridadInconsistenciaImportacion
-                                                .Error;
-
-                                        var claseSeveridad =
-                                            esError
-                                                ? "text-bg-danger"
-                                                : "text-bg-warning";
-
-                                        var textoSeveridad =
-                                            esError
-                                                ? "Error"
-                                                : "Advertencia";
+                                        var esError = inconsistencia.Severidad == SeveridadInconsistenciaImportacion.Error;
+                                        var claseSeveridad = esError ? "bg-danger" : "bg-warning text-dark";
+                                        var textoSeveridad = esError ? "Error" : "Advertencia";
 
                                         <tr>
-                                            <td>
-                                                <span class="badge @claseSeveridad">
-                                                    @textoSeveridad
-                                                </span>
+                                            <td class="ps-4">
+                                                <span class="badge @claseSeveridad">@textoSeveridad</span>
                                             </td>
-
                                             <td>
-                                                <code>
-                                                    @inconsistencia.Codigo
-                                                </code>
+                                                <code class="text-dark bg-light px-2 py-1 rounded border">@inconsistencia.Codigo</code>
                                             </td>
-
                                             <td>
-                                                @(inconsistencia.Fila
-                                                    ?.ToString() ?? "—")
+                                                <span class="fw-medium">@(inconsistencia.Fila?.ToString() ?? "—")</span>
                                             </td>
-
                                             <td>
-                                                @(inconsistencia.Columna
-                                                    ?? "—")
+                                                @(inconsistencia.Columna ?? "—")
                                             </td>
-
                                             <td>
-                                                @(inconsistencia
-                                                    .ValorPresentado
-                                                    ?? "—")
+                                                <span class="text-muted">@(inconsistencia.ValorPresentado ?? "—")</span>
                                             </td>
-
                                             <td>
                                                 @inconsistencia.Mensaje
                                             </td>
@@ -452,35 +383,27 @@
 {
     <script>
         (() => {
-            const selector = document.getElementById(
-                "tipoImportacion");
-            const enlace = document.getElementById(
-                "descargarPlantilla");
+            const selector = document.getElementById("tipoImportacion");
+            const enlace = document.getElementById("descargarPlantilla");
 
             if (!selector || !enlace) {
                 return;
             }
 
             const actualizarEnlace = () => {
-                const opcion =
-                    selector.options[selector.selectedIndex];
+                const opcion = selector.options[selector.selectedIndex];
                 const url = opcion?.dataset.plantillaUrl;
                 const habilitado = Boolean(url);
 
                 enlace.href = habilitado ? url : "#";
-                enlace.classList.toggle(
-                    "disabled",
-                    !habilitado);
-                enlace.setAttribute(
-                    "aria-disabled",
-                    String(!habilitado));
+                enlace.classList.toggle("disabled", !habilitado);
+                enlace.classList.toggle("btn-outline-secondary", !habilitado);
+                enlace.classList.toggle("btn-success", habilitado); // Se pone verde cuando está activo
+                enlace.setAttribute("aria-disabled", String(!habilitado));
                 enlace.tabIndex = habilitado ? 0 : -1;
             };
 
-            selector.addEventListener(
-                "change",
-                actualizarEnlace);
-
+            selector.addEventListener("change", actualizarEnlace);
             actualizarEnlace();
         })();
     </script>

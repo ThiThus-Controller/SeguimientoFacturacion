@@ -1,0 +1,88 @@
+@model SeguimientoFacturacion.ViewModels.Glosas.GlosaResolucionViewModel
+
+@{
+    ViewData["Title"] = "Conciliar glosa";
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">Conciliar glosa</h1>
+    <p class="text-muted mb-0">
+        Factura @Model.FacturaId · Estado actual: @Model.EstadoActual
+    </p>
+</div>
+
+<div class="alert alert-warning" role="alert">
+    La glosa quedará conciliada. Indique el valor aceptado acordado y
+    documente el resultado. La diferencia entre el valor glosado y el
+    aceptado quedará reconocida a favor de la institución y podrá pagarse.
+</div>
+
+<form asp-action="Conciliar"
+      asp-route-glosaId="@Model.Id"
+      method="post"
+      class="card">
+    <input asp-for="Id" type="hidden" />
+    <input asp-for="FacturaId" type="hidden" />
+    <input asp-for="EstadoFinal" type="hidden" />
+    <input asp-for="VersionFilaBase64" type="hidden" />
+
+    <div class="card-body">
+        <div asp-validation-summary="All"
+             class="alert alert-danger"
+             role="alert"></div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Fecha de glosa</label>
+                <input value="@Model.FechaGlosa.ToString("yyyy-MM-dd")"
+                       class="form-control"
+                       readonly />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Valor glosado</label>
+                <input value="@Model.ValorGlosa.ToString("N2")"
+                       class="form-control"
+                       readonly />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="FechaRespuesta" class="form-label"></label>
+                <input asp-for="FechaRespuesta" class="form-control" />
+                <span asp-validation-for="FechaRespuesta"
+                      class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="ValorAceptado" class="form-label"></label>
+                <input asp-for="ValorAceptado"
+                       class="form-control"
+                       inputmode="decimal"
+                       step="0.01" />
+                <span asp-validation-for="ValorAceptado"
+                      class="text-danger"></span>
+            </div>
+        </div>
+
+        <div>
+            <label asp-for="Observacion" class="form-label"></label>
+            <textarea asp-for="Observacion"
+                      class="form-control"
+                      rows="4"></textarea>
+            <span asp-validation-for="Observacion"
+                  class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a asp-action="Index"
+           asp-route-facturaId="@Model.FacturaId"
+           class="btn btn-outline-secondary">
+            Cancelar
+        </a>
+        <button type="submit" class="btn btn-success">
+            Confirmar conciliación
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -211,7 +211,7 @@ public sealed class
                 repositorioDefinitivo.Agregadas);
 
         Assert.Equal(
-            EstadoGlosa.Aceptada,
+            EstadoGlosa.EnNegociacion,
             glosa.Estado);
 
         Assert.Equal(60000m, glosa.ValorAceptado);

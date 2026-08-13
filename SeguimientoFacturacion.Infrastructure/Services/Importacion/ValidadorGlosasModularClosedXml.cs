@@ -465,6 +465,8 @@ public sealed class
             "3" or "ACEPTADA" => EstadoGlosa.Aceptada,
             "4" or "LEVANTADA" => EstadoGlosa.Levantada,
             "5" or "CONCILIADA" => EstadoGlosa.Conciliada,
+            "7" or "EN NEGOCIACION" =>
+                EstadoGlosa.EnNegociacion,
             _ => (EstadoGlosa?)null
         };
 
@@ -476,7 +478,8 @@ public sealed class
                 "ESTADO GLOSA",
                 "ESTADO_GLOSA_INVALIDO",
                 "El estado debe ser ABIERTA, RESPONDIDA, " +
-                "ACEPTADA, LEVANTADA o CONCILIADA.",
+                "ACEPTADA, LEVANTADA, CONCILIADA o " +
+                "EN NEGOCIACION.",
                 SanitizadorValorPresentadoImportacion
                     .Sanitizar(texto));
         }
@@ -561,7 +564,8 @@ public sealed class
                 "de respuesta.");
         }
 
-        if (estado.Value == EstadoGlosa.Aceptada &&
+        if ((estado.Value is EstadoGlosa.Aceptada or
+                EstadoGlosa.EnNegociacion) &&
             !valorAceptadoInformado)
         {
             AgregarError(
@@ -569,7 +573,8 @@ public sealed class
                 fila,
                 "VALOR ACEPTADO",
                 "VALOR_ACEPTADO_REQUERIDO",
-                "Una glosa aceptada debe informar el valor " +
+                "Una glosa aceptada o en negociación debe " +
+                "informar el valor " +
                 "aceptado.");
 
             return;
@@ -603,6 +608,20 @@ public sealed class
                 "VALOR_ACEPTADO_NO_POSITIVO",
                 "Una glosa aceptada debe tener un valor " +
                 "aceptado mayor que cero.");
+        }
+
+        if (estado.Value == EstadoGlosa.EnNegociacion &&
+            valorGlosa.HasValue &&
+            (valorAceptado.Value <= decimal.Zero ||
+             valorAceptado.Value >= valorGlosa.Value))
+        {
+            AgregarError(
+                inconsistencias,
+                fila,
+                "VALOR ACEPTADO",
+                "VALOR_ACEPTADO_NEGOCIACION_INVALIDO",
+                "Una glosa en negociación debe tener valor " +
+                "aceptado mayor que cero y menor al valor glosado.");
         }
 
         if ((estado.Value is

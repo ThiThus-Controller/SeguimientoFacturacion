@@ -93,11 +93,13 @@ public sealed class GlosaImportacionTemporal :
                 FechaGlosa,
                 fechaRespuesta);
 
-        Estado =
+        Estado = NormalizarEstado(
             estado ??
             (FechaRespuesta.HasValue
                 ? EstadoGlosa.Respondida
-                : EstadoGlosa.Abierta);
+                : EstadoGlosa.Abierta),
+            valorAceptado,
+            ValorGlosa);
 
         ValorAceptado =
             ValidarResolucion(
@@ -349,11 +351,21 @@ public sealed class GlosaImportacionTemporal :
         }
 
         if (estado == EstadoGlosa.Aceptada &&
-            valorAceptado <= decimal.Zero)
+            valorAceptado != valorGlosa)
         {
             throw new ArgumentException(
-                "Una glosa aceptada debe tener un valor " +
-                "aceptado mayor que cero.",
+                "Una glosa aceptada de forma definitiva debe " +
+                "tener aceptado todo el valor glosado.",
+                nameof(valorAceptado));
+        }
+
+        if (estado == EstadoGlosa.EnNegociacion &&
+            (valorAceptado <= decimal.Zero ||
+             valorAceptado >= valorGlosa))
+        {
+            throw new ArgumentException(
+                "Una glosa en negociación debe tener un valor " +
+                "aceptado mayor que cero y menor al valor glosado.",
                 nameof(valorAceptado));
         }
 
@@ -369,6 +381,18 @@ public sealed class GlosaImportacionTemporal :
         }
 
         return valorAceptado;
+    }
+
+    private static EstadoGlosa NormalizarEstado(
+        EstadoGlosa estado,
+        decimal valorAceptado,
+        decimal valorGlosa)
+    {
+        return estado == EstadoGlosa.Aceptada &&
+            valorAceptado > decimal.Zero &&
+            valorAceptado < valorGlosa
+                ? EstadoGlosa.EnNegociacion
+                : estado;
     }
 
     private static void ValidarCorrespondenciaFactura(

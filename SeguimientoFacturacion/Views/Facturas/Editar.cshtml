@@ -11,122 +11,219 @@
         PoliticasAutorizacion.FacturasAnular)).Succeeded;
 }
 
-<div class="mb-4">
-    <h1 class="h3 mb-1">Editar factura @Model.Id</h1>
-    <p class="text-muted mb-0">
-        Solo están habilitados los datos operativos autorizados.
-    </p>
-</div>
+<!-- Estilos corporativos específicos de la vista -->
+<style>
+    .card-corporativa {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
 
-@if (ViewData["MensajeExito"] is string mensajeExito)
-{
-    <div class="alert alert-success" role="alert">@mensajeExito</div>
-}
-
-@if (ViewData["MensajeError"] is string mensajeError)
-{
-    <div class="alert alert-warning" role="alert">@mensajeError</div>
-}
-
-<div class="alert alert-info">
-    Aseguradora, valor, estado e identificación permanecen bloqueados
-    en esta operación.
-</div>
-
-<form asp-action="Editar"
-      asp-route-facturaId="@Model.Id"
-      method="post"
-      class="card">
-    <input asp-for="VersionFilaBase64" type="hidden" />
-
-    <div class="card-body">
-        <div asp-validation-summary="All"
-             class="alert alert-danger"
-             role="alert"></div>
-
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <label class="form-label">Paciente</label>
-                <input value="@Model.Paciente"
-                       class="form-control"
-                       readonly />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Identificación</label>
-                <input value="@Model.Identificacion"
-                       class="form-control"
-                       readonly />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Fecha de factura</label>
-                <input value="@Model.FechaFactura.ToString("yyyy-MM-dd")"
-                       class="form-control"
-                       readonly />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Valor</label>
-                <input value="@Model.Valor.ToString("N2")"
-                       class="form-control"
-                       readonly />
-            </div>
-        </div>
-
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label asp-for="FechaRadicacion" class="form-label"></label>
-                <input asp-for="FechaRadicacion" class="form-control" />
-                <span asp-validation-for="FechaRadicacion" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="AtencionId" class="form-label"></label>
-                <select asp-for="AtencionId"
-                        class="form-select"
-                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Atenciones, "Id", "Nombre"))">
-                </select>
-                <span asp-validation-for="AtencionId" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="CostoId" class="form-label"></label>
-                <select asp-for="CostoId"
-                        class="form-select"
-                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Costos, "Id", "Nombre"))">
-                </select>
-                <span asp-validation-for="CostoId" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="NumeroAdmision" class="form-label"></label>
-                <input asp-for="NumeroAdmision" class="form-control" />
-                <span asp-validation-for="NumeroAdmision" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="FechaAdmision" class="form-label"></label>
-                <input asp-for="FechaAdmision" class="form-control" />
-                <span asp-validation-for="FechaAdmision" class="text-danger"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="FacturadorId" class="form-label"></label>
-                <select asp-for="FacturadorId"
-                        class="form-select"
-                        asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Facturadores, "Id", "Nombre"))">
-                </select>
-                <span asp-validation-for="FacturadorId" class="text-danger"></span>
-            </div>
-        </div>
-    </div>
-
-    <div class="card-footer d-flex justify-content-end gap-2">
-        <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
-        @if (puedeAnular)
-        {
-            <a asp-action="Anular"
-               asp-route-facturaId="@Model.Id"
-               class="btn btn-outline-danger">
-                Anular factura
-            </a>
+        .card-corporativa .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--azul-rey);
+            padding: 1rem 1.5rem;
         }
-        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+
+        .card-corporativa .card-footer {
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            padding: 1.25rem 1.5rem;
+        }
+
+    .seccion-titulo {
+        color: var(--azul-rey);
+        font-weight: 700;
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+        .seccion-titulo:first-of-type {
+            margin-top: 0;
+        }
+
+    .btn-naranja {
+        background-color: var(--naranja);
+        color: var(--blanco);
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+        .btn-naranja:hover {
+            background-color: #e66d00;
+            color: var(--blanco);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(255, 121, 0, 0.3);
+        }
+
+    .input-readonly-custom {
+        background-color: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+        color: #334155 !important;
+        font-weight: 600;
+    }
+</style>
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-xl-10">
+
+        <!-- CABECERA DE LA PÁGINA -->
+        <div class="mb-4 border-bottom pb-3">
+            <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                <i class="bi bi-pencil-square me-2 text-secondary opacity-75"></i>Editar factura @Model.Id
+            </h1>
+            <p class="text-secondary mb-0">
+                Solo están habilitados los datos operativos autorizados.
+            </p>
+        </div>
+
+        <!-- ALERTAS DE ESTADO -->
+        @if (ViewData["MensajeExito"] is string mensajeExito)
+        {
+            <div class="alert alert-success shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
+                <div class="fw-medium">@mensajeExito</div>
+            </div>
+        }
+
+        @if (ViewData["MensajeError"] is string mensajeError)
+        {
+            <div class="alert alert-warning shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+                <div class="fw-medium">@mensajeError</div>
+            </div>
+        }
+
+        <!-- INFORMACIÓN SOBRE CAMPOS BLOQUEADOS -->
+        <div class="alert alert-info shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-lock-fill fs-4 me-3 text-info"></i>
+            <div>
+                <strong class="d-block text-dark mb-0">Información protegida:</strong>
+                <span class="text-secondary">Aseguradora, valor, estado e identificación permanecen bloqueados en esta operación.</span>
+            </div>
+        </div>
+
+        <!-- FORMULARIO DE EDICIÓN -->
+        <form asp-action="Editar"
+              asp-route-facturaId="@Model.Id"
+              method="post"
+              class="card card-corporativa mb-5">
+
+            <input asp-for="VersionFilaBase64" type="hidden" />
+
+            <div class="card-body p-4 pt-4">
+
+                <div asp-validation-summary="All" class="alert alert-danger shadow-sm border-0 rounded-3 mb-4" role="alert"></div>
+
+                <!-- SECCIÓN 1: DATOS PROTEGIDOS (SOLO LECTURA) -->
+                <h2 class="h5 seccion-titulo">
+                    <i class="bi bi-shield-lock me-2" style="color: var(--azul-rey);"></i>Datos Principales (Protegidos)
+                </h2>
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-dark">Paciente</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-person text-muted"></i></span>
+                            <input value="@Model.Paciente" class="form-control input-readonly-custom" readonly />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-dark">Identificación</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-card-text text-muted"></i></span>
+                            <input value="@Model.Identificacion" class="form-control input-readonly-custom" readonly />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-dark">Fecha de factura</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-calendar3 text-muted"></i></span>
+                            <input value="@Model.FechaFactura.ToString("yyyy-MM-dd")" class="form-control input-readonly-custom" readonly />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-dark">Valor</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-secondary-subtle">$</span>
+                            <input value="@Model.Valor.ToString("N2")" class="form-control input-readonly-custom fw-bold" readonly />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 2: CAMPOS EDITABLES -->
+                <h2 class="h5 seccion-titulo">
+                    <i class="bi bi-sliders me-2" style="color: var(--naranja);"></i>Datos Operativos Editables
+                </h2>
+                <div class="row g-4 mb-2">
+                    <div class="col-md-4">
+                        <label asp-for="FechaRadicacion" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="FechaRadicacion" class="form-control border-secondary-subtle" />
+                        <span asp-validation-for="FechaRadicacion" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="AtencionId" class="form-label fw-semibold text-dark"></label>
+                        <select asp-for="AtencionId"
+                                class="form-select border-secondary-subtle"
+                                asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Atenciones, "Id", "Nombre"))">
+                        </select>
+                        <span asp-validation-for="AtencionId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="CostoId" class="form-label fw-semibold text-dark"></label>
+                        <select asp-for="CostoId"
+                                class="form-select border-secondary-subtle"
+                                asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Costos, "Id", "Nombre"))">
+                        </select>
+                        <span asp-validation-for="CostoId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="NumeroAdmision" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="NumeroAdmision" class="form-control border-secondary-subtle" />
+                        <span asp-validation-for="NumeroAdmision" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="FechaAdmision" class="form-label fw-semibold text-dark"></label>
+                        <input asp-for="FechaAdmision" class="form-control border-secondary-subtle" />
+                        <span asp-validation-for="FechaAdmision" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="FacturadorId" class="form-label fw-semibold text-dark"></label>
+                        <select asp-for="FacturadorId"
+                                class="form-select border-secondary-subtle"
+                                asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Catalogos.Facturadores, "Id", "Nombre"))">
+                        </select>
+                        <span asp-validation-for="FacturadorId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTONERA DE ACCIONES -->
+            <div class="card-footer d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+                <a asp-action="Index" class="btn btn-outline-secondary px-4 w-100 w-sm-auto">
+                    <i class="bi bi-arrow-left me-1"></i> Volver
+                </a>
+
+                <div class="d-flex gap-2 w-100 w-sm-auto justify-content-end">
+                    @if (puedeAnular)
+                    {
+                        <a asp-action="Anular"
+                           asp-route-facturaId="@Model.Id"
+                           class="btn btn-outline-danger px-4">
+                            <i class="bi bi-trash3 me-1"></i> Anular factura
+                        </a>
+                    }
+                    <button type="submit" class="btn btn-naranja px-4 shadow-sm">
+                        <i class="bi bi-floppy me-1"></i> Guardar cambios
+                    </button>
+                </div>
+            </div>
+        </form>
+
     </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

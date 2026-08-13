@@ -49,7 +49,7 @@ internal sealed class
 
                 tableBuilder.HasCheckConstraint(
                     "CK_GlosasTemporales_Estado",
-                    "[Estado] IN (1, 2, 3, 4, 5)");
+                    "[Estado] IN (1, 2, 3, 4, 5, 7)");
 
                 tableBuilder.HasCheckConstraint(
                     "CK_GlosasTemporales_ValorAceptado",
@@ -66,12 +66,16 @@ internal sealed class
                     "[ValorAceptado] = 0) OR " +
                     "([Estado] = 3 AND " +
                     "[FechaRespuesta] IS NOT NULL AND " +
-                    "[ValorAceptado] > 0) OR " +
+                    "[ValorAceptado] = [ValorGlosa]) OR " +
                     "([Estado] = 4 AND " +
                     "[FechaRespuesta] IS NOT NULL AND " +
                     "[ValorAceptado] = 0) OR " +
                     "([Estado] = 5 AND " +
-                    "[FechaRespuesta] IS NOT NULL)");
+                    "[FechaRespuesta] IS NOT NULL) OR " +
+                    "([Estado] = 7 AND " +
+                    "[FechaRespuesta] IS NOT NULL AND " +
+                    "[ValorAceptado] > 0 AND " +
+                    "[ValorAceptado] < [ValorGlosa])");
             });
 
         builder.HasKey(

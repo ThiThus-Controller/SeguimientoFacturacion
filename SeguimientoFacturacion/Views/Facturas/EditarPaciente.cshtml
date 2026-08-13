@@ -4,56 +4,127 @@
     ViewData["Title"] = "Corregir paciente";
 }
 
-<div class="mb-4">
-    <h1 class="h3 mb-1">Corregir nombre del paciente</h1>
-    <p class="text-muted mb-0">
-        El nuevo nombre se propagará a todas las facturas de esta identificación.
-    </p>
-</div>
+<!-- Estilos corporativos específicos de la vista -->
+<style>
+    .card-corporativa {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
 
-@if (ViewData["MensajeError"] is string mensajeError)
-{
-    <div class="alert alert-warning" role="alert">@mensajeError</div>
-}
+        .card-corporativa .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--azul-rey);
+            padding: 1rem 1.5rem;
+        }
 
-<div class="alert alert-warning">
-    Esta operación es global para el paciente y quedará registrada
-    en la auditoría de cada factura afectada.
-</div>
+        .card-corporativa .card-footer {
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            padding: 1.25rem 1.5rem;
+        }
 
-<form asp-action="EditarPaciente" method="post" class="card">
-    <input asp-for="TipoDocumentoId" type="hidden" />
-    <input asp-for="NumeroDocumento" type="hidden" />
-    <input asp-for="VersionFilaBase64" type="hidden" />
+    .btn-naranja {
+        background-color: var(--naranja);
+        color: var(--blanco);
+        font-weight: 600;
+        transition: all 0.2s;
+    }
 
-    <div class="card-body">
-        <div asp-validation-summary="All"
-             class="alert alert-danger"
-             role="alert"></div>
+        .btn-naranja:hover {
+            background-color: #e66d00;
+            color: var(--blanco);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(255, 121, 0, 0.3);
+        }
 
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Identificación</label>
-                <input value="@Model.NumeroDocumento"
-                       class="form-control"
-                       readonly />
+    .input-readonly-custom {
+        background-color: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+        color: #334155 !important;
+        font-weight: 600;
+    }
+</style>
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-md-10 col-lg-8">
+
+        <!-- CABECERA DE LA PÁGINA -->
+        <div class="mb-4 border-bottom pb-3">
+            <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                <i class="bi bi-person-gear me-2 text-secondary opacity-75"></i>Corregir nombre del paciente
+            </h1>
+            <p class="text-secondary mb-0">
+                El nuevo nombre se propagará a todas las facturas de esta identificación.
+            </p>
+        </div>
+
+        <!-- ALERTAS DE ESTADO Y AUDITORÍA -->
+        @if (ViewData["MensajeError"] is string mensajeError)
+        {
+            <div class="alert alert-warning shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+                <div class="fw-medium">@mensajeError</div>
             </div>
-            <div class="col-md-8">
-                <label asp-for="NombreCompleto" class="form-label"></label>
-                <input asp-for="NombreCompleto" class="form-control" />
-                <span asp-validation-for="NombreCompleto"
-                      class="text-danger"></span>
+        }
+
+        <div class="alert alert-warning shadow-sm border-0 rounded-3 d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-info-circle-fill fs-4 me-3 text-warning"></i>
+            <div>
+                <strong class="d-block text-dark mb-0">Operación de alcance global:</strong>
+                <span class="text-dark opacity-75">Esta operación es global para el paciente y quedará registrada en la auditoría de cada factura afectada.</span>
             </div>
         </div>
-    </div>
 
-    <div class="card-footer d-flex justify-content-end gap-2">
-        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
-        <button type="submit" class="btn btn-primary">
-            Actualizar en todas las facturas
-        </button>
+        <!-- FORMULARIO DE ACTUALIZACIÓN -->
+        <form asp-action="EditarPaciente" method="post" class="card card-corporativa mb-5">
+            <input asp-for="TipoDocumentoId" type="hidden" />
+            <input asp-for="NumeroDocumento" type="hidden" />
+            <input asp-for="VersionFilaBase64" type="hidden" />
+
+            <div class="card-header">
+                <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-person-vcard me-2 text-secondary"></i>Datos de actualización
+                </h2>
+            </div>
+
+            <div class="card-body p-4">
+                <div asp-validation-summary="All" class="alert alert-danger shadow-sm border-0 rounded-3 mb-4" role="alert"></div>
+
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-dark">Identificación</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-card-text text-muted"></i></span>
+                            <input value="@Model.NumeroDocumento" class="form-control input-readonly-custom" readonly />
+                        </div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <label asp-for="NombreCompleto" class="form-label fw-semibold text-dark"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-secondary-subtle"><i class="bi bi-person text-muted"></i></span>
+                            <input asp-for="NombreCompleto" class="form-control border-secondary-subtle" placeholder="Apellidos y nombres completos" />
+                        </div>
+                        <span asp-validation-for="NombreCompleto" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTONERA DE ACCIÓN -->
+            <div class="card-footer d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+                <a asp-action="Index" class="btn btn-outline-secondary px-4 w-100 w-sm-auto">
+                    <i class="bi bi-x-circle me-1"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-naranja px-4 shadow-sm w-100 w-sm-auto">
+                    <i class="bi bi-arrow-repeat me-1"></i> Actualizar en todas las facturas
+                </button>
+            </div>
+        </form>
+
     </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
