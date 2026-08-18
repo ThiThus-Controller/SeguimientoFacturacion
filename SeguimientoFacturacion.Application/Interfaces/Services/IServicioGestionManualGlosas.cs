@@ -16,6 +16,11 @@ public interface IServicioGestionManualGlosas
         Guid glosaId,
         CancellationToken cancellationToken = default);
 
+    Task<GlosaGestionManualDto> CrearAsync(
+        SolicitudCreacionGlosaManualDto solicitud,
+        string actor,
+        CancellationToken cancellationToken = default);
+
     Task<GlosaGestionManualDto> RegistrarRespuestaAsync(
         Guid glosaId,
         SolicitudRegistroRespuestaGlosaDto solicitud,

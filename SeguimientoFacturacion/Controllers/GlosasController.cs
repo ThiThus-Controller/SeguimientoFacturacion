@@ -75,6 +75,90 @@ public sealed class GlosasController : Controller
         }
     }
 
+    [Authorize(Policy = PoliticasAutorizacion.GlosasCrear)]
+    [HttpGet("factura/{facturaId}/crear")]
+    public async Task<IActionResult> Crear(
+        string facturaId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(facturaId))
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            await _servicio.ObtenerPorFacturaAsync(
+                facturaId,
+                cancellationToken);
+
+            return View(
+                new GlosaCreacionViewModel
+                {
+                    FacturaId = facturaId.Trim().ToUpperInvariant(),
+                    FechaGlosa = DateOnly.FromDateTime(DateTime.Today)
+                });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.GlosasCrear)]
+    [HttpPost("factura/{facturaId}/crear")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Crear(
+        string facturaId,
+        GlosaCreacionViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (string.IsNullOrWhiteSpace(facturaId))
+        {
+            return BadRequest();
+        }
+
+        model.FacturaId = facturaId.Trim().ToUpperInvariant();
+        ModelState.Remove(nameof(model.FacturaId));
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            var identidad = _contextoUsuarioActual.ObtenerRequerido();
+            var resultado = await _servicio.CrearAsync(
+                new SolicitudCreacionGlosaManualDto
+                {
+                    FacturaId = model.FacturaId,
+                    FechaGlosa = model.FechaGlosa,
+                    ValorGlosa = model.ValorGlosa,
+                    Observacion = model.Observacion
+                },
+                identidad.NombreUsuario,
+                cancellationToken);
+
+            TempData[MensajeExito] =
+                "La glosa fue creada correctamente.";
+
+            return RedirigirAListado(resultado.FacturaId);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception excepcion) when (
+            ManejarExcepcionOperacion(excepcion))
+        {
+        }
+
+        return View(model);
+    }
+
     [Authorize(Policy = PoliticasAutorizacion.GlosasResponder)]
     [HttpGet("{glosaId:guid}/responder")]
     public async Task<IActionResult> Responder(

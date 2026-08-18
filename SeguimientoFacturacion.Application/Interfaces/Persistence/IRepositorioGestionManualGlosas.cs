@@ -19,6 +19,16 @@ public interface IRepositorioGestionManualGlosas
         Guid glosaId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> ExisteAsync(
+        string facturaId,
+        DateOnly fechaGlosa,
+        decimal valorGlosa,
+        CancellationToken cancellationToken = default);
+
+    Task AgregarAsync(
+        Glosa glosa,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlySet<Guid>>
         ObtenerIdsConNotasCreditoVigentesAsync(
             IReadOnlyCollection<Guid> glosaIds,

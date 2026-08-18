@@ -32,6 +32,14 @@ public sealed class GlosasControllerAutorizacionTests
         true,
         PoliticasAutorizacion.GlosasConsultar)]
     [InlineData(
+        nameof(GlosasController.Crear),
+        true,
+        PoliticasAutorizacion.GlosasCrear)]
+    [InlineData(
+        nameof(GlosasController.Crear),
+        false,
+        PoliticasAutorizacion.GlosasCrear)]
+    [InlineData(
         nameof(GlosasController.Responder),
         true,
         PoliticasAutorizacion.GlosasResponder)]
@@ -76,6 +84,7 @@ public sealed class GlosasControllerAutorizacionTests
     }
 
     [Theory]
+    [InlineData(nameof(GlosasController.Crear))]
     [InlineData(nameof(GlosasController.Responder))]
     [InlineData(nameof(GlosasController.Resolver))]
     [InlineData(nameof(GlosasController.Conciliar))]

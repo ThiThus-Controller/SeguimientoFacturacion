@@ -1,0 +1,84 @@
+@model SeguimientoFacturacion.ViewModels.Glosas.GlosaCreacionViewModel
+
+@{
+    ViewData["Title"] = "Crear glosa";
+}
+
+<div class="mb-4 border-bottom pb-3">
+    <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+        <i class="bi bi-shield-plus me-2 text-secondary opacity-75"></i>Crear glosa
+    </h1>
+    <p class="text-secondary mb-0">
+        Registre una nueva glosa para la factura @Model.FacturaId.
+    </p>
+</div>
+
+<div class="alert alert-info" role="alert">
+    La glosa se registrará en estado Abierta. La fecha no puede ser
+    anterior a la fecha de la factura y el valor debe ser positivo.
+</div>
+
+<form asp-action="Crear"
+      asp-route-facturaId="@Model.FacturaId"
+      method="post"
+      class="card">
+    <input asp-for="FacturaId" type="hidden" />
+
+    <div class="card-body">
+        <div asp-validation-summary="All"
+             class="alert alert-danger"
+             role="alert"></div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <label class="form-label">Factura</label>
+                <input value="@Model.FacturaId"
+                       class="form-control"
+                       readonly />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="FechaGlosa" class="form-label"></label>
+                <input asp-for="FechaGlosa" class="form-control" />
+                <span asp-validation-for="FechaGlosa"
+                      class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="ValorGlosa" class="form-label"></label>
+                <input asp-for="ValorGlosa"
+                       class="form-control"
+                       inputmode="decimal"
+                       data-decimal-flexible="true"
+                       placeholder="0.00" />
+                <span asp-validation-for="ValorGlosa"
+                      class="text-danger"></span>
+            </div>
+        </div>
+
+        <div>
+            <label asp-for="Observacion" class="form-label"></label>
+            <textarea asp-for="Observacion"
+                      class="form-control"
+                      rows="4"></textarea>
+            <span asp-validation-for="Observacion"
+                  class="text-danger"></span>
+            <div class="form-text">
+                Opcional. Máximo 1000 caracteres.
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a asp-action="Index"
+           asp-route-facturaId="@Model.FacturaId"
+           class="btn btn-outline-secondary">
+            Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary">
+            Crear glosa
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

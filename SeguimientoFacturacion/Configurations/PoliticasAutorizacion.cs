@@ -108,6 +108,9 @@ public static class PoliticasAutorizacion
     public const string GlosasConsultar =
         PrefijoPermiso + PermisosSistema.Glosas.Ver;
 
+    public const string GlosasCrear =
+        PrefijoPermiso + PermisosSistema.Glosas.Crear;
+
     public const string GlosasEditar =
         PrefijoPermiso + PermisosSistema.Glosas.Editar;
 
