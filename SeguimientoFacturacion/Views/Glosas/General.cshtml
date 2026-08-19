@@ -1,0 +1,234 @@
+@model SeguimientoFacturacion.ViewModels.Glosas.GlosasListadoViewModel
+
+@{
+    ViewData["Title"] = "Consulta general de glosas";
+
+    static string ClaseEstado(EstadoGlosa estado) => estado switch
+    {
+        EstadoGlosa.Abierta => "bg-warning text-dark",
+        EstadoGlosa.Respondida => "bg-info text-dark",
+        EstadoGlosa.Aceptada => "bg-danger text-white",
+        EstadoGlosa.Levantada => "bg-success text-white",
+        EstadoGlosa.Conciliada => "bg-primary text-white",
+        EstadoGlosa.Anulada => "bg-secondary text-white",
+        EstadoGlosa.EnNegociacion => "bg-warning text-dark",
+        _ => "bg-light text-dark border"
+    };
+
+    static string DescripcionEstado(EstadoGlosa estado) => estado switch
+    {
+        EstadoGlosa.EnNegociacion => "En negociación",
+        _ => estado.ToString()
+    };
+}
+
+<style>
+    .card-corporativa {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+
+    .card-corporativa .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid var(--azul-rey);
+        padding: 1rem 1.25rem;
+    }
+
+    .tabla-glosas th,
+    .tabla-glosas td {
+        padding: 0.65rem 0.5rem !important;
+        font-size: 0.875rem;
+    }
+</style>
+
+<div class="row py-3">
+    <div class="col-12">
+        <div class="mb-4 border-bottom pb-3">
+            <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                <i class="bi bi-shield-exclamation me-2 text-secondary opacity-75"></i>Consulta general de glosas
+            </h1>
+            <p class="text-secondary mb-0">
+                Busque, filtre y navegue las glosas registradas en el sistema.
+            </p>
+        </div>
+
+        <div class="card card-corporativa mb-4">
+            <div class="card-header">
+                <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-funnel me-2 text-secondary"></i>Filtros de búsqueda
+                </h2>
+            </div>
+
+            <form method="get" class="card-body p-4">
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger"
+                     role="alert"></div>
+
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-lg-4">
+                        <label asp-for="TextoBusqueda" class="form-label fw-semibold"></label>
+                        <input asp-for="TextoBusqueda"
+                               class="form-control"
+                               placeholder="Factura, paciente, documento u observación" />
+                    </div>
+                    <div class="col-12 col-md-4 col-lg-2">
+                        <label asp-for="Estado" class="form-label fw-semibold"></label>
+                        <select asp-for="Estado" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="@((int)EstadoGlosa.Abierta)">Abierta</option>
+                            <option value="@((int)EstadoGlosa.Respondida)">Respondida</option>
+                            <option value="@((int)EstadoGlosa.Aceptada)">Aceptada</option>
+                            <option value="@((int)EstadoGlosa.Levantada)">Levantada</option>
+                            <option value="@((int)EstadoGlosa.Conciliada)">Conciliada</option>
+                            <option value="@((int)EstadoGlosa.Anulada)">Anulada</option>
+                            <option value="@((int)EstadoGlosa.EnNegociacion)">En negociación</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <label asp-for="FechaDesde" class="form-label fw-semibold"></label>
+                        <input asp-for="FechaDesde" class="form-control" />
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <label asp-for="FechaHasta" class="form-label fw-semibold"></label>
+                        <input asp-for="FechaHasta" class="form-control" />
+                    </div>
+                    <div class="col-12 col-lg-2 d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            Buscar
+                        </button>
+                        <a asp-action="General" class="btn btn-outline-secondary">
+                            Limpiar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card card-corporativa shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-list-check me-2 text-secondary"></i>Glosas encontradas
+                </h2>
+                <span class="badge rounded-pill px-3 py-2 text-primary"
+                      style="background-color: rgba(11, 59, 134, 0.1);">
+                    @Model.TotalRegistros registros
+                </span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle tabla-glosas mb-0">
+                    <thead style="background-color: #f1f5f9;">
+                        <tr>
+                            <th scope="col" class="ps-3">Factura</th>
+                            <th scope="col">Paciente</th>
+                            <th scope="col">Fecha glosa</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col" class="text-end">Valor glosado</th>
+                            <th scope="col" class="text-end">Aceptado</th>
+                            <th scope="col" class="text-end">Pendiente</th>
+                            <th scope="col" class="text-end">Reconocido</th>
+                            <th scope="col">Nota crédito</th>
+                            <th scope="col">Observación</th>
+                            <th scope="col" class="text-center pe-3">Navegar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Glosas.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="11" class="text-center py-5">
+                                    <i class="bi bi-inbox text-muted" style="font-size: 3rem; opacity: 0.5;"></i>
+                                    <p class="mt-3 text-muted fw-medium fs-5">
+                                        No se encontraron glosas con los filtros aplicados.
+                                    </p>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var glosa in Model.Glosas)
+                            {
+                                <tr>
+                                    <td class="ps-3 text-nowrap">
+                                        <strong style="color: var(--azul-rey);">@glosa.FacturaId</strong>
+                                    </td>
+                                    <td>
+                                        <span class="fw-medium">@glosa.NombrePaciente</span>
+                                        <div class="small text-muted">@glosa.NumeroDocumento</div>
+                                    </td>
+                                    <td class="text-nowrap">
+                                        @glosa.FechaGlosa.ToString("yyyy-MM-dd")
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <span class="badge @ClaseEstado(glosa.Estado)">
+                                            @DescripcionEstado(glosa.Estado)
+                                        </span>
+                                    </td>
+                                    <td class="text-end fw-semibold text-nowrap">
+                                        $@glosa.ValorGlosa.ToString("N2")
+                                    </td>
+                                    <td class="text-end text-danger text-nowrap">
+                                        $@glosa.ValorAceptado.ToString("N2")
+                                    </td>
+                                    <td class="text-end text-warning-emphasis text-nowrap">
+                                        $@glosa.ValorPendiente.ToString("N2")
+                                    </td>
+                                    <td class="text-end text-success text-nowrap">
+                                        $@glosa.ValorReconocido.ToString("N2")
+                                    </td>
+                                    <td>
+                                        @(glosa.TieneNotaCreditoVigente ? "Vigente" : "No asociada")
+                                    </td>
+                                    <td class="text-break" style="max-width: 220px;">
+                                        @(string.IsNullOrWhiteSpace(glosa.Observacion) ? "—" : glosa.Observacion)
+                                    </td>
+                                    <td class="text-center pe-3">
+                                        <a asp-action="Index"
+                                           asp-route-facturaId="@glosa.FacturaId"
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="Abrir glosas de la factura">
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPaginas > 1)
+            {
+                <div class="card-footer d-flex flex-column flex-sm-row justify-content-between align-items-center">
+                    <span class="text-muted small mb-3 mb-sm-0 fw-medium">
+                        Página <strong>@Model.Pagina</strong> de <strong>@Model.TotalPaginas</strong>
+                    </span>
+                    <div class="btn-group shadow-sm">
+                        <a asp-action="General"
+                           asp-route-textoBusqueda="@Model.TextoBusqueda"
+                           asp-route-estado="@Model.Estado"
+                           asp-route-fechaDesde="@Model.FechaDesde"
+                           asp-route-fechaHasta="@Model.FechaHasta"
+                           asp-route-pagina="@(Model.Pagina - 1)"
+                           asp-route-tamanoPagina="@Model.TamanoPagina"
+                           class="btn btn-sm btn-outline-secondary @(Model.Pagina <= 1 ? "disabled" : string.Empty)">
+                            <i class="bi bi-chevron-left me-1"></i>Anterior
+                        </a>
+                        <a asp-action="General"
+                           asp-route-textoBusqueda="@Model.TextoBusqueda"
+                           asp-route-estado="@Model.Estado"
+                           asp-route-fechaDesde="@Model.FechaDesde"
+                           asp-route-fechaHasta="@Model.FechaHasta"
+                           asp-route-pagina="@(Model.Pagina + 1)"
+                           asp-route-tamanoPagina="@Model.TamanoPagina"
+                           class="btn btn-sm btn-outline-secondary @(Model.Pagina >= Model.TotalPaginas ? "disabled" : string.Empty)">
+                            Siguiente<i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

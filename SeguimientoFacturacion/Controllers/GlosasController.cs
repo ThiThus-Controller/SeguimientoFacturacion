@@ -27,17 +27,62 @@ public sealed class GlosasController : Controller
         "Glosas.MensajeError";
 
     private readonly IServicioGestionManualGlosas _servicio;
+    private readonly IServicioConsultaGlosas _servicioConsulta;
     private readonly IContextoUsuarioActual _contextoUsuarioActual;
 
     public GlosasController(
         IServicioGestionManualGlosas servicio,
+        IServicioConsultaGlosas servicioConsulta,
         IContextoUsuarioActual contextoUsuarioActual)
     {
         ArgumentNullException.ThrowIfNull(servicio);
+        ArgumentNullException.ThrowIfNull(servicioConsulta);
         ArgumentNullException.ThrowIfNull(contextoUsuarioActual);
 
         _servicio = servicio;
+        _servicioConsulta = servicioConsulta;
         _contextoUsuarioActual = contextoUsuarioActual;
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.GlosasConsultar)]
+    [HttpGet("")]
+    public async Task<IActionResult> General(
+        [FromQuery] GlosasListadoViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            var resultado = await _servicioConsulta.BuscarAsync(
+                new FiltroGlosasDto
+                {
+                    TextoBusqueda = model.TextoBusqueda,
+                    Estado = model.Estado,
+                    FechaDesde = model.FechaDesde,
+                    FechaHasta = model.FechaHasta,
+                    Pagina = model.Pagina,
+                    TamanoPagina = model.TamanoPagina
+                },
+                cancellationToken);
+
+            model.Glosas = resultado.Elementos.ToArray();
+            model.TotalRegistros = resultado.TotalRegistros;
+            model.TotalPaginas = resultado.TotalPaginas;
+            model.Pagina = resultado.Pagina;
+            model.TamanoPagina = resultado.TamanoPagina;
+        }
+        catch (ExcepcionValidacionAplicacion excepcion)
+        {
+            AgregarErroresValidacion(excepcion);
+        }
+
+        return View(model);
     }
 
     [Authorize(Policy = PoliticasAutorizacion.GlosasConsultar)]

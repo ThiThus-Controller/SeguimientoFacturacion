@@ -23,12 +23,19 @@ public sealed class GlosasControllerAutorizacionTests
         Assert.Contains(
             typeof(IServicioGestionManualGlosas),
             tipos);
+        Assert.Contains(
+            typeof(IServicioConsultaGlosas),
+            tipos);
         Assert.Contains(typeof(IContextoUsuarioActual), tipos);
     }
 
     [Theory]
     [InlineData(
         nameof(GlosasController.Index),
+        true,
+        PoliticasAutorizacion.GlosasConsultar)]
+    [InlineData(
+        nameof(GlosasController.General),
         true,
         PoliticasAutorizacion.GlosasConsultar)]
     [InlineData(

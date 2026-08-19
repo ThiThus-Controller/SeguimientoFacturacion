@@ -37,6 +37,13 @@
             User,
             PoliticasAutorizacion.FacturasConsultar))
         .Succeeded;
+
+    var puedeConsultarGlosas =
+        User.Identity?.IsAuthenticated == true &&
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.GlosasConsultar))
+        .Succeeded;
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -140,6 +147,15 @@
                                 <li class="nav-item me-1">
                                     <a class="nav-link" asp-controller="Facturas" asp-action="Index">
                                         <i class="bi bi-receipt me-1"></i> Facturas
+                                    </a>
+                                </li>
+                            }
+
+                            @if (puedeConsultarGlosas)
+                            {
+                                <li class="nav-item me-1">
+                                    <a class="nav-link" asp-controller="Glosas" asp-action="General">
+                                        <i class="bi bi-shield-exclamation me-1"></i> Glosas
                                     </a>
                                 </li>
                             }
