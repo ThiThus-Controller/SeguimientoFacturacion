@@ -54,6 +54,79 @@ public sealed class RepositorioGestionManualNotasFacturaEfCore :
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<NotaFactura>>
+        ObtenerPorFacturaAsync(
+            string facturaId,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+        var id = facturaId.Trim().ToUpperInvariant();
+
+        return await _contexto.NotasFactura
+            .AsNoTracking()
+            .Where(nota => nota.FacturaId == id)
+            .OrderByDescending(nota => nota.Fecha)
+            .ThenBy(nota => nota.Tipo)
+            .ThenBy(nota => nota.Numero)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Glosa>>
+        ObtenerGlosasPorFacturaAsync(
+            string facturaId,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+        var id = facturaId.Trim().ToUpperInvariant();
+
+        return await _contexto.Glosas
+            .AsNoTracking()
+            .Where(glosa => glosa.FacturaId == id)
+            .OrderByDescending(glosa => glosa.FechaGlosa)
+            .ThenBy(glosa => glosa.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyDictionary<Guid, decimal>>
+        ObtenerTotalesNotasCreditoVigentesAsync(
+            IReadOnlyCollection<Guid> glosaIds,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(glosaIds);
+        var ids = glosaIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToArray();
+
+        if (ids.Length == 0)
+        {
+            return new Dictionary<Guid, decimal>();
+        }
+
+        var notas = await _contexto.NotasFactura
+            .AsNoTracking()
+            .Where(nota =>
+                nota.GlosaId.HasValue &&
+                ids.Contains(nota.GlosaId.Value) &&
+                nota.Tipo == TipoNotaFactura.Credito &&
+                !nota.Anulada)
+            .Select(nota => new
+            {
+                GlosaId = nota.GlosaId!.Value,
+                nota.Valor
+            })
+            .ToListAsync(cancellationToken);
+
+        return notas
+            .GroupBy(nota => nota.GlosaId)
+            .ToDictionary(
+                grupo => grupo.Key,
+                grupo => grupo.Sum(nota => nota.Valor));
+    }
+
+    /// <inheritdoc />
     public Task<bool> ExisteAsync(
         string facturaId,
         TipoNotaFactura tipo,

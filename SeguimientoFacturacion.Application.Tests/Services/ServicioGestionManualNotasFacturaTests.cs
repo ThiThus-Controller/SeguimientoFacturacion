@@ -48,6 +48,38 @@ public sealed class ServicioGestionManualNotasFacturaTests
     }
 
     [Fact]
+    public async Task Consultar_DebeMostrarNotasYCupoDisponible()
+    {
+        var repositorio = CrearRepositorio(out var glosa);
+        repositorio.TotalCreditoVigente = 250m;
+        var nota = new NotaFactura(
+            repositorio.Factura.Id,
+            TipoNotaFactura.Credito,
+            new DateOnly(2026, 8, 10),
+            "NC-EXISTENTE",
+            250m,
+            glosa.Id);
+        nota.RegistrarCreacion(FechaPrueba, "importacion");
+        repositorio.Notas.Add(nota);
+        var servicio = CrearServicio(
+            repositorio,
+            new UnidadTrabajoFalsa());
+
+        var resultado = await servicio.ObtenerPorFacturaAsync(
+            " fe100 ");
+
+        Assert.Equal("FE100", resultado.FacturaId);
+        Assert.Equal(250m, resultado.TotalNotasCredito);
+        Assert.Equal(decimal.Zero, resultado.TotalNotasDebito);
+        Assert.Single(resultado.Notas);
+        var cupo = Assert.Single(resultado.Glosas);
+        Assert.Equal(600m, cupo.ValorAceptado);
+        Assert.Equal(250m, cupo.CupoUsado);
+        Assert.Equal(350m, cupo.CupoDisponible);
+        Assert.Equal(VersionValida, cupo.VersionFila);
+    }
+
+    [Fact]
     public async Task CrearDebito_DebeRegistrarSinGlosa()
     {
         var repositorio = CrearRepositorio(out _);
@@ -284,6 +316,45 @@ public sealed class ServicioGestionManualNotasFacturaTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<Glosa?>(
                 Glosa.Id == glosaId ? Glosa : null);
+
+        public Task<IReadOnlyList<NotaFactura>>
+            ObtenerPorFacturaAsync(
+                string facturaId,
+                CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<NotaFactura> resultado = Notas
+                .Where(nota => nota.FacturaId == facturaId)
+                .ToArray();
+
+            return Task.FromResult(resultado);
+        }
+
+        public Task<IReadOnlyList<Glosa>>
+            ObtenerGlosasPorFacturaAsync(
+                string facturaId,
+                CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<Glosa> resultado =
+                Glosa.FacturaId == facturaId ? [Glosa] : [];
+
+            return Task.FromResult(resultado);
+        }
+
+        public Task<IReadOnlyDictionary<Guid, decimal>>
+            ObtenerTotalesNotasCreditoVigentesAsync(
+                IReadOnlyCollection<Guid> glosaIds,
+                CancellationToken cancellationToken = default)
+        {
+            IReadOnlyDictionary<Guid, decimal> resultado =
+                glosaIds.Contains(Glosa.Id)
+                    ? new Dictionary<Guid, decimal>
+                    {
+                        [Glosa.Id] = TotalCreditoVigente
+                    }
+                    : new Dictionary<Guid, decimal>();
+
+            return Task.FromResult(resultado);
+        }
 
         public Task<bool> ExisteAsync(
             string facturaId,

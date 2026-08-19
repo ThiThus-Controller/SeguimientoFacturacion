@@ -123,6 +123,15 @@ public static class PoliticasAutorizacion
     public const string GlosasAnular =
         PrefijoPermiso + PermisosSistema.Glosas.Anular;
 
+    public const string NotasConsultar =
+        "Notas.Consultar";
+
+    public const string NotasCreditoCrear =
+        PrefijoPermiso + PermisosSistema.NotasCredito.Crear;
+
+    public const string NotasDebitoCrear =
+        PrefijoPermiso + PermisosSistema.NotasDebito.Crear;
+
     private static readonly string[] PermisosCreacionUsuarios =
     [
         PermisosSistema.Usuarios.Crear,
@@ -177,6 +186,12 @@ public static class PoliticasAutorizacion
     [
         PermisosSistema.NotasCredito.Procesar,
         PermisosSistema.NotasDebito.Procesar
+    ];
+
+    private static readonly string[] PermisosConsultaNotas =
+    [
+        PermisosSistema.NotasCredito.Ver,
+        PermisosSistema.NotasDebito.Ver
     ];
 
     /// <summary>
@@ -270,6 +285,12 @@ public static class PoliticasAutorizacion
             ProcesarNotasFactura,
             RequisitoPermisos.ExigirTodos(
                 PermisosProcesamientoNotas));
+
+        AgregarPolitica(
+            options,
+            NotasConsultar,
+            RequisitoPermisos.ExigirTodos(
+                PermisosConsultaNotas));
 
         AgregarPolitica(
             options,

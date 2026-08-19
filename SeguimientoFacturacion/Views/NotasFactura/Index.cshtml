@@ -1,0 +1,170 @@
+@using Microsoft.AspNetCore.Authorization
+@using SeguimientoFacturacion.Configurations
+@model NotasFacturaListadoViewModel
+@inject IAuthorizationService ServicioAutorizacion
+
+@{
+    ViewData["Title"] = $"Notas de {Model.FacturaId}";
+
+    var puedeCrearCredito =
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.NotasCreditoCrear)).Succeeded;
+
+    var puedeCrearDebito =
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.NotasDebitoCrear)).Succeeded;
+}
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-xl-11">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end mb-4 border-bottom pb-3">
+            <div>
+                <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-journal-text me-2 text-secondary"></i>Notas de la factura @Model.FacturaId
+                </h1>
+                <p class="text-secondary mb-0">
+                    Consulte el impacto financiero y el cupo disponible de cada glosa.
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3 mt-lg-0">
+                @if (puedeCrearCredito)
+                {
+                    <a asp-action="CrearCredito"
+                       asp-route-facturaId="@Model.FacturaId"
+                       class="btn btn-primary">
+                        <i class="bi bi-dash-circle me-1"></i>Nueva nota crédito
+                    </a>
+                }
+                @if (puedeCrearDebito)
+                {
+                    <a asp-action="CrearDebito"
+                       asp-route-facturaId="@Model.FacturaId"
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Nueva nota débito
+                    </a>
+                }
+                <a asp-controller="Facturas"
+                   asp-action="Index"
+                   class="btn btn-outline-secondary">
+                    Volver a facturas
+                </a>
+            </div>
+        </div>
+
+        @if (ViewData["MensajeExito"] is string mensaje)
+        {
+            <div class="alert alert-success" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>@mensaje
+            </div>
+        }
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card h-100"><div class="card-body">
+                    <div class="text-secondary small">Valor factura</div>
+                    <div class="fs-5 fw-bold">$@Model.ValorFactura.ToString("N2")</div>
+                </div></div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100"><div class="card-body">
+                    <div class="text-secondary small">Notas crédito vigentes</div>
+                    <div class="fs-5 fw-bold text-danger">$@Model.TotalNotasCredito.ToString("N2")</div>
+                </div></div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100"><div class="card-body">
+                    <div class="text-secondary small">Notas débito vigentes</div>
+                    <div class="fs-5 fw-bold text-success">$@Model.TotalNotasDebito.ToString("N2")</div>
+                </div></div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header fw-bold">Notas registradas</div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Número</th>
+                            <th class="text-end">Valor</th>
+                            <th class="text-end">Impacto saldo</th>
+                            <th>Glosa</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (Model.Notas.Count == 0)
+                    {
+                        <tr><td colspan="7" class="text-center text-muted py-4">No existen notas registradas.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var nota in Model.Notas)
+                        {
+                            <tr>
+                                <td>@nota.Fecha.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <span class="badge @(nota.Tipo == TipoNotaFactura.Credito ? "bg-danger" : "bg-success")">
+                                        @(nota.Tipo == TipoNotaFactura.Credito ? "Crédito" : "Débito")
+                                    </span>
+                                </td>
+                                <td class="fw-semibold">@nota.Numero</td>
+                                <td class="text-end">$@nota.Valor.ToString("N2")</td>
+                                <td class="text-end @(nota.ImpactoSaldo < 0 ? "text-danger" : "text-success")">
+                                    $@nota.ImpactoSaldo.ToString("N2")
+                                </td>
+                                <td>@(nota.GlosaId.HasValue ? nota.GlosaId.Value.ToString()[..8] : "—")</td>
+                                <td>@(nota.Anulada ? "Anulada" : "Vigente")</td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header fw-bold">Cupo de notas crédito por glosa</div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha glosa</th>
+                            <th>Estado</th>
+                            <th class="text-end">Glosado</th>
+                            <th class="text-end">Aceptado</th>
+                            <th class="text-end">Usado</th>
+                            <th class="text-end">Disponible</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (Model.Glosas.Count == 0)
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">No hay glosas con valor aceptado.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var glosa in Model.Glosas)
+                        {
+                            <tr>
+                                <td>@glosa.FechaGlosa.ToString("yyyy-MM-dd")</td>
+                                <td>@glosa.Estado</td>
+                                <td class="text-end">$@glosa.ValorGlosa.ToString("N2")</td>
+                                <td class="text-end">$@glosa.ValorAceptado.ToString("N2")</td>
+                                <td class="text-end">$@glosa.CupoUsado.ToString("N2")</td>
+                                <td class="text-end fw-bold @(glosa.CupoDisponible > 0 ? "text-primary" : "text-muted")">
+                                    $@glosa.CupoDisponible.ToString("N2")
+                                </td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -120,6 +120,24 @@ public sealed class PoliticasAutorizacionTests
     }
 
     [Fact]
+    public void Registrar_ConsultarNotas_DebeExigirAmbosPermisos()
+    {
+        var options = new AuthorizationOptions();
+        PoliticasAutorizacion.Registrar(options);
+
+        var politica = options.GetPolicy(
+            PoliticasAutorizacion.NotasConsultar);
+
+        Assert.NotNull(politica);
+        var requisito = Assert.Single(
+            politica.Requirements.OfType<RequisitoPermisos>());
+        var alternativa = Assert.Single(requisito.Alternativas);
+
+        Assert.Contains(PermisosSistema.NotasCredito.Ver, alternativa);
+        Assert.Contains(PermisosSistema.NotasDebito.Ver, alternativa);
+    }
+
+    [Fact]
     public void Registrar_ProcesarGlosas_DebeExigirPermiso()
     {
         var options = new AuthorizationOptions();

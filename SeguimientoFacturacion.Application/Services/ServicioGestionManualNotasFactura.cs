@@ -39,6 +39,85 @@ public sealed class ServicioGestionManualNotasFactura :
     }
 
     /// <inheritdoc />
+    public async Task<ConsultaNotasFacturaDto> ObtenerPorFacturaAsync(
+        string facturaId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+        var id = facturaId.Trim().ToUpperInvariant();
+
+        var factura = await _repositorio.ObtenerFacturaAsync(
+            id,
+            cancellationToken) ??
+            throw new KeyNotFoundException(
+                "No se encontró la factura indicada.");
+
+        var notas = await _repositorio.ObtenerPorFacturaAsync(
+            id,
+            cancellationToken);
+
+        var glosas = await _repositorio.ObtenerGlosasPorFacturaAsync(
+            id,
+            cancellationToken);
+
+        var totales = await _repositorio
+            .ObtenerTotalesNotasCreditoVigentesAsync(
+                glosas.Select(glosa => glosa.Id).ToArray(),
+                cancellationToken);
+
+        var notasMapeadas = notas
+            .OrderByDescending(nota => nota.Fecha)
+            .ThenBy(nota => nota.Tipo)
+            .ThenBy(nota => nota.Numero, StringComparer.Ordinal)
+            .Select(MapearNota)
+            .ToArray();
+
+        var cupos = glosas
+            .Where(glosa =>
+                glosa.Estado != EstadoGlosa.Anulada &&
+                glosa.ValorAceptado > decimal.Zero)
+            .OrderByDescending(glosa => glosa.FechaGlosa)
+            .ThenBy(glosa => glosa.Id)
+            .Select(glosa =>
+            {
+                var usado = totales.GetValueOrDefault(glosa.Id);
+
+                return new GlosaCupoNotaCreditoDto
+                {
+                    Id = glosa.Id,
+                    FechaGlosa = glosa.FechaGlosa,
+                    Estado = glosa.Estado,
+                    ValorGlosa = glosa.ValorGlosa,
+                    ValorAceptado = glosa.ValorAceptado,
+                    CupoUsado = usado,
+                    CupoDisponible = Math.Max(
+                        decimal.Zero,
+                        glosa.ValorAceptado - usado),
+                    VersionFila = glosa.VersionFila.ToArray()
+                };
+            })
+            .ToArray();
+
+        return new ConsultaNotasFacturaDto
+        {
+            FacturaId = factura.Id,
+            ValorFactura = factura.Valor,
+            TotalNotasCredito = notas
+                .Where(nota =>
+                    !nota.Anulada &&
+                    nota.Tipo == TipoNotaFactura.Credito)
+                .Sum(nota => nota.Valor),
+            TotalNotasDebito = notas
+                .Where(nota =>
+                    !nota.Anulada &&
+                    nota.Tipo == TipoNotaFactura.Debito)
+                .Sum(nota => nota.Valor),
+            Notas = notasMapeadas,
+            Glosas = cupos
+        };
+    }
+
+    /// <inheritdoc />
     public async Task<NotaFacturaGestionManualDto> CrearAsync(
         SolicitudCreacionNotaFacturaManualDto solicitud,
         string actor,
@@ -268,5 +347,24 @@ public sealed class ServicioGestionManualNotasFactura :
                 nota.FechaCreacionUtc,
                 nota.CreadoPor
             });
+    }
+
+    private static NotaFacturaGestionManualDto MapearNota(
+        NotaFactura nota)
+    {
+        return new NotaFacturaGestionManualDto
+        {
+            Id = nota.Id,
+            FacturaId = nota.FacturaId,
+            Tipo = nota.Tipo,
+            Fecha = nota.Fecha,
+            Numero = nota.Numero,
+            Valor = nota.Valor,
+            ImpactoSaldo = nota.ImpactoSaldo,
+            GlosaId = nota.GlosaId,
+            Anulada = nota.Anulada,
+            FechaCreacionUtc = nota.FechaCreacionUtc,
+            CreadoPor = nota.CreadoPor
+        };
     }
 }

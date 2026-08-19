@@ -16,6 +16,19 @@ public interface IRepositorioGestionManualNotasFactura
         Guid glosaId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<NotaFactura>> ObtenerPorFacturaAsync(
+        string facturaId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Glosa>> ObtenerGlosasPorFacturaAsync(
+        string facturaId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<Guid, decimal>>
+        ObtenerTotalesNotasCreditoVigentesAsync(
+            IReadOnlyCollection<Guid> glosaIds,
+            CancellationToken cancellationToken = default);
+
     Task<bool> ExisteAsync(
         string facturaId,
         TipoNotaFactura tipo,

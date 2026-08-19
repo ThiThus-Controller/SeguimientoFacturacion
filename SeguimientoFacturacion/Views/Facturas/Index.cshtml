@@ -23,6 +23,11 @@
         (await ServicioAutorizacion.AuthorizeAsync(
             User,
             PoliticasAutorizacion.GlosasConsultar)).Succeeded;
+
+    var puedeConsultarNotas =
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.NotasConsultar)).Succeeded;
 }
 
 <style>
@@ -266,6 +271,17 @@
                                                    class="btn btn-outline-warning text-dark"
                                                    title="Ver glosas">
                                                     <i class="bi bi-shield-exclamation"></i>
+                                                </a>
+                                            }
+
+                                            @if (puedeConsultarNotas)
+                                            {
+                                                <a asp-controller="NotasFactura"
+                                                   asp-action="Index"
+                                                   asp-route-facturaId="@factura.Id"
+                                                   class="btn btn-outline-success"
+                                                   title="Ver notas crédito y débito">
+                                                    <i class="bi bi-journal-text"></i>
                                                 </a>
                                             }
                                         </div>

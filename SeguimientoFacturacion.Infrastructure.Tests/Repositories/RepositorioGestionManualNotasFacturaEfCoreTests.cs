@@ -78,6 +78,36 @@ public sealed class
     }
 
     [Fact]
+    public async Task Listados_DebenRetornarNotasGlosasYTotales()
+    {
+        await using var contexto = CrearContexto();
+        var factura = CrearFactura();
+        var glosa = CrearGlosa(factura);
+        var nota = CrearCredito(glosa, "NC-100", 175m);
+
+        await contexto.AddRangeAsync(factura, glosa, nota);
+        await contexto.GuardarCambiosAsync();
+        contexto.ChangeTracker.Clear();
+
+        var repositorio =
+            new RepositorioGestionManualNotasFacturaEfCore(
+                contexto);
+
+        var notas = await repositorio.ObtenerPorFacturaAsync(
+            " fe100 ");
+        var glosas = await repositorio.ObtenerGlosasPorFacturaAsync(
+            " fe100 ");
+        var totales = await repositorio
+            .ObtenerTotalesNotasCreditoVigentesAsync([glosa.Id]);
+
+        Assert.Single(notas);
+        Assert.Single(glosas);
+        Assert.Equal(175m, totales[glosa.Id]);
+        Assert.Empty(contexto.ChangeTracker.Entries<NotaFactura>());
+        Assert.Empty(contexto.ChangeTracker.Entries<Glosa>());
+    }
+
+    [Fact]
     public void DependencyInjection_DebeRegistrarRepositorio()
     {
         ServiceCollection servicios = new();

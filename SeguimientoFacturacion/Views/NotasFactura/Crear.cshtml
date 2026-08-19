@@ -1,0 +1,129 @@
+@model NotaFacturaCreacionViewModel
+
+@{
+    var esCredito = Model.Tipo == TipoNotaFactura.Credito;
+    var accion = esCredito ? "CrearCredito" : "CrearDebito";
+    ViewData["Title"] = esCredito
+        ? "Crear nota crédito"
+        : "Crear nota débito";
+    var glosasDisponibles = Model.Glosas
+        .Where(glosa => glosa.CupoDisponible > decimal.Zero)
+        .ToArray();
+}
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-lg-9">
+        <div class="mb-4 border-bottom pb-3">
+            <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                <i class="bi bi-journal-plus me-2 text-secondary"></i>@(ViewData["Title"])
+            </h1>
+            <p class="text-secondary mb-0">Factura @Model.FacturaId</p>
+        </div>
+
+        <div class="alert @(esCredito ? "alert-warning" : "alert-info")" role="alert">
+            @if (esCredito)
+            {
+                <span>La nota crédito reducirá el saldo y deberá consumir cupo aceptado de una glosa.</span>
+            }
+            else
+            {
+                <span>La nota débito aumentará el saldo de la factura y no se asociará a una glosa.</span>
+            }
+        </div>
+
+        <form asp-action="@accion"
+              asp-route-facturaId="@Model.FacturaId"
+              method="post"
+              class="card">
+            <input asp-for="FacturaId" type="hidden" />
+            <input asp-for="Tipo" type="hidden" />
+            <input asp-for="VersionGlosaBase64" type="hidden" />
+
+            <div class="card-body">
+                <div asp-validation-summary="All"
+                     class="alert alert-danger"
+                     role="alert"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="Fecha" class="form-label"></label>
+                        <input asp-for="Fecha" class="form-control" />
+                        <span asp-validation-for="Fecha" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Numero" class="form-label"></label>
+                        <input asp-for="Numero" class="form-control" autocomplete="off" />
+                        <span asp-validation-for="Numero" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Valor" class="form-label"></label>
+                        <input asp-for="Valor"
+                               type="text"
+                               class="form-control"
+                               inputmode="decimal"
+                               data-decimal-flexible="true"
+                               placeholder="0,00" />
+                        <span asp-validation-for="Valor" class="text-danger"></span>
+                    </div>
+
+                    @if (esCredito)
+                    {
+                        <div class="col-12">
+                            <label asp-for="GlosaId" class="form-label"></label>
+                            <select asp-for="GlosaId"
+                                    id="selector-glosa"
+                                    class="form-select"
+                                    disabled="@(glosasDisponibles.Length == 0)">
+                                @if (glosasDisponibles.Length == 0)
+                                {
+                                    <option value="">No existe cupo disponible</option>
+                                }
+                                else
+                                {
+                                    @foreach (var glosa in glosasDisponibles)
+                                    {
+                                        <option value="@glosa.Id"
+                                                data-version="@Convert.ToBase64String(glosa.VersionFila)">
+                                            @glosa.FechaGlosa.ToString("yyyy-MM-dd") · @glosa.Estado · aceptado $@glosa.ValorAceptado.ToString("N2") · disponible $@glosa.CupoDisponible.ToString("N2")
+                                        </option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="GlosaId" class="text-danger"></span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a asp-action="Index"
+                   asp-route-facturaId="@Model.FacturaId"
+                   class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit"
+                        class="btn btn-primary"
+                        disabled="@(esCredito && glosasDisponibles.Length == 0)">
+                    Crear nota
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    @if (esCredito && glosasDisponibles.Length > 0)
+    {
+        <script>
+            (() => {
+                const selector = document.getElementById('selector-glosa');
+                const version = document.getElementById('VersionGlosaBase64');
+                const actualizar = () => {
+                    version.value = selector.options[selector.selectedIndex]
+                        ?.dataset.version ?? '';
+                };
+                selector.addEventListener('change', actualizar);
+                actualizar();
+            })();
+        </script>
+    }
+}
