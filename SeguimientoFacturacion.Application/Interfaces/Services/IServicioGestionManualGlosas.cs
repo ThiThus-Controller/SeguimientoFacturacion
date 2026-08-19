@@ -7,6 +7,10 @@ namespace SeguimientoFacturacion.Application.Interfaces.Services;
 /// </summary>
 public interface IServicioGestionManualGlosas
 {
+    Task<FacturaReferenciaGlosaDto> ObtenerFacturaAsync(
+        string facturaId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<GlosaGestionManualDto>>
         ObtenerPorFacturaAsync(
             string facturaId,

@@ -133,14 +133,15 @@ public sealed class GlosasController : Controller
 
         try
         {
-            await _servicio.ObtenerPorFacturaAsync(
+            var factura = await _servicio.ObtenerFacturaAsync(
                 facturaId,
                 cancellationToken);
 
             return View(
                 new GlosaCreacionViewModel
                 {
-                    FacturaId = facturaId.Trim().ToUpperInvariant(),
+                    FacturaId = factura.FacturaId,
+                    ValorFactura = factura.ValorFactura,
                     FechaGlosa = DateOnly.FromDateTime(DateTime.Today)
                 });
         }
@@ -165,8 +166,22 @@ public sealed class GlosasController : Controller
             return BadRequest();
         }
 
-        model.FacturaId = facturaId.Trim().ToUpperInvariant();
+        try
+        {
+            var factura = await _servicio.ObtenerFacturaAsync(
+                facturaId,
+                cancellationToken);
+
+            model.FacturaId = factura.FacturaId;
+            model.ValorFactura = factura.ValorFactura;
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+
         ModelState.Remove(nameof(model.FacturaId));
+        ModelState.Remove(nameof(model.ValorFactura));
 
         if (!ModelState.IsValid)
         {

@@ -64,6 +64,23 @@ public sealed class ServicioGestionManualGlosas :
     }
 
     /// <inheritdoc />
+    public async Task<FacturaReferenciaGlosaDto> ObtenerFacturaAsync(
+        string facturaId,
+        CancellationToken cancellationToken = default)
+    {
+        var id = ValidarFacturaId(facturaId);
+        var factura = await ObtenerFacturaRequeridaAsync(
+            id,
+            cancellationToken);
+
+        return new FacturaReferenciaGlosaDto
+        {
+            FacturaId = factura.Id,
+            ValorFactura = factura.Valor
+        };
+    }
+
+    /// <inheritdoc />
     public async Task<GlosaGestionManualDto> CrearAsync(
         SolicitudCreacionGlosaManualDto solicitud,
         string actor,

@@ -15,6 +15,9 @@ public sealed class GlosaCreacionViewModel
             .FacturaIdLongitudMaxima)]
     public string FacturaId { get; set; } = string.Empty;
 
+    [Display(Name = "Valor de la factura")]
+    public decimal ValorFactura { get; set; }
+
     [Required]
     [DataType(DataType.Date)]
     [Display(Name = "Fecha de glosa")]

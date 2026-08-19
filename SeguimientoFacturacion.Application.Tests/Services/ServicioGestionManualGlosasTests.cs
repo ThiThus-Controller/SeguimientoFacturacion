@@ -56,6 +56,18 @@ public sealed class ServicioGestionManualGlosasTests
     }
 
     [Fact]
+    public async Task ObtenerFactura_DebeRetornarIdNormalizadoYValor()
+    {
+        var repositorio = CrearRepositorioConGlosa(out _);
+        var servicio = CrearServicio(repositorio);
+
+        var resultado = await servicio.ObtenerFacturaAsync(" fe100 ");
+
+        Assert.Equal("FE100", resultado.FacturaId);
+        Assert.Equal(10000m, resultado.ValorFactura);
+    }
+
+    [Fact]
     public async Task Crear_FacturaAnulada_DebeBloquear()
     {
         var repositorio = CrearRepositorioConGlosa(out _);
