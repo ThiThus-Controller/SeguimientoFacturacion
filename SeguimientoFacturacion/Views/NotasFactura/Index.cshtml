@@ -15,6 +15,16 @@
         (await ServicioAutorizacion.AuthorizeAsync(
             User,
             PoliticasAutorizacion.NotasDebitoCrear)).Succeeded;
+
+    var puedeAnularCredito =
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.NotasCreditoAnular)).Succeeded;
+
+    var puedeAnularDebito =
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.NotasDebitoAnular)).Succeeded;
 }
 
 <div class="row justify-content-center py-3">
@@ -94,12 +104,13 @@
                             <th class="text-end">Impacto saldo</th>
                             <th>Glosa</th>
                             <th>Estado</th>
+                            <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                     @if (Model.Notas.Count == 0)
                     {
-                        <tr><td colspan="7" class="text-center text-muted py-4">No existen notas registradas.</td></tr>
+                        <tr><td colspan="8" class="text-center text-muted py-4">No existen notas registradas.</td></tr>
                     }
                     else
                     {
@@ -118,7 +129,38 @@
                                     $@nota.ImpactoSaldo.ToString("N2")
                                 </td>
                                 <td>@(nota.GlosaId.HasValue ? nota.GlosaId.Value.ToString()[..8] : "—")</td>
-                                <td>@(nota.Anulada ? "Anulada" : "Vigente")</td>
+                                <td>
+                                    <span class="badge @(nota.Anulada ? "bg-secondary" : "bg-primary")">
+                                        @(nota.Anulada ? "Anulada" : "Vigente")
+                                    </span>
+                                    @if (nota.Anulada && !string.IsNullOrWhiteSpace(nota.MotivoAnulacion))
+                                    {
+                                        <div class="small text-muted mt-1">@nota.MotivoAnulacion</div>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (!nota.Anulada &&
+                                        ((nota.Tipo == TipoNotaFactura.Credito && puedeAnularCredito) ||
+                                         (nota.Tipo == TipoNotaFactura.Debito && puedeAnularDebito)))
+                                    {
+                                        var accionAnulacion = nota.Tipo == TipoNotaFactura.Credito
+                                            ? "AnularCredito"
+                                            : "AnularDebito";
+
+                                        <a asp-action="@accionAnulacion"
+                                           asp-route-facturaId="@Model.FacturaId"
+                                           asp-route-notaId="@nota.Id"
+                                           class="btn btn-sm btn-outline-danger"
+                                           title="Anular nota @nota.Numero">
+                                            <i class="bi bi-x-octagon"></i>
+                                            <span class="visually-hidden">Anular</span>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
                             </tr>
                         }
                     }

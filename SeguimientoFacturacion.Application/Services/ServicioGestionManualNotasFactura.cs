@@ -12,7 +12,7 @@ using SeguimientoFacturacion.Domain.Enums;
 namespace SeguimientoFacturacion.Application.Services;
 
 /// <summary>
-/// Implementa la creación manual auditada de notas factura.
+/// Implementa la gestión manual auditada de notas factura.
 /// </summary>
 public sealed class ServicioGestionManualNotasFactura :
     IServicioGestionManualNotasFactura
@@ -24,18 +24,36 @@ public sealed class ServicioGestionManualNotasFactura :
     private readonly IUnidadTrabajo _unidadTrabajo;
     private readonly IValidator<SolicitudCreacionNotaFacturaManualDto>
         _validador;
+    private readonly IValidator<SolicitudAnulacionNotaFacturaDto>
+        _validadorAnulacion;
     private readonly TimeProvider _timeProvider;
 
     public ServicioGestionManualNotasFactura(
         IRepositorioGestionManualNotasFactura repositorio,
         IUnidadTrabajo unidadTrabajo,
         IValidator<SolicitudCreacionNotaFacturaManualDto> validador,
+        IValidator<SolicitudAnulacionNotaFacturaDto>
+            validadorAnulacion,
         TimeProvider timeProvider)
     {
         _repositorio = repositorio;
         _unidadTrabajo = unidadTrabajo;
         _validador = validador;
+        _validadorAnulacion = validadorAnulacion;
         _timeProvider = timeProvider;
+    }
+
+    /// <inheritdoc />
+    public async Task<NotaFacturaGestionManualDto?> ObtenerPorIdAsync(
+        Guid notaId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidarNotaId(notaId);
+        var nota = await _repositorio.ObtenerPorIdAsync(
+            notaId,
+            cancellationToken);
+
+        return nota is null ? null : MapearNota(nota);
     }
 
     /// <inheritdoc />
@@ -244,6 +262,56 @@ public sealed class ServicioGestionManualNotasFactura :
         };
     }
 
+    /// <inheritdoc />
+    public async Task<NotaFacturaGestionManualDto> AnularAsync(
+        Guid notaId,
+        SolicitudAnulacionNotaFacturaDto solicitud,
+        string actor,
+        CancellationToken cancellationToken = default)
+    {
+        ValidarNotaId(notaId);
+        ArgumentNullException.ThrowIfNull(solicitud);
+
+        var validacion = await _validadorAnulacion.ValidateAsync(
+            solicitud,
+            cancellationToken);
+
+        if (!validacion.IsValid)
+        {
+            throw new ExcepcionValidacionAplicacion(
+                validacion.Errors);
+        }
+
+        var actorNormalizado = ValidarActor(actor);
+        var nota = await _repositorio.ObtenerPorIdAsync(
+            notaId,
+            cancellationToken) ??
+            throw new KeyNotFoundException(
+                "No se encontró la nota indicada.");
+
+        var datosAnteriores = Serializar(nota);
+        nota.Anular(solicitud.Motivo);
+
+        var fecha = _timeProvider.GetUtcNow();
+        nota.RegistrarModificacion(fecha, actorNormalizado);
+
+        await _repositorio.AgregarAuditoriaAsync(
+            new RegistroAuditoria(
+                TipoOperacionAuditoria.Anulacion,
+                nameof(NotaFactura),
+                nota.Id.ToString(),
+                actorNormalizado,
+                fecha,
+                datosAnteriores,
+                Serializar(nota),
+                motivo: nota.MotivoAnulacion,
+                correlacionId: Guid.NewGuid()),
+            cancellationToken);
+
+        await _unidadTrabajo.GuardarCambiosAsync(cancellationToken);
+        return MapearNota(nota);
+    }
+
     private async Task<Glosa> ValidarNotaCreditoAsync(
         SolicitudCreacionNotaFacturaManualDto solicitud,
         string facturaId,
@@ -344,8 +412,11 @@ public sealed class ServicioGestionManualNotasFactura :
                 nota.Valor,
                 nota.GlosaId,
                 nota.Anulada,
+                nota.MotivoAnulacion,
                 nota.FechaCreacionUtc,
-                nota.CreadoPor
+                nota.CreadoPor,
+                nota.FechaModificacionUtc,
+                nota.ModificadoPor
             });
     }
 
@@ -363,8 +434,21 @@ public sealed class ServicioGestionManualNotasFactura :
             ImpactoSaldo = nota.ImpactoSaldo,
             GlosaId = nota.GlosaId,
             Anulada = nota.Anulada,
+            MotivoAnulacion = nota.MotivoAnulacion,
             FechaCreacionUtc = nota.FechaCreacionUtc,
-            CreadoPor = nota.CreadoPor
+            CreadoPor = nota.CreadoPor,
+            FechaModificacionUtc = nota.FechaModificacionUtc,
+            ModificadoPor = nota.ModificadoPor
         };
+    }
+
+    private static void ValidarNotaId(Guid notaId)
+    {
+        if (notaId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "El identificador de la nota es obligatorio.",
+                nameof(notaId));
+        }
     }
 }

@@ -44,6 +44,31 @@
                      class="alert alert-danger"
                      role="alert"></div>
 
+                @if (esCredito)
+                {
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Factura</label>
+                            <input value="@Model.FacturaId"
+                                   class="form-control"
+                                   readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ValorFactura"
+                                   class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input value="@Model.ValorFactura.ToString("N2")"
+                                       class="form-control text-end"
+                                       readonly />
+                            </div>
+                            <div class="form-text">
+                                Valor original registrado en la factura.
+                            </div>
+                        </div>
+                    </div>
+                }
+
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label asp-for="Fecha" class="form-label"></label>

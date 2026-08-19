@@ -132,6 +132,12 @@ public static class PoliticasAutorizacion
     public const string NotasDebitoCrear =
         PrefijoPermiso + PermisosSistema.NotasDebito.Crear;
 
+    public const string NotasCreditoAnular =
+        PrefijoPermiso + PermisosSistema.NotasCredito.Anular;
+
+    public const string NotasDebitoAnular =
+        PrefijoPermiso + PermisosSistema.NotasDebito.Anular;
+
     private static readonly string[] PermisosCreacionUsuarios =
     [
         PermisosSistema.Usuarios.Crear,

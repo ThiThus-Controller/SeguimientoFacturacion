@@ -5,11 +5,30 @@ using SeguimientoFacturacion.Application.Interfaces.Services;
 using SeguimientoFacturacion.Configurations;
 using SeguimientoFacturacion.Controllers;
 using SeguimientoFacturacion.Services.Seguridad;
+using SeguimientoFacturacion.ViewModels.Notas;
 
 namespace SeguimientoFacturacion.Web.Tests.Controllers;
 
 public sealed class NotasFacturaControllerAutorizacionTests
 {
+    [Fact]
+    public void VersionGlosa_DebeSerOpcionalParaNotaDebito()
+    {
+        var propiedad = typeof(NotaFacturaCreacionViewModel)
+            .GetProperty(
+                nameof(NotaFacturaCreacionViewModel
+                    .VersionGlosaBase64));
+
+        Assert.NotNull(propiedad);
+
+        var nulabilidad = new NullabilityInfoContext()
+            .Create(propiedad);
+
+        Assert.Equal(
+            NullabilityState.Nullable,
+            nulabilidad.WriteState);
+    }
+
     [Fact]
     public void Constructor_DebeDependerDeApplicationYUsuarioActual()
     {
@@ -47,6 +66,22 @@ public sealed class NotasFacturaControllerAutorizacionTests
         nameof(NotasFacturaController.CrearDebito),
         false,
         PoliticasAutorizacion.NotasDebitoCrear)]
+    [InlineData(
+        nameof(NotasFacturaController.AnularCredito),
+        true,
+        PoliticasAutorizacion.NotasCreditoAnular)]
+    [InlineData(
+        nameof(NotasFacturaController.AnularCredito),
+        false,
+        PoliticasAutorizacion.NotasCreditoAnular)]
+    [InlineData(
+        nameof(NotasFacturaController.AnularDebito),
+        true,
+        PoliticasAutorizacion.NotasDebitoAnular)]
+    [InlineData(
+        nameof(NotasFacturaController.AnularDebito),
+        false,
+        PoliticasAutorizacion.NotasDebitoAnular)]
     public void Accion_DebeExigirPoliticaEsperada(
         string nombre,
         bool esGet,
@@ -62,6 +97,8 @@ public sealed class NotasFacturaControllerAutorizacionTests
     [Theory]
     [InlineData(nameof(NotasFacturaController.CrearCredito))]
     [InlineData(nameof(NotasFacturaController.CrearDebito))]
+    [InlineData(nameof(NotasFacturaController.AnularCredito))]
+    [InlineData(nameof(NotasFacturaController.AnularDebito))]
     public void AccionPost_DebeValidarAntiforgery(string nombre)
     {
         var metodo = ObtenerAccion(nombre, esGet: false);

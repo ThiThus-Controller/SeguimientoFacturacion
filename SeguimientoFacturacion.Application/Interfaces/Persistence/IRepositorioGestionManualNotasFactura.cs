@@ -4,7 +4,7 @@ using SeguimientoFacturacion.Domain.Enums;
 namespace SeguimientoFacturacion.Application.Interfaces.Persistence;
 
 /// <summary>
-/// Define la persistencia requerida para crear notas manualmente.
+/// Define la persistencia requerida para gestionar notas manualmente.
 /// </summary>
 public interface IRepositorioGestionManualNotasFactura
 {
@@ -14,6 +14,10 @@ public interface IRepositorioGestionManualNotasFactura
 
     Task<Glosa?> ObtenerGlosaAsync(
         Guid glosaId,
+        CancellationToken cancellationToken = default);
+
+    Task<NotaFactura?> ObtenerPorIdAsync(
+        Guid notaId,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<NotaFactura>> ObtenerPorFacturaAsync(

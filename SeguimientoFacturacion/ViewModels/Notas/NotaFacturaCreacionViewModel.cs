@@ -16,6 +16,9 @@ public sealed class NotaFacturaCreacionViewModel
             .FacturaIdLongitudMaxima)]
     public string FacturaId { get; set; } = string.Empty;
 
+    [Display(Name = "Valor de la factura")]
+    public decimal ValorFactura { get; set; }
+
     public TipoNotaFactura Tipo { get; set; }
 
     [Required]
@@ -37,7 +40,7 @@ public sealed class NotaFacturaCreacionViewModel
     [Display(Name = "Glosa que respalda la nota crédito")]
     public Guid? GlosaId { get; set; }
 
-    public string VersionGlosaBase64 { get; set; } = string.Empty;
+    public string? VersionGlosaBase64 { get; set; }
 
     public IReadOnlyList<GlosaCupoNotaCreditoDto> Glosas
     {

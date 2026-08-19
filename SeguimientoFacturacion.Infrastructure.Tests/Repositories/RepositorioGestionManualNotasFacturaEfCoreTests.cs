@@ -36,6 +36,8 @@ public sealed class
             await repositorio.ObtenerFacturaAsync(" fe100 ");
         var glosaEncontrada =
             await repositorio.ObtenerGlosaAsync(glosa.Id);
+        var notaEncontrada =
+            await repositorio.ObtenerPorIdAsync(nota.Id);
         var existe = await repositorio.ExisteAsync(
             " fe100 ",
             TipoNotaFactura.Credito,
@@ -43,11 +45,29 @@ public sealed class
 
         Assert.NotNull(facturaEncontrada);
         Assert.NotNull(glosaEncontrada);
+        Assert.NotNull(notaEncontrada);
         Assert.True(existe);
         Assert.Empty(contexto.ChangeTracker.Entries<Factura>());
         Assert.Equal(
             EntityState.Unchanged,
             contexto.Entry(glosaEncontrada).State);
+        Assert.Equal(
+            EntityState.Unchanged,
+            contexto.Entry(notaEncontrada).State);
+    }
+
+    [Fact]
+    public void Modelo_AnuladaDebeSerTokenDeConcurrencia()
+    {
+        using var contexto = CrearContexto();
+
+        var entidad = contexto.Model.FindEntityType(
+            typeof(NotaFactura));
+        var propiedad = entidad?.FindProperty(
+            nameof(NotaFactura.Anulada));
+
+        Assert.NotNull(propiedad);
+        Assert.True(propiedad.IsConcurrencyToken);
     }
 
     [Fact]

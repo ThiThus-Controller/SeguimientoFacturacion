@@ -7,7 +7,7 @@ using SeguimientoFacturacion.Infrastructure.Persistence;
 namespace SeguimientoFacturacion.Infrastructure.Repositories;
 
 /// <summary>
-/// Implementa la persistencia de la creación manual de notas.
+/// Implementa la persistencia de la gestión manual de notas.
 /// </summary>
 public sealed class RepositorioGestionManualNotasFacturaEfCore :
     IRepositorioGestionManualNotasFactura
@@ -50,6 +50,23 @@ public sealed class RepositorioGestionManualNotasFacturaEfCore :
 
         return _contexto.Glosas.SingleOrDefaultAsync(
             glosa => glosa.Id == glosaId,
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<NotaFactura?> ObtenerPorIdAsync(
+        Guid notaId,
+        CancellationToken cancellationToken = default)
+    {
+        if (notaId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "El identificador de la nota es obligatorio.",
+                nameof(notaId));
+        }
+
+        return _contexto.NotasFactura.SingleOrDefaultAsync(
+            nota => nota.Id == notaId,
             cancellationToken);
     }
 

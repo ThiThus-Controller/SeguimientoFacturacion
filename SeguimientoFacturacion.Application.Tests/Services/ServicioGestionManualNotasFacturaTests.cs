@@ -51,7 +51,6 @@ public sealed class ServicioGestionManualNotasFacturaTests
     public async Task Consultar_DebeMostrarNotasYCupoDisponible()
     {
         var repositorio = CrearRepositorio(out var glosa);
-        repositorio.TotalCreditoVigente = 250m;
         var nota = new NotaFactura(
             repositorio.Factura.Id,
             TipoNotaFactura.Credito,
@@ -69,6 +68,7 @@ public sealed class ServicioGestionManualNotasFacturaTests
             " fe100 ");
 
         Assert.Equal("FE100", resultado.FacturaId);
+        Assert.Equal(5000m, resultado.ValorFactura);
         Assert.Equal(250m, resultado.TotalNotasCredito);
         Assert.Equal(decimal.Zero, resultado.TotalNotasDebito);
         Assert.Single(resultado.Notas);
@@ -77,6 +77,117 @@ public sealed class ServicioGestionManualNotasFacturaTests
         Assert.Equal(250m, cupo.CupoUsado);
         Assert.Equal(350m, cupo.CupoDisponible);
         Assert.Equal(VersionValida, cupo.VersionFila);
+    }
+
+    [Fact]
+    public async Task AnularCredito_DebeRestaurarCupoAuditarYGuardar()
+    {
+        var repositorio = CrearRepositorio(out var glosa);
+        var nota = new NotaFactura(
+            repositorio.Factura.Id,
+            TipoNotaFactura.Credito,
+            new DateOnly(2026, 8, 10),
+            "NC-ANULAR",
+            250m,
+            glosa.Id);
+        nota.RegistrarCreacion(
+            FechaPrueba.AddDays(-1),
+            "operador-creacion");
+        repositorio.Notas.Add(nota);
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        var resultado = await servicio.AnularAsync(
+            nota.Id,
+            new SolicitudAnulacionNotaFacturaDto
+            {
+                Motivo = "  Nota duplicada.  "
+            },
+            " operador-anulacion ");
+
+        Assert.True(resultado.Anulada);
+        Assert.Equal(decimal.Zero, resultado.ImpactoSaldo);
+        Assert.Equal("Nota duplicada.", resultado.MotivoAnulacion);
+        Assert.Equal("operador-anulacion", resultado.ModificadoPor);
+        Assert.Equal(FechaPrueba, resultado.FechaModificacionUtc);
+        var auditoria = Assert.Single(repositorio.Auditorias);
+        Assert.Equal(
+            TipoOperacionAuditoria.Anulacion,
+            auditoria.TipoOperacion);
+        Assert.NotNull(auditoria.DatosAnterioresJson);
+        Assert.NotNull(auditoria.DatosNuevosJson);
+        Assert.Contains("\"Anulada\":false", auditoria.DatosAnterioresJson);
+        Assert.Contains("\"Anulada\":true", auditoria.DatosNuevosJson);
+        Assert.Equal("Nota duplicada.", auditoria.Motivo);
+        Assert.Equal(1, unidadTrabajo.Guardados);
+
+        var consulta = await servicio.ObtenerPorFacturaAsync("FE100");
+        Assert.Equal(decimal.Zero, consulta.TotalNotasCredito);
+        var cupo = Assert.Single(consulta.Glosas);
+        Assert.Equal(decimal.Zero, cupo.CupoUsado);
+        Assert.Equal(600m, cupo.CupoDisponible);
+    }
+
+    [Fact]
+    public async Task Anular_NotaYaAnulada_DebeBloquearSinGuardar()
+    {
+        var repositorio = CrearRepositorio(out var glosa);
+        var nota = new NotaFactura(
+            repositorio.Factura.Id,
+            TipoNotaFactura.Credito,
+            new DateOnly(2026, 8, 10),
+            "NC-ANULADA",
+            100m,
+            glosa.Id);
+        nota.Anular("Anulación anterior.");
+        repositorio.Notas.Add(nota);
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => servicio.AnularAsync(
+                nota.Id,
+                new SolicitudAnulacionNotaFacturaDto
+                {
+                    Motivo = "Segundo intento."
+                },
+                "administrador"));
+
+        Assert.Empty(repositorio.Auditorias);
+        Assert.Equal(0, unidadTrabajo.Guardados);
+    }
+
+    [Fact]
+    public async Task AnularDebito_DebeEliminarImpactoFinanciero()
+    {
+        var repositorio = CrearRepositorio(out _);
+        var nota = new NotaFactura(
+            repositorio.Factura.Id,
+            TipoNotaFactura.Debito,
+            new DateOnly(2026, 8, 10),
+            "ND-ANULAR",
+            125m);
+        nota.RegistrarCreacion(
+            FechaPrueba.AddDays(-1),
+            "operador-creacion");
+        repositorio.Notas.Add(nota);
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        var resultado = await servicio.AnularAsync(
+            nota.Id,
+            new SolicitudAnulacionNotaFacturaDto
+            {
+                Motivo = "Corrección de nota débito."
+            },
+            "administrador");
+
+        Assert.True(resultado.Anulada);
+        Assert.Equal(decimal.Zero, resultado.ImpactoSaldo);
+        Assert.Equal(1, unidadTrabajo.Guardados);
+
+        var consulta = await servicio.ObtenerPorFacturaAsync("FE100");
+        Assert.Equal(decimal.Zero, consulta.TotalNotasDebito);
     }
 
     [Fact]
@@ -280,6 +391,7 @@ public sealed class ServicioGestionManualNotasFacturaTests
             repositorio,
             unidadTrabajo,
             new SolicitudCreacionNotaFacturaManualDtoValidator(),
+            new SolicitudAnulacionNotaFacturaDtoValidator(),
             new TimeProviderFalso(FechaPrueba));
     }
 
@@ -317,6 +429,12 @@ public sealed class ServicioGestionManualNotasFacturaTests
             Task.FromResult<Glosa?>(
                 Glosa.Id == glosaId ? Glosa : null);
 
+        public Task<NotaFactura?> ObtenerPorIdAsync(
+            Guid notaId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<NotaFactura?>(
+                Notas.SingleOrDefault(nota => nota.Id == notaId));
+
         public Task<IReadOnlyList<NotaFactura>>
             ObtenerPorFacturaAsync(
                 string facturaId,
@@ -345,11 +463,18 @@ public sealed class ServicioGestionManualNotasFacturaTests
                 IReadOnlyCollection<Guid> glosaIds,
                 CancellationToken cancellationToken = default)
         {
+            var total = TotalCreditoVigente + Notas
+                .Where(nota =>
+                    nota.GlosaId == Glosa.Id &&
+                    nota.Tipo == TipoNotaFactura.Credito &&
+                    !nota.Anulada)
+                .Sum(nota => nota.Valor);
+
             IReadOnlyDictionary<Guid, decimal> resultado =
                 glosaIds.Contains(Glosa.Id)
                     ? new Dictionary<Guid, decimal>
                     {
-                        [Glosa.Id] = TotalCreditoVigente
+                        [Glosa.Id] = total
                     }
                     : new Dictionary<Guid, decimal>();
 
@@ -365,8 +490,17 @@ public sealed class ServicioGestionManualNotasFacturaTests
 
         public Task<decimal> ObtenerTotalNotasCreditoVigentesAsync(
             Guid glosaId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(TotalCreditoVigente);
+            CancellationToken cancellationToken = default)
+        {
+            var total = TotalCreditoVigente + Notas
+                .Where(nota =>
+                    nota.GlosaId == glosaId &&
+                    nota.Tipo == TipoNotaFactura.Credito &&
+                    !nota.Anulada)
+                .Sum(nota => nota.Valor);
+
+            return Task.FromResult(total);
+        }
 
         public Task AgregarAsync(
             NotaFactura nota,

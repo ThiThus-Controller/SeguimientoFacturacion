@@ -16,9 +16,12 @@ public sealed record NotaFacturaGestionManualDto
     public required decimal ImpactoSaldo { get; init; }
     public Guid? GlosaId { get; init; }
     public required bool Anulada { get; init; }
+    public string? MotivoAnulacion { get; init; }
     public decimal? ValorAceptadoGlosa { get; init; }
     public decimal? TotalNotasCreditoVigentesGlosa { get; init; }
     public decimal? CupoDisponibleGlosa { get; init; }
     public required DateTimeOffset FechaCreacionUtc { get; init; }
     public required string CreadoPor { get; init; }
+    public DateTimeOffset? FechaModificacionUtc { get; init; }
+    public string? ModificadoPor { get; init; }
 }

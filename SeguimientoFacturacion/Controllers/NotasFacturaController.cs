@@ -11,7 +11,7 @@ using SeguimientoFacturacion.ViewModels.Notas;
 namespace SeguimientoFacturacion.Controllers;
 
 /// <summary>
-/// Expone la consulta y creación manual de notas factura.
+/// Expone la consulta, creación y anulación manual de notas factura.
 /// </summary>
 [Route("facturas/{facturaId}/notas")]
 [ResponseCache(
@@ -106,6 +106,60 @@ public sealed class NotasFacturaController : Controller
             model,
             cancellationToken);
 
+    [Authorize(Policy = PoliticasAutorizacion.NotasCreditoAnular)]
+    [HttpGet("{notaId:guid}/anular-credito")]
+    public Task<IActionResult> AnularCredito(
+        string facturaId,
+        Guid notaId,
+        CancellationToken cancellationToken) =>
+        PrepararAnulacionAsync(
+            facturaId,
+            notaId,
+            TipoNotaFactura.Credito,
+            cancellationToken);
+
+    [Authorize(Policy = PoliticasAutorizacion.NotasCreditoAnular)]
+    [HttpPost("{notaId:guid}/anular-credito")]
+    [ValidateAntiForgeryToken]
+    public Task<IActionResult> AnularCredito(
+        string facturaId,
+        Guid notaId,
+        NotaFacturaAnulacionViewModel model,
+        CancellationToken cancellationToken) =>
+        AnularAsync(
+            facturaId,
+            notaId,
+            TipoNotaFactura.Credito,
+            model,
+            cancellationToken);
+
+    [Authorize(Policy = PoliticasAutorizacion.NotasDebitoAnular)]
+    [HttpGet("{notaId:guid}/anular-debito")]
+    public Task<IActionResult> AnularDebito(
+        string facturaId,
+        Guid notaId,
+        CancellationToken cancellationToken) =>
+        PrepararAnulacionAsync(
+            facturaId,
+            notaId,
+            TipoNotaFactura.Debito,
+            cancellationToken);
+
+    [Authorize(Policy = PoliticasAutorizacion.NotasDebitoAnular)]
+    [HttpPost("{notaId:guid}/anular-debito")]
+    [ValidateAntiForgeryToken]
+    public Task<IActionResult> AnularDebito(
+        string facturaId,
+        Guid notaId,
+        NotaFacturaAnulacionViewModel model,
+        CancellationToken cancellationToken) =>
+        AnularAsync(
+            facturaId,
+            notaId,
+            TipoNotaFactura.Debito,
+            model,
+            cancellationToken);
+
     private async Task<IActionResult> PrepararCreacionAsync(
         string facturaId,
         TipoNotaFactura tipo,
@@ -120,6 +174,7 @@ public sealed class NotasFacturaController : Controller
             var model = new NotaFacturaCreacionViewModel
             {
                 FacturaId = consulta.FacturaId,
+                ValorFactura = consulta.ValorFactura,
                 Tipo = tipo,
                 Fecha = DateOnly.FromDateTime(DateTime.Today),
                 Glosas = consulta.Glosas
@@ -180,6 +235,8 @@ public sealed class NotasFacturaController : Controller
         {
             model.GlosaId = null;
             model.VersionGlosaBase64 = string.Empty;
+            ModelState.Remove(nameof(model.GlosaId));
+            ModelState.Remove(nameof(model.VersionGlosaBase64));
         }
 
         if (ModelState.IsValid)
@@ -220,6 +277,147 @@ public sealed class NotasFacturaController : Controller
         return await CompletarModeloAsync(model, cancellationToken);
     }
 
+    private async Task<IActionResult> PrepararAnulacionAsync(
+        string facturaId,
+        Guid notaId,
+        TipoNotaFactura tipo,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var nota = await ObtenerNotaEsperadaAsync(
+                facturaId,
+                notaId,
+                tipo,
+                cancellationToken);
+
+            return View("Anular", MapearAnulacion(nota));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ArgumentException)
+        {
+            return BadRequest();
+        }
+        catch (InvalidOperationException)
+        {
+            return BadRequest();
+        }
+    }
+
+    private async Task<IActionResult> AnularAsync(
+        string facturaId,
+        Guid notaId,
+        TipoNotaFactura tipo,
+        NotaFacturaAnulacionViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        NotaFacturaGestionManualDto nota;
+
+        try
+        {
+            nota = await ObtenerNotaEsperadaAsync(
+                facturaId,
+                notaId,
+                tipo,
+                cancellationToken);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ArgumentException)
+        {
+            return BadRequest();
+        }
+        catch (InvalidOperationException)
+        {
+            return BadRequest();
+        }
+
+        model.Id = nota.Id;
+        model.FacturaId = nota.FacturaId;
+        model.Tipo = nota.Tipo;
+        model.Fecha = nota.Fecha;
+        model.Numero = nota.Numero;
+        model.Valor = nota.Valor;
+        model.Anulada = nota.Anulada;
+
+        ModelState.Remove(nameof(model.Id));
+        ModelState.Remove(nameof(model.FacturaId));
+        ModelState.Remove(nameof(model.Tipo));
+        ModelState.Remove(nameof(model.Fecha));
+        ModelState.Remove(nameof(model.Numero));
+        ModelState.Remove(nameof(model.Valor));
+        ModelState.Remove(nameof(model.Anulada));
+
+        if (ModelState.IsValid)
+        {
+            try
+            {
+                var identidad =
+                    _contextoUsuarioActual.ObtenerRequerido();
+
+                var resultado = await _servicio.AnularAsync(
+                    nota.Id,
+                    new SolicitudAnulacionNotaFacturaDto
+                    {
+                        Motivo = model.Motivo
+                    },
+                    identidad.NombreUsuario,
+                    cancellationToken);
+
+                TempData[MensajeExito] =
+                    $"La nota {resultado.Numero} fue anulada " +
+                    "correctamente.";
+
+                return RedirectToAction(
+                    nameof(Index),
+                    new { facturaId = resultado.FacturaId });
+            }
+            catch (Exception excepcion) when (
+                ManejarExcepcion(excepcion))
+            {
+            }
+        }
+
+        return View("Anular", model);
+    }
+
+    private async Task<NotaFacturaGestionManualDto>
+        ObtenerNotaEsperadaAsync(
+            string facturaId,
+            Guid notaId,
+            TipoNotaFactura tipo,
+            CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+
+        var id = facturaId.Trim().ToUpperInvariant();
+        var nota = await _servicio.ObtenerPorIdAsync(
+            notaId,
+            cancellationToken) ??
+            throw new KeyNotFoundException(
+                "No se encontró la nota indicada.");
+
+        if (!string.Equals(
+                nota.FacturaId,
+                id,
+                StringComparison.OrdinalIgnoreCase) ||
+            nota.Tipo != tipo)
+        {
+            throw new InvalidOperationException(
+                "La nota no corresponde a la factura o al tipo " +
+                "indicados.");
+        }
+
+        return nota;
+    }
+
     private async Task<IActionResult> CompletarModeloAsync(
         NotaFacturaCreacionViewModel model,
         CancellationToken cancellationToken)
@@ -230,6 +428,7 @@ public sealed class NotasFacturaController : Controller
                 model.FacturaId,
                 cancellationToken);
 
+            model.ValorFactura = consulta.ValorFactura;
             model.Glosas = consulta.Glosas;
             return View("Crear", model);
         }
@@ -239,7 +438,7 @@ public sealed class NotasFacturaController : Controller
         }
     }
 
-    private byte[]? ObtenerVersion(string versionBase64)
+    private byte[]? ObtenerVersion(string? versionBase64)
     {
         try
         {
@@ -302,6 +501,22 @@ public sealed class NotasFacturaController : Controller
             TotalNotasDebito = consulta.TotalNotasDebito,
             Notas = consulta.Notas,
             Glosas = consulta.Glosas
+        };
+    }
+
+    private static NotaFacturaAnulacionViewModel MapearAnulacion(
+        NotaFacturaGestionManualDto nota)
+    {
+        return new NotaFacturaAnulacionViewModel
+        {
+            Id = nota.Id,
+            FacturaId = nota.FacturaId,
+            Tipo = nota.Tipo,
+            Fecha = nota.Fecha,
+            Numero = nota.Numero,
+            Valor = nota.Valor,
+            Anulada = nota.Anulada,
+            Motivo = nota.MotivoAnulacion ?? string.Empty
         };
     }
 }

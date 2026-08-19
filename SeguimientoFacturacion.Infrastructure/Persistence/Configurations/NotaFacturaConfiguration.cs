@@ -73,7 +73,8 @@ internal sealed class NotaFacturaConfiguration :
         builder.Property(nota => nota.GlosaId);
 
         builder.Property(nota => nota.Anulada)
-            .IsRequired();
+            .IsRequired()
+            .IsConcurrencyToken();
 
         builder.Property(nota => nota.MotivoAnulacion)
             .HasMaxLength(

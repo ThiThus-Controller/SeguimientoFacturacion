@@ -1,0 +1,86 @@
+@using SeguimientoFacturacion.Application.DTOs.Notas
+@model NotaFacturaAnulacionViewModel
+
+@{
+    var esCredito = Model.Tipo == TipoNotaFactura.Credito;
+    var accion = esCredito ? "AnularCredito" : "AnularDebito";
+    ViewData["Title"] = $"Anular nota {Model.Numero}";
+}
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-lg-8 col-xl-7">
+        <div class="mb-4 border-bottom pb-3">
+            <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                <i class="bi bi-x-octagon me-2 text-danger"></i>Anular nota @(esCredito ? "crédito" : "débito")
+            </h1>
+            <p class="text-secondary mb-0">
+                Confirme la anulación de la nota @Model.Numero de la factura @Model.FacturaId.
+            </p>
+        </div>
+
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            @if (esCredito)
+            {
+                <span>La nota dejará de reducir el saldo de la factura y su valor volverá a estar disponible en el cupo de la glosa.</span>
+            }
+            else
+            {
+                <span>La nota dejará de aumentar el saldo de la factura.</span>
+            }
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <dl class="row mb-4">
+                    <dt class="col-sm-4">Número</dt>
+                    <dd class="col-sm-8">@Model.Numero</dd>
+                    <dt class="col-sm-4">Fecha</dt>
+                    <dd class="col-sm-8">@Model.Fecha.ToString("yyyy-MM-dd")</dd>
+                    <dt class="col-sm-4">Valor</dt>
+                    <dd class="col-sm-8 fw-bold">$@Model.Valor.ToString("N2")</dd>
+                    <dt class="col-sm-4">Estado</dt>
+                    <dd class="col-sm-8">@(Model.Anulada ? "Anulada" : "Vigente")</dd>
+                </dl>
+
+                <form asp-action="@accion"
+                      asp-route-facturaId="@Model.FacturaId"
+                      asp-route-notaId="@Model.Id"
+                      method="post">
+                    <div asp-validation-summary="ModelOnly"
+                         class="text-danger mb-3"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="Motivo" class="form-label fw-semibold"></label>
+                        <textarea asp-for="Motivo"
+                                  class="form-control"
+                                  rows="4"
+                                  maxlength="@SolicitudAnulacionNotaFacturaDto.MotivoLongitudMaxima"
+                                  autocomplete="off"></textarea>
+                        <span asp-validation-for="Motivo" class="text-danger"></span>
+                        <div class="form-text">
+                            Este motivo quedará registrado en la auditoría y no podrá modificarse.
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap justify-content-end gap-2">
+                        <a asp-action="Index"
+                           asp-route-facturaId="@Model.FacturaId"
+                           class="btn btn-outline-secondary">
+                            Cancelar
+                        </a>
+                        <button type="submit"
+                                class="btn btn-danger"
+                                disabled="@Model.Anulada">
+                            <i class="bi bi-x-octagon me-1"></i>Confirmar anulación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
