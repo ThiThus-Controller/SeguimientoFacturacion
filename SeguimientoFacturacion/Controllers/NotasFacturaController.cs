@@ -23,16 +23,68 @@ public sealed class NotasFacturaController : Controller
     private const string MensajeExito = "NotasFactura.MensajeExito";
 
     private readonly IServicioGestionManualNotasFactura _servicio;
+    private readonly IServicioConsultaNotasFactura _servicioConsulta;
     private readonly IContextoUsuarioActual _contextoUsuarioActual;
 
     public NotasFacturaController(
         IServicioGestionManualNotasFactura servicio,
+        IServicioConsultaNotasFactura servicioConsulta,
         IContextoUsuarioActual contextoUsuarioActual)
     {
         ArgumentNullException.ThrowIfNull(servicio);
+        ArgumentNullException.ThrowIfNull(servicioConsulta);
         ArgumentNullException.ThrowIfNull(contextoUsuarioActual);
         _servicio = servicio;
+        _servicioConsulta = servicioConsulta;
         _contextoUsuarioActual = contextoUsuarioActual;
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.NotasConsultar)]
+    [HttpGet("~/notas")]
+    public async Task<IActionResult> General(
+        [FromQuery] NotasFacturaListadoGeneralViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            var resultado = await _servicioConsulta.BuscarAsync(
+                new FiltroNotasFacturaDto
+                {
+                    TextoBusqueda = model.TextoBusqueda,
+                    Tipo = model.Tipo,
+                    Anulada = model.Anulada,
+                    FechaDesde = model.FechaDesde,
+                    FechaHasta = model.FechaHasta,
+                    Pagina = model.Pagina,
+                    TamanoPagina = model.TamanoPagina
+                },
+                cancellationToken);
+
+            model.Notas = resultado.Elementos.ToArray();
+            model.TotalRegistros = resultado.TotalRegistros;
+            model.TotalPaginas = resultado.TotalPaginas;
+            model.Pagina = resultado.Pagina;
+            model.TamanoPagina = resultado.TamanoPagina;
+        }
+        catch (ExcepcionValidacionAplicacion excepcion)
+        {
+            foreach (var error in excepcion.Errores)
+            {
+                foreach (var mensaje in error.Value)
+                {
+                    ModelState.AddModelError(error.Key, mensaje);
+                }
+            }
+        }
+
+        return View(model);
     }
 
     [Authorize(Policy = PoliticasAutorizacion.NotasConsultar)]

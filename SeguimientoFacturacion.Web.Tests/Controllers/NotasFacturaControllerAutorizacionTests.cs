@@ -42,10 +42,17 @@ public sealed class NotasFacturaControllerAutorizacionTests
         Assert.Contains(
             typeof(IServicioGestionManualNotasFactura),
             tipos);
+        Assert.Contains(
+            typeof(IServicioConsultaNotasFactura),
+            tipos);
         Assert.Contains(typeof(IContextoUsuarioActual), tipos);
     }
 
     [Theory]
+    [InlineData(
+        nameof(NotasFacturaController.General),
+        true,
+        PoliticasAutorizacion.NotasConsultar)]
     [InlineData(
         nameof(NotasFacturaController.Index),
         true,
