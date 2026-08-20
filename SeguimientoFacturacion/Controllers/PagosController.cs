@@ -10,7 +10,7 @@ using SeguimientoFacturacion.ViewModels.Pagos;
 namespace SeguimientoFacturacion.Controllers;
 
 /// <summary>
-/// Expone el registro manual de pagos sobre facturas.
+/// Expone el registro manual, la consulta y el detalle de pagos.
 /// </summary>
 [Route("facturas/{facturaId}/pagos")]
 [ResponseCache(
@@ -20,22 +20,97 @@ namespace SeguimientoFacturacion.Controllers;
 public sealed class PagosController : Controller
 {
     private readonly IServicioGestionManualPagos _servicio;
+    private readonly IServicioConsultaPagos _servicioConsulta;
     private readonly IServicioAdministracionAseguradoras
         _servicioAseguradoras;
     private readonly IContextoUsuarioActual _contextoUsuarioActual;
 
     public PagosController(
         IServicioGestionManualPagos servicio,
+        IServicioConsultaPagos servicioConsulta,
         IServicioAdministracionAseguradoras servicioAseguradoras,
         IContextoUsuarioActual contextoUsuarioActual)
     {
         ArgumentNullException.ThrowIfNull(servicio);
+        ArgumentNullException.ThrowIfNull(servicioConsulta);
         ArgumentNullException.ThrowIfNull(servicioAseguradoras);
         ArgumentNullException.ThrowIfNull(contextoUsuarioActual);
 
         _servicio = servicio;
+        _servicioConsulta = servicioConsulta;
         _servicioAseguradoras = servicioAseguradoras;
         _contextoUsuarioActual = contextoUsuarioActual;
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.PagosConsultar)]
+    [HttpGet("~/pagos")]
+    public async Task<IActionResult> General(
+        [FromQuery] PagosListadoGeneralViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        model.Aseguradoras = await _servicioAseguradoras.ListarAsync(
+            cancellationToken);
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            var resultado = await _servicioConsulta.BuscarAsync(
+                new FiltroPagosDto
+                {
+                    TextoBusqueda = model.TextoBusqueda,
+                    AseguradoraId = model.AseguradoraId,
+                    Distribucion = model.Distribucion,
+                    FechaDesde = model.FechaDesde,
+                    FechaHasta = model.FechaHasta,
+                    Pagina = model.Pagina,
+                    TamanoPagina = model.TamanoPagina
+                },
+                cancellationToken);
+
+            model.Pagos = resultado.Elementos.ToArray();
+            model.TotalRegistros = resultado.TotalRegistros;
+            model.TotalPaginas = resultado.TotalPaginas;
+            model.Pagina = resultado.Pagina;
+            model.TamanoPagina = resultado.TamanoPagina;
+        }
+        catch (ExcepcionValidacionAplicacion excepcion)
+        {
+            foreach (var error in excepcion.Errores)
+            {
+                foreach (var mensaje in error.Value)
+                {
+                    ModelState.AddModelError(error.Key, mensaje);
+                }
+            }
+        }
+
+        return View(model);
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.PagosConsultar)]
+    [HttpGet("~/pagos/{pagoId:guid}")]
+    public async Task<IActionResult> Detalle(
+        Guid pagoId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var pago = await _servicioConsulta.ObtenerDetalleAsync(
+                pagoId,
+                cancellationToken);
+
+            return pago is null ? NotFound() : View(pago);
+        }
+        catch (ArgumentException)
+        {
+            return BadRequest();
+        }
     }
 
     [Authorize(Policy = PoliticasAutorizacion.PagosCrearManual)]

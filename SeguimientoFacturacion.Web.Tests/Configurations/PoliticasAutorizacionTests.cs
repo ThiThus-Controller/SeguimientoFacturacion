@@ -159,6 +159,27 @@ public sealed class PoliticasAutorizacionTests
     }
 
     [Fact]
+    public void Registrar_ConsultarPagos_DebeExigirPagoYAplicacion()
+    {
+        var options = new AuthorizationOptions();
+        PoliticasAutorizacion.Registrar(options);
+
+        var politica = options.GetPolicy(
+            PoliticasAutorizacion.PagosConsultar);
+
+        Assert.NotNull(politica);
+        var requisito = Assert.Single(
+            politica.Requirements.OfType<RequisitoPermisos>());
+        var alternativa = Assert.Single(requisito.Alternativas);
+
+        Assert.Equal(2, alternativa.Count);
+        Assert.Contains(PermisosSistema.Pagos.Ver, alternativa);
+        Assert.Contains(
+            PermisosSistema.AplicacionesPago.Ver,
+            alternativa);
+    }
+
+    [Fact]
     public void Registrar_ProcesarGlosas_DebeExigirPermiso()
     {
         var options = new AuthorizationOptions();

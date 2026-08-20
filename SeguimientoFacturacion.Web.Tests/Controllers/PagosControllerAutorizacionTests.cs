@@ -21,10 +21,29 @@ public sealed class PagosControllerAutorizacionTests
             .ToArray();
 
         Assert.Contains(typeof(IServicioGestionManualPagos), tipos);
+        Assert.Contains(typeof(IServicioConsultaPagos), tipos);
         Assert.Contains(
             typeof(IServicioAdministracionAseguradoras),
             tipos);
         Assert.Contains(typeof(IContextoUsuarioActual), tipos);
+    }
+
+    [Theory]
+    [InlineData(nameof(PagosController.General))]
+    [InlineData(nameof(PagosController.Detalle))]
+    public void Consulta_DebeExigirPoliticaEsperada(string accion)
+    {
+        var metodo = typeof(PagosController)
+            .GetMethod(accion, BindingFlags.Instance | BindingFlags.Public);
+
+        Assert.NotNull(metodo);
+        var atributo = Assert.Single(
+            metodo.GetCustomAttributes<AuthorizeAttribute>());
+
+        Assert.Equal(
+            PoliticasAutorizacion.PagosConsultar,
+            atributo.Policy);
+        Assert.NotNull(metodo.GetCustomAttribute<HttpGetAttribute>());
     }
 
     [Theory]
