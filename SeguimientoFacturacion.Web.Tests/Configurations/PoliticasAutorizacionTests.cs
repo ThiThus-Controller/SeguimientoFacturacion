@@ -180,6 +180,27 @@ public sealed class PoliticasAutorizacionTests
     }
 
     [Fact]
+    public void Registrar_AplicarAnticipo_DebeExigirEdicionDePagoYAplicacion()
+    {
+        var options = new AuthorizationOptions();
+        PoliticasAutorizacion.Registrar(options);
+
+        var politica = options.GetPolicy(
+            PoliticasAutorizacion.PagosAplicarAnticipo);
+
+        Assert.NotNull(politica);
+        var requisito = Assert.Single(
+            politica.Requirements.OfType<RequisitoPermisos>());
+        var alternativa = Assert.Single(requisito.Alternativas);
+
+        Assert.Equal(2, alternativa.Count);
+        Assert.Contains(PermisosSistema.Pagos.Editar, alternativa);
+        Assert.Contains(
+            PermisosSistema.AplicacionesPago.Editar,
+            alternativa);
+    }
+
+    [Fact]
     public void Registrar_ProcesarGlosas_DebeExigirPermiso()
     {
         var options = new AuthorizationOptions();

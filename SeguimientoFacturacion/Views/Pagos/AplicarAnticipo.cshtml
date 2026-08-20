@@ -1,0 +1,51 @@
+@model PagoAplicacionAnticipoViewModel
+
+@{
+    ViewData["Title"] = "Aplicar anticipo";
+}
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-lg-8">
+        <h1 class="h3 fw-bold mb-3" style="color: var(--azul-rey);">Aplicar anticipo</h1>
+        <div class="alert alert-info">
+            El anticipo se aplicará a una factura de la misma aseguradora con saldo disponible. El total del recibo permanecerá sin cambios.
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <dl class="row mb-4">
+                    <dt class="col-sm-4">Recibo</dt><dd class="col-sm-8">@Model.Recibo</dd>
+                    <dt class="col-sm-4">Factura origen</dt><dd class="col-sm-8">@Model.FacturaOrigenId</dd>
+                    <dt class="col-sm-4">Anticipo disponible</dt><dd class="col-sm-8">$@Model.AnticipoDisponible.ToString("N2")</dd>
+                </dl>
+                <form method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="FacturaDestinoId" class="form-label"></label>
+                            <input asp-for="FacturaDestinoId" class="form-control" />
+                            <span asp-validation-for="FacturaDestinoId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Valor" class="form-label"></label>
+                            <input asp-for="Valor" class="form-control" inputmode="decimal" />
+                            <span asp-validation-for="Valor" class="text-danger"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Motivo" class="form-label"></label>
+                            <textarea asp-for="Motivo" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Motivo" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">Aplicar anticipo</button>
+                        <a asp-action="Detalle" asp-route-pagoId="@Model.PagoId" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

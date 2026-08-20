@@ -70,6 +70,38 @@ public sealed class PagosControllerAutorizacionTests
                 ValidateAntiForgeryTokenAttribute>());
     }
 
+    [Theory]
+    [InlineData(nameof(PagosController.RevertirAplicacion), true,
+        PoliticasAutorizacion.PagosRevertirAplicacion)]
+    [InlineData(nameof(PagosController.RevertirAplicacion), false,
+        PoliticasAutorizacion.PagosRevertirAplicacion)]
+    [InlineData(nameof(PagosController.AplicarAnticipo), true,
+        PoliticasAutorizacion.PagosAplicarAnticipo)]
+    [InlineData(nameof(PagosController.AplicarAnticipo), false,
+        PoliticasAutorizacion.PagosAplicarAnticipo)]
+    public void GestionAplicacion_DebeExigirPoliticaEsperada(
+        string accion,
+        bool esGet,
+        string politica)
+    {
+        var metodo = ObtenerAccion(accion, esGet);
+        var atributo = Assert.Single(
+            metodo.GetCustomAttributes<AuthorizeAttribute>());
+
+        Assert.Equal(politica, atributo.Policy);
+    }
+
+    [Theory]
+    [InlineData(nameof(PagosController.RevertirAplicacion))]
+    [InlineData(nameof(PagosController.AplicarAnticipo))]
+    public void GestionAplicacionPost_DebeValidarAntiforgery(string accion)
+    {
+        var metodo = ObtenerAccion(accion, esGet: false);
+
+        Assert.NotNull(
+            metodo.GetCustomAttribute<ValidateAntiForgeryTokenAttribute>());
+    }
+
     private static MethodInfo ObtenerAccion(bool esGet)
     {
         return typeof(PagosController)
@@ -82,5 +114,17 @@ public sealed class PagosControllerAutorizacionTests
                             is not null
                         : metodo.GetCustomAttribute<HttpPostAttribute>()
                             is not null));
+    }
+
+    private static MethodInfo ObtenerAccion(string nombre, bool esGet)
+    {
+        return typeof(PagosController)
+            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+            .Single(
+                metodo =>
+                    metodo.Name == nombre &&
+                    (esGet
+                        ? metodo.GetCustomAttribute<HttpGetAttribute>() is not null
+                        : metodo.GetCustomAttribute<HttpPostAttribute>() is not null));
     }
 }

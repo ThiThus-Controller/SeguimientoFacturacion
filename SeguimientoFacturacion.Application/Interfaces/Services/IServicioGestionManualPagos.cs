@@ -20,4 +20,14 @@ public interface IServicioGestionManualPagos
         SolicitudCreacionPagoManualDto solicitud,
         string actor,
         CancellationToken cancellationToken = default);
+
+    Task RevertirAplicacionAsync(
+        SolicitudReversionAplicacionPagoDto solicitud,
+        string actor,
+        CancellationToken cancellationToken = default);
+
+    Task AplicarAnticipoAsync(
+        SolicitudAplicacionAnticipoDto solicitud,
+        string actor,
+        CancellationToken cancellationToken = default);
 }

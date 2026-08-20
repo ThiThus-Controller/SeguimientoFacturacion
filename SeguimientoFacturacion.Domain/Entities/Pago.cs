@@ -182,6 +182,31 @@ public sealed class Pago : EntidadAuditableBase<Guid>
         }
     }
 
+    /// <summary>
+    /// Retira una distribución que quedó sin valor recibido.
+    /// </summary>
+    public void RetirarAplicacion(AplicacionPago aplicacion)
+    {
+        ArgumentNullException.ThrowIfNull(aplicacion);
+
+        if (aplicacion.PagoId != Id ||
+            !_aplicaciones.Contains(aplicacion))
+        {
+            throw new InvalidOperationException(
+                "La distribución no pertenece a este pago.");
+        }
+
+        if (aplicacion.ValorRecibido != decimal.Zero ||
+            aplicacion.ValorAplicado != decimal.Zero ||
+            aplicacion.ValorAnticipo != decimal.Zero)
+        {
+            throw new InvalidOperationException(
+                "Solo puede retirarse una distribución sin valores.");
+        }
+
+        _aplicaciones.Remove(aplicacion);
+    }
+
     private static int ValidarAseguradoraId(
         int aseguradoraId)
     {

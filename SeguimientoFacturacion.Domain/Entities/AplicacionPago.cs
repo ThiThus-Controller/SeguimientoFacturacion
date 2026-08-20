@@ -104,6 +104,65 @@ public sealed class AplicacionPago :
         ValorAnticipo += valor;
     }
 
+    /// <summary>
+    /// Aplica a cartera una porción del anticipo de esta misma factura.
+    /// </summary>
+    public void AplicarAnticipoDisponible(decimal valor)
+    {
+        ValidarValorPositivoHasta(
+            valor,
+            ValorAnticipo,
+            "El valor a aplicar no puede superar el anticipo disponible.");
+
+        ValorAnticipo -= valor;
+        ValorAplicado += valor;
+    }
+
+    /// <summary>
+    /// Retira anticipo para transferirlo a otra factura del mismo pago.
+    /// </summary>
+    public void RetirarAnticipo(decimal valor)
+    {
+        ValidarValorPositivoHasta(
+            valor,
+            ValorAnticipo,
+            "El valor a retirar no puede superar el anticipo disponible.");
+
+        ValorAnticipo -= valor;
+        ValorRecibido -= valor;
+    }
+
+    /// <summary>
+    /// Incorpora a esta factura anticipo aplicado desde otra distribución.
+    /// </summary>
+    public void AgregarValorAplicado(decimal valor)
+    {
+        if (valor <= decimal.Zero)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(valor),
+                valor,
+                "El valor aplicado debe ser mayor que cero.");
+        }
+
+        ValorRecibido += valor;
+        ValorAplicado += valor;
+    }
+
+    private static void ValidarValorPositivoHasta(
+        decimal valor,
+        decimal maximo,
+        string mensaje)
+    {
+        if (valor <= decimal.Zero || valor > maximo)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(valor),
+                valor,
+                mensaje);
+        }
+    }
+
     private static Guid ValidarPagoId(Guid pagoId)
     {
         if (pagoId == Guid.Empty)

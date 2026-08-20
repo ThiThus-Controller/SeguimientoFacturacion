@@ -49,6 +49,59 @@ public sealed class PagoTests
         Assert.Equal(1000m, aplicacion.ValorRecibido);
     }
 
+    [Fact]
+    public void AplicarAnticipoDisponible_DebeConservarValorRecibido()
+    {
+        var aplicacion = new AplicacionPago(
+            Guid.NewGuid(), "FE1", 1000m, 600m, 400m);
+
+        aplicacion.AplicarAnticipoDisponible(250m);
+
+        Assert.Equal(850m, aplicacion.ValorAplicado);
+        Assert.Equal(150m, aplicacion.ValorAnticipo);
+        Assert.Equal(1000m, aplicacion.ValorRecibido);
+    }
+
+    [Fact]
+    public void TransferirAnticipo_DebeConservarTotalDelPago()
+    {
+        var pago = CrearPago(1000m);
+        var origen = new AplicacionPago(
+            pago.Id, "FE1", 400m, decimal.Zero, 400m);
+        var destino = new AplicacionPago(
+            pago.Id, "FE2", 600m, 600m, decimal.Zero);
+        pago.AgregarAplicacion(origen);
+        pago.AgregarAplicacion(destino);
+
+        origen.RetirarAnticipo(250m);
+        destino.AgregarValorAplicado(250m);
+        pago.ValidarDistribucionCompleta();
+
+        Assert.Equal(1000m, pago.TotalRecibidoDistribuido);
+        Assert.Equal(850m, pago.TotalAplicado);
+        Assert.Equal(150m, pago.TotalAnticipo);
+    }
+
+    [Fact]
+    public void RetirarAplicacionEnCero_DebeEliminarDistribucion()
+    {
+        var pago = CrearPago(500m);
+        var origen = new AplicacionPago(
+            pago.Id, "FE1", 200m, decimal.Zero, 200m);
+        var destino = new AplicacionPago(
+            pago.Id, "FE2", 300m, 300m, decimal.Zero);
+        pago.AgregarAplicacion(origen);
+        pago.AgregarAplicacion(destino);
+
+        origen.RetirarAnticipo(200m);
+        destino.AgregarValorAplicado(200m);
+        pago.RetirarAplicacion(origen);
+        pago.ValidarDistribucionCompleta();
+
+        Assert.Single(pago.Aplicaciones);
+        Assert.Equal("FE2", pago.Aplicaciones.Single().FacturaId);
+    }
+
     private static Pago CrearPago(decimal valor) => new(
         1,
         new DateOnly(2026, 8, 6),

@@ -144,6 +144,12 @@ public static class PoliticasAutorizacion
     public const string PagosConsultar =
         "Pagos.Consultar";
 
+    public const string PagosRevertirAplicacion =
+        PrefijoPermiso + PermisosSistema.AplicacionesPago.Reversar;
+
+    public const string PagosAplicarAnticipo =
+        "Pagos.AplicarAnticipo";
+
     private static readonly string[] PermisosCreacionUsuarios =
     [
         PermisosSistema.Usuarios.Crear,
@@ -216,6 +222,12 @@ public static class PoliticasAutorizacion
     [
         PermisosSistema.Pagos.Ver,
         PermisosSistema.AplicacionesPago.Ver
+    ];
+
+    private static readonly string[] PermisosAplicacionAnticipo =
+    [
+        PermisosSistema.Pagos.Editar,
+        PermisosSistema.AplicacionesPago.Editar
     ];
 
     /// <summary>
@@ -327,6 +339,12 @@ public static class PoliticasAutorizacion
             PagosConsultar,
             RequisitoPermisos.ExigirTodos(
                 PermisosConsultaPagos));
+
+        AgregarPolitica(
+            options,
+            PagosAplicarAnticipo,
+            RequisitoPermisos.ExigirTodos(
+                PermisosAplicacionAnticipo));
 
         AgregarPolitica(
             options,
