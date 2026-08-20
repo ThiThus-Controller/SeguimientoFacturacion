@@ -1,0 +1,185 @@
+@using SeguimientoFacturacion.Application.DTOs.Pagos
+@model PagosListadoGeneralViewModel
+
+@{
+    ViewData["Title"] = "Consulta general de pagos";
+}
+
+<div class="row py-3">
+    <div class="col-12">
+        <div class="mb-4 border-bottom pb-3">
+            <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                <i class="bi bi-cash-stack me-2 text-secondary"></i>Consulta general de pagos
+            </h1>
+            <p class="text-secondary mb-0">
+                Consulte recibos, aplicaciones a cartera y anticipos definitivos.
+            </p>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header fw-bold">
+                <i class="bi bi-funnel me-2"></i>Filtros de búsqueda
+            </div>
+            <form method="get" class="card-body p-4">
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger"
+                     role="alert"></div>
+
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-xl-4">
+                        <label asp-for="TextoBusqueda" class="form-label fw-semibold"></label>
+                        <input asp-for="TextoBusqueda"
+                               class="form-control"
+                               placeholder="Recibo, factura, aseguradora, paciente o documento" />
+                    </div>
+                    <div class="col-12 col-md-4 col-xl-2">
+                        <label asp-for="AseguradoraId" class="form-label fw-semibold"></label>
+                        <select asp-for="AseguradoraId" class="form-select">
+                            <option value="">Todas</option>
+                            @foreach (var aseguradora in Model.Aseguradoras)
+                            {
+                                <option value="@aseguradora.Codigo">
+                                    @aseguradora.Descripcion
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4 col-xl-2">
+                        <label asp-for="Distribucion" class="form-label fw-semibold"></label>
+                        <select asp-for="Distribucion" class="form-select">
+                            <option value="">Todas</option>
+                            <option value="@((int)TipoDistribucionPago.Aplicado)">Solo aplicado</option>
+                            <option value="@((int)TipoDistribucionPago.Anticipo)">Solo anticipo</option>
+                            <option value="@((int)TipoDistribucionPago.Mixto)">Mixto</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label asp-for="FechaDesde" class="form-label fw-semibold"></label>
+                        <input asp-for="FechaDesde" class="form-control" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label asp-for="FechaHasta" class="form-label fw-semibold"></label>
+                        <input asp-for="FechaHasta" class="form-control" />
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2">
+                        <a asp-action="General" class="btn btn-outline-secondary">Limpiar</a>
+                        <button type="submit" class="btn btn-primary px-4">Buscar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold">
+                    <i class="bi bi-list-check me-2"></i>Pagos encontrados
+                </span>
+                <span class="badge bg-primary rounded-pill">
+                    @Model.TotalRegistros registros
+                </span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Fecha</th>
+                            <th>Recibo</th>
+                            <th>Aseguradora</th>
+                            <th>Factura / Valor factura</th>
+                            <th class="text-end">Recibido</th>
+                            <th class="text-end">Aplicado</th>
+                            <th class="text-end">Anticipo</th>
+                            <th>Auditoría</th>
+                            <th class="text-center pe-3">Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (Model.Pagos.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-secondary py-5">
+                                No se encontraron pagos con los filtros aplicados.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var pago in Model.Pagos)
+                        {
+                            <tr>
+                                <td class="ps-3 text-nowrap">@pago.FechaPago.ToString("yyyy-MM-dd")</td>
+                                <td class="fw-semibold">@pago.Recibo</td>
+                                <td>@pago.Aseguradora</td>
+                                <td style="min-width: 180px;">
+                                    @foreach (var factura in pago.Facturas)
+                                    {
+                                        <div class="d-flex justify-content-between gap-3 text-nowrap">
+                                            <span class="fw-semibold">@factura.FacturaId</span>
+                                            <span>$@factura.ValorFactura.ToString("N2")</span>
+                                        </div>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">$@pago.ValorPagado.ToString("N2")</td>
+                                <td class="text-end text-nowrap text-success">
+                                    $@pago.TotalAplicado.ToString("N2")
+                                </td>
+                                <td class="text-end text-nowrap text-warning">
+                                    $@pago.TotalAnticipo.ToString("N2")
+                                </td>
+                                <td>
+                                    <div class="small">@pago.CreadoPor</div>
+                                    <div class="small text-secondary text-nowrap">
+                                        @pago.FechaCreacionUtc.ToString("yyyy-MM-dd HH:mm") UTC
+                                    </div>
+                                </td>
+                                <td class="text-center pe-3">
+                                    <a asp-action="Detalle"
+                                       asp-route-pagoId="@pago.Id"
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Ver pago y aplicaciones">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPaginas > 1)
+            {
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <span class="text-secondary small">
+                        Página <strong>@Model.Pagina</strong> de <strong>@Model.TotalPaginas</strong>
+                    </span>
+                    <div class="btn-group">
+                        <a asp-action="General"
+                           asp-route-textoBusqueda="@Model.TextoBusqueda"
+                           asp-route-aseguradoraId="@Model.AseguradoraId"
+                           asp-route-distribucion="@Model.Distribucion"
+                           asp-route-fechaDesde="@Model.FechaDesde"
+                           asp-route-fechaHasta="@Model.FechaHasta"
+                           asp-route-pagina="@(Model.Pagina - 1)"
+                           asp-route-tamanoPagina="@Model.TamanoPagina"
+                           class="btn btn-sm btn-outline-secondary @(Model.Pagina <= 1 ? "disabled" : string.Empty)">
+                            Anterior
+                        </a>
+                        <a asp-action="General"
+                           asp-route-textoBusqueda="@Model.TextoBusqueda"
+                           asp-route-aseguradoraId="@Model.AseguradoraId"
+                           asp-route-distribucion="@Model.Distribucion"
+                           asp-route-fechaDesde="@Model.FechaDesde"
+                           asp-route-fechaHasta="@Model.FechaHasta"
+                           asp-route-pagina="@(Model.Pagina + 1)"
+                           asp-route-tamanoPagina="@Model.TamanoPagina"
+                           class="btn btn-sm btn-outline-secondary @(Model.Pagina >= Model.TotalPaginas ? "disabled" : string.Empty)">
+                            Siguiente
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

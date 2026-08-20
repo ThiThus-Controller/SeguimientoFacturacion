@@ -195,6 +195,137 @@ public sealed class ServicioGestionManualPagosTests
     }
 
     [Fact]
+    public async Task RevertirAplicacion_DebeReclasificarComoAnticipo()
+    {
+        var repositorio = CrearRepositorioConPago(800m, 800m, 0m);
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+        var pago = Assert.Single(repositorio.Pagos);
+        var aplicacion = Assert.Single(pago.Aplicaciones);
+
+        await servicio.RevertirAplicacionAsync(
+            new SolicitudReversionAplicacionPagoDto
+            {
+                PagoId = pago.Id,
+                AplicacionId = aplicacion.Id,
+                Motivo = "Pago aplicado a la factura incorrecta."
+            },
+            "auditor");
+
+        Assert.Equal(0m, aplicacion.ValorAplicado);
+        Assert.Equal(800m, aplicacion.ValorAnticipo);
+        Assert.Equal(800m, pago.TotalRecibidoDistribuido);
+        Assert.Equal(
+            TipoOperacionAuditoria.Reversion,
+            Assert.Single(repositorio.Auditorias).TipoOperacion);
+        Assert.Equal(1, unidadTrabajo.Guardados);
+    }
+
+    [Fact]
+    public async Task RevertirAplicacion_SinValorAplicado_DebeBloquear()
+    {
+        var repositorio = CrearRepositorioConPago(500m, 0m, 500m);
+        var servicio = CrearServicio(repositorio, new UnidadTrabajoFalsa());
+        var pago = Assert.Single(repositorio.Pagos);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            servicio.RevertirAplicacionAsync(
+                new SolicitudReversionAplicacionPagoDto
+                {
+                    PagoId = pago.Id,
+                    AplicacionId = pago.Aplicaciones.Single().Id,
+                    Motivo = "Reversión inválida."
+                },
+                "auditor"));
+    }
+
+    [Fact]
+    public async Task AplicarAnticipo_MismaFactura_DebeConservarTotal()
+    {
+        var repositorio = CrearRepositorioConPago(500m, 200m, 300m);
+        repositorio.Referencias[0] = repositorio.Referencias[0] with
+        {
+            TotalPagosAplicados = 200m
+        };
+        var servicio = CrearServicio(repositorio, new UnidadTrabajoFalsa());
+        var pago = Assert.Single(repositorio.Pagos);
+        var aplicacion = Assert.Single(pago.Aplicaciones);
+
+        await servicio.AplicarAnticipoAsync(
+            new SolicitudAplicacionAnticipoDto
+            {
+                PagoId = pago.Id,
+                AplicacionOrigenId = aplicacion.Id,
+                FacturaDestinoId = " fe100 ",
+                Valor = 250m,
+                Motivo = "Aplicación por saldo habilitado."
+            },
+            "tesoreria");
+
+        Assert.Equal(450m, aplicacion.ValorAplicado);
+        Assert.Equal(50m, aplicacion.ValorAnticipo);
+        Assert.Equal(500m, pago.TotalRecibidoDistribuido);
+    }
+
+    [Fact]
+    public async Task AplicarAnticipo_OtraFactura_DebeTransferirDistribucion()
+    {
+        var repositorio = CrearRepositorioConPago(500m, 0m, 500m);
+        repositorio.Referencias.Add(
+            repositorio.Referencias[0] with
+            {
+                FacturaId = "FE200",
+                ValorFactura = 700m
+            });
+        var servicio = CrearServicio(repositorio, new UnidadTrabajoFalsa());
+        var pago = Assert.Single(repositorio.Pagos);
+        var origen = Assert.Single(pago.Aplicaciones);
+
+        await servicio.AplicarAnticipoAsync(
+            new SolicitudAplicacionAnticipoDto
+            {
+                PagoId = pago.Id,
+                AplicacionOrigenId = origen.Id,
+                FacturaDestinoId = "FE200",
+                Valor = 500m,
+                Motivo = "Cruce autorizado de anticipo."
+            },
+            "tesoreria");
+
+        var destino = Assert.Single(pago.Aplicaciones);
+        Assert.Equal("FE200", destino.FacturaId);
+        Assert.Equal(500m, destino.ValorAplicado);
+        Assert.Contains(origen, repositorio.AplicacionesEliminadas);
+        Assert.Equal(500m, pago.TotalRecibidoDistribuido);
+    }
+
+    [Fact]
+    public async Task AplicarAnticipo_OtraAseguradora_DebeBloquear()
+    {
+        var repositorio = CrearRepositorioConPago(500m, 0m, 500m);
+        repositorio.Referencias.Add(
+            repositorio.Referencias[0] with
+            {
+                FacturaId = "FE200",
+                AseguradoraId = 2
+            });
+        var servicio = CrearServicio(repositorio, new UnidadTrabajoFalsa());
+        var pago = Assert.Single(repositorio.Pagos);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            servicio.AplicarAnticipoAsync(
+                new SolicitudAplicacionAnticipoDto
+                {
+                    PagoId = pago.Id,
+                    AplicacionOrigenId = pago.Aplicaciones.Single().Id,
+                    FacturaDestinoId = "FE200",
+                    Valor = 100m,
+                    Motivo = "Intento entre aseguradoras."
+                },
+                "tesoreria"));
+    }
+
+    [Fact]
     public void DependencyInjection_DebeRegistrarServicio()
     {
         ServiceCollection servicios = new();
@@ -254,6 +385,32 @@ public sealed class ServicioGestionManualPagosTests
         return repositorio;
     }
 
+    private static RepositorioFalso CrearRepositorioConPago(
+        decimal recibido,
+        decimal aplicado,
+        decimal anticipo)
+    {
+        var repositorio = CrearRepositorio();
+        var pago = new Pago(
+            1,
+            new DateOnly(2026, 8, 10),
+            "REC-GESTION",
+            recibido,
+            0m,
+            0m);
+        var aplicacion = new AplicacionPago(
+            pago.Id,
+            "FE100",
+            recibido,
+            aplicado,
+            anticipo);
+        pago.AgregarAplicacion(aplicacion);
+        pago.RegistrarCreacion(FechaPrueba, "importador");
+        aplicacion.RegistrarCreacion(FechaPrueba, "importador");
+        repositorio.Pagos.Add(pago);
+        return repositorio;
+    }
+
     private static ServicioGestionManualPagos CrearServicio(
         RepositorioFalso repositorio,
         UnidadTrabajoFalsa unidadTrabajo)
@@ -262,6 +419,8 @@ public sealed class ServicioGestionManualPagosTests
             repositorio,
             unidadTrabajo,
             new SolicitudCreacionPagoManualDtoValidator(),
+            new SolicitudReversionAplicacionPagoDtoValidator(),
+            new SolicitudAplicacionAnticipoDtoValidator(),
             new CalculadoraDistribucionPago(),
             new TimeProviderFalso(FechaPrueba));
     }
@@ -276,6 +435,7 @@ public sealed class ServicioGestionManualPagosTests
 
         public List<Pago> Pagos { get; } = [];
         public List<RegistroAuditoria> Auditorias { get; } = [];
+        public List<AplicacionPago> AplicacionesEliminadas { get; } = [];
         public List<PagoHistorialFacturaDto> Historial { get; } = [];
         public string? UltimaFacturaHistorial { get; private set; }
 
@@ -317,6 +477,16 @@ public sealed class ServicioGestionManualPagosTests
             string recibo,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(ExistePago);
+
+        public Task<Pago?> ObtenerParaGestionAsync(
+            Guid pagoId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Pagos.SingleOrDefault(pago => pago.Id == pagoId));
+
+        public void EliminarAplicacion(AplicacionPago aplicacion)
+        {
+            AplicacionesEliminadas.Add(aplicacion);
+        }
 
         public Task AgregarAsync(
             Pago pago,

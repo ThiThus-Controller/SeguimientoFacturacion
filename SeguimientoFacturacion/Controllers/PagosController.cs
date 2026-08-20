@@ -10,7 +10,7 @@ using SeguimientoFacturacion.ViewModels.Pagos;
 namespace SeguimientoFacturacion.Controllers;
 
 /// <summary>
-/// Expone el registro manual de pagos sobre facturas.
+/// Expone el registro manual, la consulta y el detalle de pagos.
 /// </summary>
 [Route("facturas/{facturaId}/pagos")]
 [ResponseCache(
@@ -19,23 +19,102 @@ namespace SeguimientoFacturacion.Controllers;
     NoStore = true)]
 public sealed class PagosController : Controller
 {
+    private const string MensajeExitoClave = "Pagos.MensajeExito";
+
     private readonly IServicioGestionManualPagos _servicio;
+    private readonly IServicioConsultaPagos _servicioConsulta;
     private readonly IServicioAdministracionAseguradoras
         _servicioAseguradoras;
     private readonly IContextoUsuarioActual _contextoUsuarioActual;
 
     public PagosController(
         IServicioGestionManualPagos servicio,
+        IServicioConsultaPagos servicioConsulta,
         IServicioAdministracionAseguradoras servicioAseguradoras,
         IContextoUsuarioActual contextoUsuarioActual)
     {
         ArgumentNullException.ThrowIfNull(servicio);
+        ArgumentNullException.ThrowIfNull(servicioConsulta);
         ArgumentNullException.ThrowIfNull(servicioAseguradoras);
         ArgumentNullException.ThrowIfNull(contextoUsuarioActual);
 
         _servicio = servicio;
+        _servicioConsulta = servicioConsulta;
         _servicioAseguradoras = servicioAseguradoras;
         _contextoUsuarioActual = contextoUsuarioActual;
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.PagosConsultar)]
+    [HttpGet("~/pagos")]
+    public async Task<IActionResult> General(
+        [FromQuery] PagosListadoGeneralViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        model.Aseguradoras = await _servicioAseguradoras.ListarAsync(
+            cancellationToken);
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            var resultado = await _servicioConsulta.BuscarAsync(
+                new FiltroPagosDto
+                {
+                    TextoBusqueda = model.TextoBusqueda,
+                    AseguradoraId = model.AseguradoraId,
+                    Distribucion = model.Distribucion,
+                    FechaDesde = model.FechaDesde,
+                    FechaHasta = model.FechaHasta,
+                    Pagina = model.Pagina,
+                    TamanoPagina = model.TamanoPagina
+                },
+                cancellationToken);
+
+            model.Pagos = resultado.Elementos.ToArray();
+            model.TotalRegistros = resultado.TotalRegistros;
+            model.TotalPaginas = resultado.TotalPaginas;
+            model.Pagina = resultado.Pagina;
+            model.TamanoPagina = resultado.TamanoPagina;
+        }
+        catch (ExcepcionValidacionAplicacion excepcion)
+        {
+            foreach (var error in excepcion.Errores)
+            {
+                foreach (var mensaje in error.Value)
+                {
+                    ModelState.AddModelError(error.Key, mensaje);
+                }
+            }
+        }
+
+        return View(model);
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.PagosConsultar)]
+    [HttpGet("~/pagos/{pagoId:guid}")]
+    public async Task<IActionResult> Detalle(
+        Guid pagoId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var pago = await _servicioConsulta.ObtenerDetalleAsync(
+                pagoId,
+                cancellationToken);
+
+            ViewData[MensajeExitoClave] = TempData[MensajeExitoClave];
+
+            return pago is null ? NotFound() : View(pago);
+        }
+        catch (ArgumentException)
+        {
+            return BadRequest();
+        }
     }
 
     [Authorize(Policy = PoliticasAutorizacion.PagosCrearManual)]
@@ -137,6 +216,178 @@ public sealed class PagosController : Controller
         }
 
         return View(model);
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.PagosRevertirAplicacion)]
+    [HttpGet("~/pagos/{pagoId:guid}/aplicaciones/{aplicacionId:guid}/revertir")]
+    public async Task<IActionResult> RevertirAplicacion(
+        Guid pagoId,
+        Guid aplicacionId,
+        CancellationToken cancellationToken)
+    {
+        var model = new PagoReversionAplicacionViewModel
+        {
+            PagoId = pagoId,
+            AplicacionId = aplicacionId
+        };
+
+        return await CompletarReversionAsync(model, cancellationToken)
+            ? View(model)
+            : NotFound();
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.PagosRevertirAplicacion)]
+    [HttpPost("~/pagos/{pagoId:guid}/aplicaciones/{aplicacionId:guid}/revertir")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RevertirAplicacion(
+        Guid pagoId,
+        Guid aplicacionId,
+        PagoReversionAplicacionViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        model.PagoId = pagoId;
+        model.AplicacionId = aplicacionId;
+        ModelState.Remove(nameof(model.PagoId));
+        ModelState.Remove(nameof(model.AplicacionId));
+
+        if (ModelState.IsValid)
+        {
+            try
+            {
+                var identidad = _contextoUsuarioActual.ObtenerRequerido();
+                await _servicio.RevertirAplicacionAsync(
+                    new SolicitudReversionAplicacionPagoDto
+                    {
+                        PagoId = pagoId,
+                        AplicacionId = aplicacionId,
+                        Motivo = model.Motivo
+                    },
+                    identidad.NombreUsuario,
+                    cancellationToken);
+
+                TempData[MensajeExitoClave] =
+                    "La aplicación se revirtió y quedó disponible como anticipo.";
+                return RedirectToAction(nameof(Detalle), new { pagoId });
+            }
+            catch (Exception excepcion) when (ManejarExcepcion(excepcion))
+            {
+            }
+        }
+
+        return await CompletarReversionAsync(model, cancellationToken)
+            ? View(model)
+            : NotFound();
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.PagosAplicarAnticipo)]
+    [HttpGet("~/pagos/{pagoId:guid}/aplicaciones/{aplicacionId:guid}/aplicar-anticipo")]
+    public async Task<IActionResult> AplicarAnticipo(
+        Guid pagoId,
+        Guid aplicacionId,
+        CancellationToken cancellationToken)
+    {
+        var model = new PagoAplicacionAnticipoViewModel
+        {
+            PagoId = pagoId,
+            AplicacionOrigenId = aplicacionId
+        };
+
+        return await CompletarAnticipoAsync(model, cancellationToken)
+            ? View(model)
+            : NotFound();
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.PagosAplicarAnticipo)]
+    [HttpPost("~/pagos/{pagoId:guid}/aplicaciones/{aplicacionId:guid}/aplicar-anticipo")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AplicarAnticipo(
+        Guid pagoId,
+        Guid aplicacionId,
+        PagoAplicacionAnticipoViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        model.PagoId = pagoId;
+        model.AplicacionOrigenId = aplicacionId;
+        ModelState.Remove(nameof(model.PagoId));
+        ModelState.Remove(nameof(model.AplicacionOrigenId));
+
+        if (ModelState.IsValid)
+        {
+            try
+            {
+                var identidad = _contextoUsuarioActual.ObtenerRequerido();
+                await _servicio.AplicarAnticipoAsync(
+                    new SolicitudAplicacionAnticipoDto
+                    {
+                        PagoId = pagoId,
+                        AplicacionOrigenId = aplicacionId,
+                        FacturaDestinoId = model.FacturaDestinoId,
+                        Valor = model.Valor,
+                        Motivo = model.Motivo
+                    },
+                    identidad.NombreUsuario,
+                    cancellationToken);
+
+                TempData[MensajeExitoClave] =
+                    "El anticipo se aplicó correctamente a la factura.";
+                return RedirectToAction(nameof(Detalle), new { pagoId });
+            }
+            catch (Exception excepcion) when (ManejarExcepcion(excepcion))
+            {
+            }
+        }
+
+        return await CompletarAnticipoAsync(model, cancellationToken)
+            ? View(model)
+            : NotFound();
+    }
+
+    private async Task<bool> CompletarReversionAsync(
+        PagoReversionAplicacionViewModel model,
+        CancellationToken cancellationToken)
+    {
+        var pago = await _servicioConsulta.ObtenerDetalleAsync(
+            model.PagoId,
+            cancellationToken);
+        var aplicacion = pago?.Aplicaciones.SingleOrDefault(
+            item => item.Id == model.AplicacionId);
+
+        if (pago is null ||
+            aplicacion is null ||
+            aplicacion.ValorAplicado <= decimal.Zero)
+        {
+            return false;
+        }
+
+        model.Recibo = pago.Recibo;
+        model.FacturaId = aplicacion.FacturaId;
+        model.ValorAplicado = aplicacion.ValorAplicado;
+        return true;
+    }
+
+    private async Task<bool> CompletarAnticipoAsync(
+        PagoAplicacionAnticipoViewModel model,
+        CancellationToken cancellationToken)
+    {
+        var pago = await _servicioConsulta.ObtenerDetalleAsync(
+            model.PagoId,
+            cancellationToken);
+        var aplicacion = pago?.Aplicaciones.SingleOrDefault(
+            item => item.Id == model.AplicacionOrigenId);
+
+        if (pago is null ||
+            aplicacion is null ||
+            aplicacion.ValorAnticipo <= decimal.Zero)
+        {
+            return false;
+        }
+
+        model.Recibo = pago.Recibo;
+        model.FacturaOrigenId = aplicacion.FacturaId;
+        model.AnticipoDisponible = aplicacion.ValorAnticipo;
+        return true;
     }
 
     private async Task<bool> CompletarModeloAsync(

@@ -109,6 +109,10 @@ public static class DependencyInjection
             ConsultaNotasFacturaEfCore>();
 
         services.AddScoped<
+            IConsultaPagos,
+            ConsultaPagosEfCore>();
+
+        services.AddScoped<
             IRepositorioImportaciones,
             RepositorioImportacionesEfCore>();
 

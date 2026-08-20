@@ -165,6 +165,32 @@ public sealed class RepositorioGestionManualPagosEfCore :
     }
 
     /// <inheritdoc />
+    public Task<Pago?> ObtenerParaGestionAsync(
+        Guid pagoId,
+        CancellationToken cancellationToken = default)
+    {
+        if (pagoId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "El identificador del pago es obligatorio.",
+                nameof(pagoId));
+        }
+
+        return _contexto.Pagos
+            .Include(pago => pago.Aplicaciones)
+            .SingleOrDefaultAsync(
+                pago => pago.Id == pagoId,
+                cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public void EliminarAplicacion(AplicacionPago aplicacion)
+    {
+        ArgumentNullException.ThrowIfNull(aplicacion);
+        _contexto.AplicacionesPago.Remove(aplicacion);
+    }
+
+    /// <inheritdoc />
     public Task AgregarAsync(
         Pago pago,
         CancellationToken cancellationToken = default)

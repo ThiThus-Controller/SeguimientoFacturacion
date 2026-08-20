@@ -161,6 +161,45 @@ public sealed class RepositorioGestionManualPagosEfCoreTests
     }
 
     [Fact]
+    public async Task ObtenerParaGestion_DebeIncluirAplicacionesYSeguirCambios()
+    {
+        await using var contexto = CrearContexto();
+        var factura = CrearFactura();
+        var pago = CrearPago(factura, "REC-GESTION", 300m);
+        await contexto.AddRangeAsync(factura, pago);
+        await contexto.GuardarCambiosAsync();
+        contexto.ChangeTracker.Clear();
+        var repositorio = new RepositorioGestionManualPagosEfCore(contexto);
+
+        var resultado = await repositorio.ObtenerParaGestionAsync(pago.Id);
+
+        Assert.NotNull(resultado);
+        Assert.Single(resultado.Aplicaciones);
+        Assert.Equal(
+            EntityState.Unchanged,
+            contexto.Entry(resultado).State);
+    }
+
+    [Fact]
+    public async Task EliminarAplicacion_DebePersistirEliminacion()
+    {
+        await using var contexto = CrearContexto();
+        var factura = CrearFactura();
+        var pago = CrearPago(factura, "REC-ELIMINAR", 300m);
+        await contexto.AddRangeAsync(factura, pago);
+        await contexto.GuardarCambiosAsync();
+        contexto.ChangeTracker.Clear();
+        var repositorio = new RepositorioGestionManualPagosEfCore(contexto);
+        var cargado = await repositorio.ObtenerParaGestionAsync(pago.Id);
+        var aplicacion = Assert.Single(cargado!.Aplicaciones);
+
+        repositorio.EliminarAplicacion(aplicacion);
+        await contexto.GuardarCambiosAsync();
+
+        Assert.Empty(await contexto.AplicacionesPago.ToListAsync());
+    }
+
+    [Fact]
     public void DependencyInjection_DebeRegistrarRepositorio()
     {
         ServiceCollection servicios = new();

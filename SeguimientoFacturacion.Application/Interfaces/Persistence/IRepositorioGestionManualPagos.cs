@@ -23,6 +23,12 @@ public interface IRepositorioGestionManualPagos
         string recibo,
         CancellationToken cancellationToken = default);
 
+    Task<Pago?> ObtenerParaGestionAsync(
+        Guid pagoId,
+        CancellationToken cancellationToken = default);
+
+    void EliminarAplicacion(AplicacionPago aplicacion);
+
     Task AgregarAsync(
         Pago pago,
         CancellationToken cancellationToken = default);
