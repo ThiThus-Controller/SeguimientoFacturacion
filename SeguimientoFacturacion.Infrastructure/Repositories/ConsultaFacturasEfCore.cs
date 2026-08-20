@@ -231,6 +231,14 @@ public sealed class ConsultaFacturasEfCore :
                                 registro
                                     .TotalPagosAplicados,
 
+                            TotalValorGlosas =
+                                registro
+                                    .TotalValorGlosas,
+
+                            TotalValorAceptadoGlosas =
+                                registro
+                                    .TotalValorAceptadoGlosas,
+
                             ValorGlosaPendiente =
                                 registro
                                     .ValorGlosaPendiente,
@@ -318,6 +326,32 @@ public sealed class ConsultaFacturasEfCore :
                                 aplicacion =>
                                     (decimal?)
                                     aplicacion.ValorAplicado)
+                        ??
+                        decimal.Zero,
+
+                    TotalValorGlosas =
+                        _contexto.Glosas
+                            .Where(
+                                glosa =>
+                                    glosa.FacturaId == factura.Id
+                                    &&
+                                    glosa.Estado != EstadoGlosa.Anulada)
+                            .Sum(
+                                glosa =>
+                                    (decimal?)glosa.ValorGlosa)
+                        ??
+                        decimal.Zero,
+
+                    TotalValorAceptadoGlosas =
+                        _contexto.Glosas
+                            .Where(
+                                glosa =>
+                                    glosa.FacturaId == factura.Id
+                                    &&
+                                    glosa.Estado != EstadoGlosa.Anulada)
+                            .Sum(
+                                glosa =>
+                                    (decimal?)glosa.ValorAceptado)
                         ??
                         decimal.Zero,
 
@@ -433,6 +467,10 @@ public sealed class ConsultaFacturasEfCore :
         public decimal TotalNotasDebito { get; init; }
 
         public decimal TotalPagosAplicados { get; init; }
+
+        public decimal TotalValorGlosas { get; init; }
+
+        public decimal TotalValorAceptadoGlosas { get; init; }
 
         public decimal ValorGlosaPendiente { get; init; }
     }
