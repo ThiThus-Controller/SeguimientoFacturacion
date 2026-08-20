@@ -132,6 +132,65 @@ public sealed class ConsultaPagosEfCoreTests
     }
 
     [Fact]
+    public async Task ListarAnticiposPorEntidad_DebeConsolidarDisponibles()
+    {
+        await using var contexto = await CrearContextoConDatosAsync();
+        var consulta = new ConsultaPagosEfCore(contexto);
+
+        var entidades = await consulta.ListarAnticiposPorEntidadAsync();
+
+        Assert.Equal(2, entidades.Count);
+        var entidadUno = entidades.Single(
+            entidad => entidad.AseguradoraId == 1);
+        Assert.Equal("ASEGURADORA UNO", entidadUno.Aseguradora);
+        Assert.Equal(400m, entidadUno.AnticipoDisponible);
+        Assert.Equal(1, entidadUno.CantidadFacturasConAnticipo);
+        Assert.Equal(1, entidadUno.CantidadRecibos);
+        var entidadDos = entidades.Single(
+            entidad => entidad.AseguradoraId == 2);
+        Assert.Equal(200m, entidadDos.AnticipoDisponible);
+    }
+
+    [Fact]
+    public async Task BuscarFacturasAnticipo_DebeMostrarSaldoYAnticipo()
+    {
+        await using var contexto = await CrearContextoConDatosAsync();
+        var consulta = new ConsultaPagosEfCore(contexto);
+
+        var resultado = await consulta.BuscarFacturasAnticipoAsync(
+            aseguradoraId: 1,
+            textoBusqueda: "FE101",
+            pagina: 1,
+            tamanoPagina: 10);
+
+        var factura = Assert.Single(resultado.Elementos);
+        Assert.Equal("FE101", factura.FacturaId);
+        Assert.Equal(1000m, factura.ValorFactura);
+        Assert.Equal(1000m, factura.SaldoCartera);
+        Assert.Equal(400m, factura.AnticipoDisponible);
+        Assert.Empty(contexto.ChangeTracker.Entries<Factura>());
+        Assert.Empty(contexto.ChangeTracker.Entries<AplicacionPago>());
+    }
+
+    [Fact]
+    public async Task BuscarFacturasAnticipo_DebePriorizarFacturasConAnticipo()
+    {
+        await using var contexto = await CrearContextoConDatosAsync();
+        var consulta = new ConsultaPagosEfCore(contexto);
+
+        var resultado = await consulta.BuscarFacturasAnticipoAsync(
+            aseguradoraId: 1,
+            textoBusqueda: null,
+            pagina: 1,
+            tamanoPagina: 1);
+
+        Assert.Equal(2, resultado.TotalRegistros);
+        var factura = Assert.Single(resultado.Elementos);
+        Assert.Equal("FE101", factura.FacturaId);
+        Assert.Equal(400m, factura.AnticipoDisponible);
+    }
+
+    [Fact]
     public void DependencyInjection_DebeRegistrarConsulta()
     {
         ServiceCollection servicios = new();

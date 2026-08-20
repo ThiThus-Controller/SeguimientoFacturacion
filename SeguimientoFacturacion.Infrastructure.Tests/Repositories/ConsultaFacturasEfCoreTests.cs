@@ -77,6 +77,7 @@ public sealed class ConsultaFacturasEfCoreTests
         Assert.Equal(100m, resumen.TotalValorAceptadoGlosas);
         Assert.Equal(100m, resumen.TotalNotasCredito);
         Assert.Equal(250m, resumen.TotalPagosAplicados);
+        Assert.Equal(50m, resumen.TotalAnticipoDisponible);
         Assert.Equal(650m, resumen.SaldoCartera);
         Assert.Empty(contexto.ChangeTracker.Entries<Factura>());
     }

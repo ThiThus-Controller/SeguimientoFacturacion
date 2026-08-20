@@ -35,6 +35,11 @@
             User,
             PoliticasAutorizacion.PagosCrearManual)).Succeeded;
 
+    var puedeConsultarPagos =
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.PagosConsultar)).Succeeded;
+
     var puedeGestionar =
         puedeEditar ||
         puedeEditarPaciente ||
@@ -98,7 +103,7 @@
     }
 
     .tabla-financiera {
-        min-width: 1540px;
+        min-width: 1665px;
         font-size: 0.875rem;
     }
 
@@ -255,12 +260,24 @@
                 </p>
             </div>
 
-            @if (puedeCrear)
-            {
-                <a asp-action="Crear" class="btn btn-naranja px-4 rounded-pill">
-                    <i class="bi bi-plus-circle me-1"></i> Crear factura
-                </a>
-            }
+            <div class="d-flex flex-wrap gap-2">
+                @if (puedeConsultarPagos)
+                {
+                    <button type="button"
+                            class="btn btn-outline-primary px-4 rounded-pill"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalAnticiposPorEntidad">
+                        <i class="bi bi-wallet2 me-1"></i>Anticipos por entidad
+                    </button>
+                }
+
+                @if (puedeCrear)
+                {
+                    <a asp-action="Crear" class="btn btn-naranja px-4 rounded-pill">
+                        <i class="bi bi-plus-circle me-1"></i> Crear factura
+                    </a>
+                }
+            </div>
         </div>
 
         <!-- ALERTAS -->
@@ -343,7 +360,7 @@
                     <thead>
                         <tr class="encabezado-grupo">
                             <th colspan="4" scope="colgroup">Identificación</th>
-                            <th colspan="6" scope="colgroup" class="text-center">Movimientos financieros</th>
+                            <th colspan="7" scope="colgroup" class="text-center">Movimientos financieros</th>
                             <th colspan="2" scope="colgroup" class="text-center">Gestión</th>
                         </tr>
                         <tr class="encabezado-columnas">
@@ -365,6 +382,11 @@
                                 <span title="Pagos aplicados a cartera; no incluye anticipos.">Pagos aplicados <i class="bi bi-info-circle text-secondary"></i></span>
                             </th>
                             <th scope="col" class="text-end col-moneda">Saldo</th>
+                            <th scope="col" class="text-end col-moneda">
+                                <span title="Anticipo disponible asociado a la factura; no disminuye el saldo hasta su aplicación.">
+                                    Anticipo <i class="bi bi-info-circle text-secondary"></i>
+                                </span>
+                            </th>
                             <th scope="col" class="col-estado">Estado</th>
                             <th scope="col" class="text-end pe-4 col-acciones celda-acciones">Acciones</th>
                         </tr>
@@ -373,7 +395,7 @@
                         @if (Model.Facturas.Count == 0)
                         {
                             <tr>
-                                <td colspan="12" class="text-center py-5">
+                                <td colspan="13" class="text-center py-5">
                                     <i class="bi bi-inbox text-muted" style="font-size: 3rem; opacity: 0.5;"></i>
                                     <p class="mt-3 text-muted fw-medium fs-5">No se encontraron facturas con los filtros aplicados.</p>
                                 </td>
@@ -430,6 +452,9 @@
                                                 : "saldo-saldado")">
                                             $@factura.SaldoCartera.ToString("N2")
                                         </span>
+                                    </td>
+                                    <td class="text-end valor-monetario text-primary fw-semibold">
+                                        $@factura.TotalAnticipoDisponible.ToString("N2")
                                     </td>
                                     <td>
                                         <span class="badge bg-secondary text-white rounded-pill px-2">@factura.Estado</span>
@@ -518,6 +543,7 @@
                                     </h2>
                                     <div class="small text-secondary">
                                         @factura.NombreCompleto · Saldo $@factura.SaldoCartera.ToString("N2")
+                                        · Anticipo $@factura.TotalAnticipoDisponible.ToString("N2")
                                     </div>
                                 </div>
                                 <button type="button"
@@ -612,5 +638,125 @@
             }
         }
 
+        @if (puedeConsultarPagos)
+        {
+            <div class="modal fade"
+                 id="modalAnticiposPorEntidad"
+                 tabindex="-1"
+                 aria-label="Anticipos por entidad"
+                 aria-hidden="true"
+                 data-url-entidades="@Url.Action("AnticiposPorEntidad", "Pagos")">
+                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content" id="contenidoModalAnticipos">
+                        <div class="modal-body text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
     </div>
 </div>
+
+@section Scripts
+{
+    @if (puedeConsultarPagos)
+    {
+        <script>
+            (() => {
+                const modal = document.getElementById('modalAnticiposPorEntidad');
+                const contenido = document.getElementById('contenidoModalAnticipos');
+                if (!modal || !contenido) return;
+
+                const urlEntidades = modal.dataset.urlEntidades;
+                const cargando = `
+                    <div class="modal-body text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>`;
+
+                function mostrarError() {
+                    contenido.innerHTML = `
+                        <div class="modal-header">
+                            <h2 class="modal-title h5">Anticipos por entidad</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-danger mb-0">No fue posible cargar la información solicitada.</div>
+                        </div>`;
+                }
+
+                async function cargar(url, opciones) {
+                    contenido.innerHTML = cargando;
+                    try {
+                        const respuesta = await fetch(url, {
+                            ...opciones,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                ...(opciones?.headers ?? {})
+                            }
+                        });
+
+                        if (!respuesta.ok) {
+                            mostrarError();
+                            return;
+                        }
+
+                        contenido.innerHTML = await respuesta.text();
+                    } catch {
+                        mostrarError();
+                    }
+                }
+
+                modal.addEventListener('show.bs.modal', () => cargar(urlEntidades));
+
+                contenido.addEventListener('click', event => {
+                    const detalle = event.target.closest('.js-ver-anticipos-entidad');
+                    if (detalle) {
+                        cargar(detalle.dataset.url);
+                        return;
+                    }
+
+                    const volver = event.target.closest('.js-volver-anticipos');
+                    if (volver) {
+                        cargar(urlEntidades);
+                        return;
+                    }
+
+                    const pagina = event.target.closest('.js-pagina-anticipos');
+                    if (pagina && !pagina.closest('.disabled')) {
+                        event.preventDefault();
+                        cargar(pagina.href);
+                    }
+                });
+
+                contenido.addEventListener('submit', event => {
+                    const busqueda = event.target.closest('.js-buscar-facturas-anticipo');
+                    if (busqueda) {
+                        event.preventDefault();
+                        const url = new URL(busqueda.action, window.location.origin);
+                        url.search = new URLSearchParams(new FormData(busqueda)).toString();
+                        cargar(url.toString());
+                        return;
+                    }
+
+                    const aplicacion = event.target.closest('.js-aplicar-anticipo-entidad');
+                    if (aplicacion) {
+                        event.preventDefault();
+                        if (!window.confirm('¿Confirma la aplicación del anticipo a esta factura?')) {
+                            return;
+                        }
+                        cargar(aplicacion.action, {
+                            method: 'POST',
+                            body: new FormData(aplicacion)
+                        });
+                    }
+                });
+            })();
+        </script>
+    }
+}

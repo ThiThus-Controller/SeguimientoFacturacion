@@ -69,6 +69,23 @@ public sealed class ServicioConsultaPagosTests
     }
 
     [Fact]
+    public async Task BuscarFacturasAnticipo_DebeDelegarPaginacion()
+    {
+        var consulta = new ConsultaFalsa();
+        var servicio = CrearServicio(consulta);
+
+        var resultado = await servicio.BuscarFacturasAnticipoAsync(
+            2,
+            "FE100",
+            3,
+            10);
+
+        Assert.Equal(2, consulta.UltimaAseguradoraId);
+        Assert.Equal("FE100", consulta.UltimoTextoAnticipo);
+        Assert.Equal(3, resultado.Pagina);
+    }
+
+    [Fact]
     public void DependencyInjection_DebeRegistrarServicio()
     {
         ServiceCollection servicios = new();
@@ -93,6 +110,8 @@ public sealed class ServicioConsultaPagosTests
         public int Consultas { get; private set; }
         public FiltroPagosDto? UltimoFiltro { get; private set; }
         public Guid? UltimoPagoId { get; private set; }
+        public int? UltimaAseguradoraId { get; private set; }
+        public string? UltimoTextoAnticipo { get; private set; }
 
         public Task<ResultadoPaginado<PagoResumenGeneralDto>>
             BuscarAsync(
@@ -112,6 +131,29 @@ public sealed class ServicioConsultaPagosTests
         {
             UltimoPagoId = pagoId;
             return Task.FromResult<PagoDetalleDto?>(null);
+        }
+
+        public Task<IReadOnlyList<AnticipoEntidadResumenDto>>
+            ListarAnticiposPorEntidadAsync(
+                CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<AnticipoEntidadResumenDto> resultado = [];
+            return Task.FromResult(resultado);
+        }
+
+        public Task<ResultadoPaginado<AnticipoFacturaResumenDto>>
+            BuscarFacturasAnticipoAsync(
+                int aseguradoraId,
+                string? textoBusqueda,
+                int pagina,
+                int tamanoPagina,
+                CancellationToken cancellationToken = default)
+        {
+            UltimaAseguradoraId = aseguradoraId;
+            UltimoTextoAnticipo = textoBusqueda;
+            return Task.FromResult(
+                new ResultadoPaginado<AnticipoFacturaResumenDto>(
+                    [], 0, pagina, tamanoPagina));
         }
     }
 }

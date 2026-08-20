@@ -143,6 +143,12 @@ public sealed record FacturaResumenDto
     public decimal TotalPagosAplicados { get; init; }
 
     /// <summary>
+    /// Obtiene el anticipo vigente asociado a la factura.
+    /// No disminuye el saldo hasta que sea aplicado.
+    /// </summary>
+    public decimal TotalAnticipoDisponible { get; init; }
+
+    /// <summary>
     /// Obtiene el valor total de las glosas no anuladas.
     /// </summary>
     public decimal TotalValorGlosas { get; init; }

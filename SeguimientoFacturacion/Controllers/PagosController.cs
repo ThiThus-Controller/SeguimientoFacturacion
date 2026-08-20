@@ -344,6 +344,156 @@ public sealed class PagosController : Controller
             : NotFound();
     }
 
+    [Authorize(Policy = PoliticasAutorizacion.PagosConsultar)]
+    [HttpGet("~/pagos/anticipos/entidades")]
+    public async Task<IActionResult> AnticiposPorEntidad(
+        CancellationToken cancellationToken)
+    {
+        var entidades = await _servicioConsulta
+            .ListarAnticiposPorEntidadAsync(cancellationToken);
+
+        return PartialView("_AnticiposPorEntidad", entidades);
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.PagosConsultar)]
+    [HttpGet("~/pagos/anticipos/entidades/{aseguradoraId:int}")]
+    public async Task<IActionResult> DetalleAnticiposEntidad(
+        int aseguradoraId,
+        string? textoBusqueda,
+        int pagina = 1,
+        CancellationToken cancellationToken = default)
+    {
+        if (aseguradoraId <= 0)
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            var model = await CrearDetalleAnticiposEntidadAsync(
+                aseguradoraId,
+                textoBusqueda,
+                pagina,
+                mensajeExito: null,
+                cancellationToken: cancellationToken);
+
+            return model is null
+                ? NotFound()
+                : PartialView("_AnticiposEntidadDetalle", model);
+        }
+        catch (ArgumentException)
+        {
+            return BadRequest();
+        }
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.PagosAplicarAnticipo)]
+    [HttpPost("~/pagos/anticipos/entidades/{aseguradoraId:int}/aplicar")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AplicarAnticipoEntidad(
+        int aseguradoraId,
+        AplicacionAnticipoEntidadViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (aseguradoraId <= 0)
+        {
+            return BadRequest();
+        }
+
+        model.AseguradoraId = aseguradoraId;
+        ModelState.Remove(nameof(model.AseguradoraId));
+        string? mensajeExito = null;
+
+        if (ModelState.IsValid)
+        {
+            try
+            {
+                var identidad = _contextoUsuarioActual.ObtenerRequerido();
+                var resultado = await _servicio
+                    .AplicarAnticipoEntidadAsync(
+                        new SolicitudAplicacionAnticipoEntidadDto
+                        {
+                            AseguradoraId = aseguradoraId,
+                            FacturaDestinoId = model.FacturaDestinoId,
+                            Valor = model.Valor,
+                            Motivo = model.Motivo
+                        },
+                        identidad.NombreUsuario,
+                        cancellationToken);
+
+                ModelState.Clear();
+                mensajeExito =
+                    $"Se aplicaron ${resultado.ValorAplicado:N2} a la " +
+                    $"factura {resultado.FacturaDestinoId}.";
+            }
+            catch (Exception excepcion) when (ManejarExcepcion(excepcion))
+            {
+            }
+        }
+
+        var detalle = await CrearDetalleAnticiposEntidadAsync(
+            aseguradoraId,
+            model.TextoBusqueda,
+            Math.Max(1, model.Pagina),
+            mensajeExito,
+            cancellationToken);
+
+        return detalle is null
+            ? NotFound()
+            : PartialView("_AnticiposEntidadDetalle", detalle);
+    }
+
+    private async Task<AnticiposEntidadDetalleViewModel?>
+        CrearDetalleAnticiposEntidadAsync(
+            int aseguradoraId,
+            string? textoBusqueda,
+            int pagina,
+            string? mensajeExito,
+            CancellationToken cancellationToken)
+    {
+        var aseguradora = await _servicioAseguradoras.ObtenerPorIdAsync(
+            aseguradoraId,
+            cancellationToken);
+
+        if (aseguradora is null)
+        {
+            return null;
+        }
+
+        var entidades = await _servicioConsulta
+            .ListarAnticiposPorEntidadAsync(cancellationToken);
+        var entidad = entidades.SingleOrDefault(
+            elemento => elemento.AseguradoraId == aseguradoraId)
+            ?? new AnticipoEntidadResumenDto
+            {
+                AseguradoraId = aseguradoraId,
+                Aseguradora = aseguradora.Descripcion,
+                AnticipoDisponible = decimal.Zero,
+                CantidadFacturasConAnticipo = 0,
+                CantidadRecibos = 0
+            };
+        var resultado = await _servicioConsulta
+            .BuscarFacturasAnticipoAsync(
+                aseguradoraId,
+                textoBusqueda,
+                pagina,
+                tamanoPagina: 10,
+                cancellationToken: cancellationToken);
+
+        return new AnticiposEntidadDetalleViewModel
+        {
+            Entidad = entidad,
+            Facturas = resultado.Elementos.ToArray(),
+            TextoBusqueda = textoBusqueda,
+            Pagina = resultado.Pagina,
+            TotalPaginas = resultado.TotalPaginas,
+            TotalRegistros = resultado.TotalRegistros,
+            MensajeExito = mensajeExito
+        };
+    }
+
     private async Task<bool> CompletarReversionAsync(
         PagoReversionAplicacionViewModel model,
         CancellationToken cancellationToken)

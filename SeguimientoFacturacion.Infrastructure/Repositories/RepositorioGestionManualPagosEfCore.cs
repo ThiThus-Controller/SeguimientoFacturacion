@@ -184,6 +184,32 @@ public sealed class RepositorioGestionManualPagosEfCore :
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<Pago>>
+        ObtenerAnticiposEntidadParaGestionAsync(
+            int aseguradoraId,
+            CancellationToken cancellationToken = default)
+    {
+        if (aseguradoraId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(aseguradoraId));
+        }
+
+        return await _contexto.Pagos
+            .Include(pago => pago.Aplicaciones)
+            .Where(
+                pago =>
+                    pago.AseguradoraId == aseguradoraId &&
+                    pago.Aplicaciones.Any(
+                        aplicacion =>
+                            aplicacion.ValorAnticipo > decimal.Zero))
+            .OrderBy(pago => pago.FechaPago)
+            .ThenBy(pago => pago.Recibo)
+            .ThenBy(pago => pago.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public void EliminarAplicacion(AplicacionPago aplicacion)
     {
         ArgumentNullException.ThrowIfNull(aplicacion);

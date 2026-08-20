@@ -231,6 +231,10 @@ public sealed class ConsultaFacturasEfCore :
                                 registro
                                     .TotalPagosAplicados,
 
+                            TotalAnticipoDisponible =
+                                registro
+                                    .TotalAnticipoDisponible,
+
                             TotalValorGlosas =
                                 registro
                                     .TotalValorGlosas,
@@ -326,6 +330,19 @@ public sealed class ConsultaFacturasEfCore :
                                 aplicacion =>
                                     (decimal?)
                                     aplicacion.ValorAplicado)
+                        ??
+                        decimal.Zero,
+
+                    TotalAnticipoDisponible =
+                        _contexto.AplicacionesPago
+                            .Where(
+                                aplicacion =>
+                                    aplicacion.FacturaId ==
+                                    factura.Id)
+                            .Sum(
+                                aplicacion =>
+                                    (decimal?)
+                                    aplicacion.ValorAnticipo)
                         ??
                         decimal.Zero,
 
@@ -467,6 +484,8 @@ public sealed class ConsultaFacturasEfCore :
         public decimal TotalNotasDebito { get; init; }
 
         public decimal TotalPagosAplicados { get; init; }
+
+        public decimal TotalAnticipoDisponible { get; init; }
 
         public decimal TotalValorGlosas { get; init; }
 

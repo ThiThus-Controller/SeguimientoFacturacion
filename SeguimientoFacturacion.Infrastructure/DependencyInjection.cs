@@ -81,6 +81,10 @@ public static class DependencyInjection
                     SeguimientoDbContext>());
 
         services.AddScoped<
+            IEjecutorTransaccionSerializable,
+            EjecutorTransaccionSerializableEfCore>();
+
+        services.AddScoped<
             IConsultaFacturas,
             ConsultaFacturasEfCore>();
 

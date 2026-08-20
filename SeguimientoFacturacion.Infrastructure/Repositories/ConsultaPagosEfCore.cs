@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SeguimientoFacturacion.Application.Common.Models;
 using SeguimientoFacturacion.Application.DTOs.Pagos;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Domain.Enums;
 using SeguimientoFacturacion.Infrastructure.Persistence;
 
 namespace SeguimientoFacturacion.Infrastructure.Repositories;
@@ -266,5 +267,159 @@ public sealed class ConsultaPagosEfCore : IConsultaPagos
             .ToListAsync(cancellationToken);
 
         return pago with { Aplicaciones = aplicaciones };
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<AnticipoEntidadResumenDto>>
+        ListarAnticiposPorEntidadAsync(
+            CancellationToken cancellationToken = default)
+    {
+        return await (
+                from aplicacion in _contexto.AplicacionesPago.AsNoTracking()
+                join pago in _contexto.Pagos.AsNoTracking()
+                    on aplicacion.PagoId equals pago.Id
+                join aseguradora in _contexto.Aseguradoras.AsNoTracking()
+                    on pago.AseguradoraId equals aseguradora.Id
+                where aplicacion.ValorAnticipo > decimal.Zero
+                group new { aplicacion, pago } by new
+                {
+                    pago.AseguradoraId,
+                    Aseguradora = aseguradora.Descripcion
+                }
+                into grupo
+                orderby grupo.Key.Aseguradora
+                select new AnticipoEntidadResumenDto
+                {
+                    AseguradoraId = grupo.Key.AseguradoraId,
+                    Aseguradora = grupo.Key.Aseguradora,
+                    AnticipoDisponible = grupo.Sum(
+                        elemento => elemento.aplicacion.ValorAnticipo),
+                    CantidadFacturasConAnticipo = grupo
+                        .Select(elemento => elemento.aplicacion.FacturaId)
+                        .Distinct()
+                        .Count(),
+                    CantidadRecibos = grupo
+                        .Select(elemento => elemento.pago.Id)
+                        .Distinct()
+                        .Count()
+                })
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<ResultadoPaginado<AnticipoFacturaResumenDto>>
+        BuscarFacturasAnticipoAsync(
+            int aseguradoraId,
+            string? textoBusqueda,
+            int pagina,
+            int tamanoPagina,
+            CancellationToken cancellationToken = default)
+    {
+        var consulta = _contexto.Facturas
+            .AsNoTracking()
+            .Where(factura => factura.AseguradoraId == aseguradoraId);
+
+        if (!string.IsNullOrWhiteSpace(textoBusqueda))
+        {
+            var texto = textoBusqueda.Trim().ToUpperInvariant();
+            consulta = consulta.Where(
+                factura =>
+                    factura.Id.ToUpper().Contains(texto) ||
+                    factura.Numero.ToUpper().Contains(texto) ||
+                    factura.NombreCompleto.ToUpper().Contains(texto) ||
+                    factura.NumeroDocumento.ToUpper().Contains(texto));
+        }
+
+        var totalRegistros = await consulta.CountAsync(
+            cancellationToken);
+        var registrosAOmitir = (pagina - 1) * tamanoPagina;
+
+        var consultaConsolidada = consulta
+            .Select(
+                factura => new
+                {
+                    factura.Id,
+                    factura.EstadoId,
+                    factura.FechaFactura,
+                    factura.Valor,
+                    TotalNotasCredito = _contexto.NotasFactura
+                        .Where(
+                            nota =>
+                                nota.FacturaId == factura.Id &&
+                                !nota.Anulada &&
+                                nota.Tipo == TipoNotaFactura.Credito)
+                        .Sum(nota => (decimal?)nota.Valor)
+                        ?? decimal.Zero,
+                    TotalNotasDebito = _contexto.NotasFactura
+                        .Where(
+                            nota =>
+                                nota.FacturaId == factura.Id &&
+                                !nota.Anulada &&
+                                nota.Tipo == TipoNotaFactura.Debito)
+                        .Sum(nota => (decimal?)nota.Valor)
+                        ?? decimal.Zero,
+                    TotalPagosAplicados =
+                        _contexto.AplicacionesPago
+                            .Where(
+                                aplicacion =>
+                                    aplicacion.FacturaId == factura.Id)
+                            .Sum(
+                                aplicacion =>
+                                    (decimal?)aplicacion.ValorAplicado)
+                        ?? decimal.Zero,
+                    AnticipoDisponible =
+                        _contexto.AplicacionesPago
+                            .Where(
+                                aplicacion =>
+                                    aplicacion.FacturaId == factura.Id &&
+                                    aplicacion.Pago != null &&
+                                    aplicacion.Pago.AseguradoraId ==
+                                        aseguradoraId)
+                            .Sum(
+                                aplicacion =>
+                                    (decimal?)aplicacion.ValorAnticipo)
+                        ?? decimal.Zero
+                })
+            .Select(
+                factura => new
+                {
+                    factura.Id,
+                    factura.EstadoId,
+                    factura.FechaFactura,
+                    factura.Valor,
+                    SaldoCartera =
+                        factura.Valor +
+                        factura.TotalNotasDebito -
+                        factura.TotalNotasCredito -
+                        factura.TotalPagosAplicados,
+                    AnticipoDisponible = factura.AnticipoDisponible
+                });
+
+        var elementos = await consultaConsolidada
+            .OrderByDescending(
+                factura => factura.AnticipoDisponible > decimal.Zero)
+            .ThenByDescending(
+                factura => factura.SaldoCartera > decimal.Zero)
+            .ThenByDescending(factura => factura.AnticipoDisponible)
+            .ThenByDescending(factura => factura.FechaFactura)
+            .ThenBy(factura => factura.Id)
+            .Skip(registrosAOmitir)
+            .Take(tamanoPagina)
+            .Select(
+                factura => new AnticipoFacturaResumenDto
+                {
+                    FacturaId = factura.Id,
+                    EstadoId = factura.EstadoId,
+                    ValorFactura = factura.Valor,
+                    SaldoCartera = factura.SaldoCartera,
+                    AnticipoDisponible = factura.AnticipoDisponible
+                })
+            .ToListAsync(cancellationToken);
+
+        return new ResultadoPaginado<AnticipoFacturaResumenDto>(
+            elementos,
+            totalRegistros,
+            pagina,
+            tamanoPagina);
     }
 }
