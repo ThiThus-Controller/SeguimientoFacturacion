@@ -58,6 +58,9 @@
             User,
             PoliticasAutorizacion.PagosConsultar))
         .Succeeded;
+
+    var contenidoFluido =
+        ViewData["ContenidoFluido"] is true;
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -258,7 +261,7 @@
         </nav>
     </header>
 
-    <div class="container">
+    <div class="@(contenidoFluido ? "container-fluid px-3 px-xl-4" : "container")">
         <main role="main" class="pb-4">
             @RenderBody()
         </main>

@@ -143,6 +143,16 @@ public sealed record FacturaResumenDto
     public decimal TotalPagosAplicados { get; init; }
 
     /// <summary>
+    /// Obtiene el valor total de las glosas no anuladas.
+    /// </summary>
+    public decimal TotalValorGlosas { get; init; }
+
+    /// <summary>
+    /// Obtiene el valor aceptado acumulado de las glosas no anuladas.
+    /// </summary>
+    public decimal TotalValorAceptadoGlosas { get; init; }
+
+    /// <summary>
     /// Obtiene el valor de las glosas pendientes.
     /// </summary>
     public decimal ValorGlosaPendiente { get; init; }
