@@ -21,39 +21,50 @@ public sealed class ServicioGestionManualPagos :
 
     private readonly IRepositorioGestionManualPagos _repositorio;
     private readonly IUnidadTrabajo _unidadTrabajo;
+    private readonly IEjecutorTransaccionSerializable
+        _ejecutorTransaccion;
     private readonly IValidator<SolicitudCreacionPagoManualDto>
         _validador;
     private readonly IValidator<SolicitudReversionAplicacionPagoDto>
         _validadorReversion;
     private readonly IValidator<SolicitudAplicacionAnticipoDto>
         _validadorAnticipo;
+    private readonly IValidator<SolicitudAplicacionAnticipoEntidadDto>
+        _validadorAnticipoEntidad;
     private readonly CalculadoraDistribucionPago _calculadora;
     private readonly TimeProvider _timeProvider;
 
     public ServicioGestionManualPagos(
         IRepositorioGestionManualPagos repositorio,
         IUnidadTrabajo unidadTrabajo,
+        IEjecutorTransaccionSerializable ejecutorTransaccion,
         IValidator<SolicitudCreacionPagoManualDto> validador,
         IValidator<SolicitudReversionAplicacionPagoDto>
             validadorReversion,
         IValidator<SolicitudAplicacionAnticipoDto>
             validadorAnticipo,
+        IValidator<SolicitudAplicacionAnticipoEntidadDto>
+            validadorAnticipoEntidad,
         CalculadoraDistribucionPago calculadora,
         TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(repositorio);
         ArgumentNullException.ThrowIfNull(unidadTrabajo);
+        ArgumentNullException.ThrowIfNull(ejecutorTransaccion);
         ArgumentNullException.ThrowIfNull(validador);
         ArgumentNullException.ThrowIfNull(validadorReversion);
         ArgumentNullException.ThrowIfNull(validadorAnticipo);
+        ArgumentNullException.ThrowIfNull(validadorAnticipoEntidad);
         ArgumentNullException.ThrowIfNull(calculadora);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         _repositorio = repositorio;
         _unidadTrabajo = unidadTrabajo;
+        _ejecutorTransaccion = ejecutorTransaccion;
         _validador = validador;
         _validadorReversion = validadorReversion;
         _validadorAnticipo = validadorAnticipo;
+        _validadorAnticipoEntidad = validadorAnticipoEntidad;
         _calculadora = calculadora;
         _timeProvider = timeProvider;
     }
@@ -396,6 +407,211 @@ public sealed class ServicioGestionManualPagos :
             cancellationToken);
 
         await _unidadTrabajo.GuardarCambiosAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<ResultadoAplicacionAnticipoEntidadDto>
+        AplicarAnticipoEntidadAsync(
+            SolicitudAplicacionAnticipoEntidadDto solicitud,
+            string actor,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(solicitud);
+        await ValidarAsync(
+            _validadorAnticipoEntidad,
+            solicitud,
+            cancellationToken);
+
+        var actorNormalizado = ValidarActor(actor);
+        return await _ejecutorTransaccion.EjecutarAsync(
+            token => AplicarAnticipoEntidadValidadoAsync(
+                solicitud,
+                actorNormalizado,
+                token),
+            cancellationToken);
+    }
+
+    private async Task<ResultadoAplicacionAnticipoEntidadDto>
+        AplicarAnticipoEntidadValidadoAsync(
+            SolicitudAplicacionAnticipoEntidadDto solicitud,
+            string actorNormalizado,
+            CancellationToken cancellationToken)
+    {
+        var facturaDestinoId = solicitud.FacturaDestinoId
+            .Trim()
+            .ToUpperInvariant();
+        var referencias = await _repositorio.ObtenerFacturasAsync(
+            [facturaDestinoId],
+            cancellationToken);
+        var referencia = referencias.SingleOrDefault()
+            ?? throw new KeyNotFoundException(
+                "No se encontró la factura destino.");
+
+        if (referencia.AseguradoraId != solicitud.AseguradoraId)
+        {
+            throw new InvalidOperationException(
+                "La factura destino pertenece a otra aseguradora.");
+        }
+
+        var distribucion = _calculadora.Distribuir(
+            referencia.EstadoId,
+            referencia.ValorFactura,
+            referencia.TotalNotasDebito,
+            referencia.TotalNotasCredito,
+            referencia.TotalPagosAplicados,
+            solicitud.Valor);
+
+        if (distribucion.ValorAplicado != solicitud.Valor)
+        {
+            throw new InvalidOperationException(
+                "El valor no puede superar el saldo disponible " +
+                "de la factura destino.");
+        }
+
+        var pagos = await _repositorio
+            .ObtenerAnticiposEntidadParaGestionAsync(
+                solicitud.AseguradoraId,
+                cancellationToken);
+        var anticipoDisponible = pagos.Sum(
+            pago => pago.Aplicaciones.Sum(
+                aplicacion => aplicacion.ValorAnticipo));
+
+        if (solicitud.Valor > anticipoDisponible)
+        {
+            throw new InvalidOperationException(
+                "El valor supera el anticipo disponible de la entidad.");
+        }
+
+        var fuentes = pagos
+            .SelectMany(
+                pago => pago.Aplicaciones
+                    .Where(
+                        aplicacion =>
+                            aplicacion.ValorAnticipo > decimal.Zero)
+                    .OrderBy(aplicacion => aplicacion.FechaCreacionUtc)
+                    .ThenBy(aplicacion => aplicacion.Id)
+                    .Select(aplicacion => new { Pago = pago, Aplicacion = aplicacion }))
+            .ToArray();
+        var pagosModificados = new Dictionary<Guid, Pago>();
+        var datosAnteriores = new Dictionary<Guid, string>();
+        var restante = solicitud.Valor;
+        var fuentesConsumidas = 0;
+        var fecha = _timeProvider.GetUtcNow();
+
+        foreach (var fuente in fuentes)
+        {
+            if (restante == decimal.Zero)
+            {
+                break;
+            }
+
+            var valor = Math.Min(
+                restante,
+                fuente.Aplicacion.ValorAnticipo);
+
+            if (!datosAnteriores.ContainsKey(fuente.Pago.Id))
+            {
+                datosAnteriores[fuente.Pago.Id] =
+                    Serializar(fuente.Pago);
+            }
+
+            AplicarFuenteAnticipo(
+                fuente.Pago,
+                fuente.Aplicacion,
+                facturaDestinoId,
+                valor,
+                fecha,
+                actorNormalizado);
+
+            pagosModificados[fuente.Pago.Id] = fuente.Pago;
+            restante -= valor;
+            fuentesConsumidas++;
+        }
+
+        var correlacionId = Guid.NewGuid();
+
+        foreach (var pago in pagosModificados.Values)
+        {
+            pago.RegistrarModificacion(fecha, actorNormalizado);
+            pago.ValidarDistribucionCompleta();
+
+            await _repositorio.AgregarAuditoriaAsync(
+                new RegistroAuditoria(
+                    TipoOperacionAuditoria.Modificacion,
+                    nameof(Pago),
+                    pago.Id.ToString(),
+                    actorNormalizado,
+                    fecha,
+                    datosAnteriores[pago.Id],
+                    Serializar(pago),
+                    solicitud.Motivo.Trim(),
+                    correlacionId),
+                cancellationToken);
+        }
+
+        await _unidadTrabajo.GuardarCambiosAsync(cancellationToken);
+
+        return new ResultadoAplicacionAnticipoEntidadDto
+        {
+            AseguradoraId = solicitud.AseguradoraId,
+            FacturaDestinoId = facturaDestinoId,
+            ValorAplicado = solicitud.Valor,
+            SaldoPosterior = distribucion.SaldoDespues,
+            AnticipoDisponiblePosterior =
+                anticipoDisponible - solicitud.Valor,
+            FuentesConsumidas = fuentesConsumidas
+        };
+    }
+
+    private void AplicarFuenteAnticipo(
+        Pago pago,
+        AplicacionPago origen,
+        string facturaDestinoId,
+        decimal valor,
+        DateTimeOffset fecha,
+        string actor)
+    {
+        if (string.Equals(
+                origen.FacturaId,
+                facturaDestinoId,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            origen.AplicarAnticipoDisponible(valor);
+            origen.RegistrarModificacion(fecha, actor);
+            return;
+        }
+
+        origen.RetirarAnticipo(valor);
+        var destino = pago.Aplicaciones.SingleOrDefault(
+            aplicacion => string.Equals(
+                aplicacion.FacturaId,
+                facturaDestinoId,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (destino is null)
+        {
+            destino = new AplicacionPago(
+                pago.Id,
+                facturaDestinoId,
+                valor,
+                valor,
+                decimal.Zero);
+            destino.RegistrarCreacion(fecha, actor);
+            pago.AgregarAplicacion(destino);
+        }
+        else
+        {
+            destino.AgregarValorAplicado(valor);
+            destino.RegistrarModificacion(fecha, actor);
+        }
+
+        origen.RegistrarModificacion(fecha, actor);
+
+        if (origen.ValorRecibido == decimal.Zero)
+        {
+            pago.RetirarAplicacion(origen);
+            _repositorio.EliminarAplicacion(origen);
+        }
     }
 
     private async Task<Pago> ObtenerPagoRequeridoAsync(

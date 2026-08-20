@@ -326,6 +326,92 @@ public sealed class ServicioGestionManualPagosTests
     }
 
     [Fact]
+    public async Task AplicarAnticipoEntidad_DebeConsumirFuentesFifo()
+    {
+        var repositorio = CrearRepositorio();
+        repositorio.Referencias.Add(
+            repositorio.Referencias[0] with
+            {
+                FacturaId = "FE200",
+                ValorFactura = 900m
+            });
+        var pagoAntiguo = CrearPagoConAnticipo(
+            "REC-ANTIGUO",
+            new DateOnly(2026, 8, 1),
+            500m);
+        var pagoReciente = CrearPagoConAnticipo(
+            "REC-RECIENTE",
+            new DateOnly(2026, 8, 2),
+            1000m);
+        repositorio.Pagos.AddRange(pagoReciente, pagoAntiguo);
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        var resultado = await servicio.AplicarAnticipoEntidadAsync(
+            new SolicitudAplicacionAnticipoEntidadDto
+            {
+                AseguradoraId = 1,
+                FacturaDestinoId = " fe200 ",
+                Valor = 900m,
+                Motivo = "Cruce consolidado autorizado."
+            },
+            "tesoreria");
+
+        Assert.Equal(900m, resultado.ValorAplicado);
+        Assert.Equal(decimal.Zero, resultado.SaldoPosterior);
+        Assert.Equal(600m, resultado.AnticipoDisponiblePosterior);
+        Assert.Equal(2, resultado.FuentesConsumidas);
+        Assert.Equal(
+            500m,
+            pagoAntiguo.Aplicaciones.Single(
+                aplicacion => aplicacion.FacturaId == "FE200")
+                .ValorAplicado);
+        Assert.Equal(
+            400m,
+            pagoReciente.Aplicaciones.Single(
+                aplicacion => aplicacion.FacturaId == "FE200")
+                .ValorAplicado);
+        Assert.Equal(
+            600m,
+            pagoReciente.Aplicaciones.Single(
+                aplicacion => aplicacion.FacturaId == "FE100")
+                .ValorAnticipo);
+        Assert.Equal(2, repositorio.Auditorias.Count);
+        Assert.Single(
+            repositorio.Auditorias
+                .Select(auditoria => auditoria.CorrelacionId)
+                .Distinct());
+        Assert.Equal(1, unidadTrabajo.Guardados);
+    }
+
+    [Fact]
+    public async Task AplicarAnticipoEntidad_SaldoInsuficiente_DebeBloquear()
+    {
+        var repositorio = CrearRepositorioConPago(1500m, 0m, 1500m);
+        repositorio.Referencias[0] = repositorio.Referencias[0] with
+        {
+            ValorFactura = 900m
+        };
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            servicio.AplicarAnticipoEntidadAsync(
+                new SolicitudAplicacionAnticipoEntidadDto
+                {
+                    AseguradoraId = 1,
+                    FacturaDestinoId = "FE100",
+                    Valor = 901m,
+                    Motivo = "Valor superior al saldo."
+                },
+                "tesoreria"));
+
+        Assert.Equal(1500m, repositorio.Pagos.Single().TotalAnticipo);
+        Assert.Empty(repositorio.Auditorias);
+        Assert.Equal(0, unidadTrabajo.Guardados);
+    }
+
+    [Fact]
     public void DependencyInjection_DebeRegistrarServicio()
     {
         ServiceCollection servicios = new();
@@ -411,6 +497,24 @@ public sealed class ServicioGestionManualPagosTests
         return repositorio;
     }
 
+    private static Pago CrearPagoConAnticipo(
+        string recibo,
+        DateOnly fecha,
+        decimal valor)
+    {
+        var pago = new Pago(1, fecha, recibo, valor, 0m, 0m);
+        var aplicacion = new AplicacionPago(
+            pago.Id,
+            "FE100",
+            valor,
+            0m,
+            valor);
+        pago.AgregarAplicacion(aplicacion);
+        pago.RegistrarCreacion(FechaPrueba, "importador");
+        aplicacion.RegistrarCreacion(FechaPrueba, "importador");
+        return pago;
+    }
+
     private static ServicioGestionManualPagos CrearServicio(
         RepositorioFalso repositorio,
         UnidadTrabajoFalsa unidadTrabajo)
@@ -418,9 +522,11 @@ public sealed class ServicioGestionManualPagosTests
         return new ServicioGestionManualPagos(
             repositorio,
             unidadTrabajo,
+            new EjecutorTransaccionFalso(),
             new SolicitudCreacionPagoManualDtoValidator(),
             new SolicitudReversionAplicacionPagoDtoValidator(),
             new SolicitudAplicacionAnticipoDtoValidator(),
+            new SolicitudAplicacionAnticipoEntidadDtoValidator(),
             new CalculadoraDistribucionPago(),
             new TimeProviderFalso(FechaPrueba));
     }
@@ -483,6 +589,22 @@ public sealed class ServicioGestionManualPagosTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(Pagos.SingleOrDefault(pago => pago.Id == pagoId));
 
+        public Task<IReadOnlyList<Pago>>
+            ObtenerAnticiposEntidadParaGestionAsync(
+                int aseguradoraId,
+                CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<Pago> resultado = Pagos
+                .Where(pago =>
+                    pago.AseguradoraId == aseguradoraId &&
+                    pago.TotalAnticipo > decimal.Zero)
+                .OrderBy(pago => pago.FechaPago)
+                .ThenBy(pago => pago.Recibo)
+                .ToArray();
+
+            return Task.FromResult(resultado);
+        }
+
         public void EliminarAplicacion(AplicacionPago aplicacion)
         {
             AplicacionesEliminadas.Add(aplicacion);
@@ -514,6 +636,17 @@ public sealed class ServicioGestionManualPagosTests
         {
             Guardados++;
             return Task.FromResult(1);
+        }
+    }
+
+    private sealed class EjecutorTransaccionFalso :
+        IEjecutorTransaccionSerializable
+    {
+        public Task<T> EjecutarAsync<T>(
+            Func<CancellationToken, Task<T>> operacion,
+            CancellationToken cancellationToken = default)
+        {
+            return operacion(cancellationToken);
         }
     }
 

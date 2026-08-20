@@ -30,4 +30,10 @@ public interface IServicioGestionManualPagos
         SolicitudAplicacionAnticipoDto solicitud,
         string actor,
         CancellationToken cancellationToken = default);
+
+    Task<ResultadoAplicacionAnticipoEntidadDto>
+        AplicarAnticipoEntidadAsync(
+            SolicitudAplicacionAnticipoEntidadDto solicitud,
+            string actor,
+            CancellationToken cancellationToken = default);
 }

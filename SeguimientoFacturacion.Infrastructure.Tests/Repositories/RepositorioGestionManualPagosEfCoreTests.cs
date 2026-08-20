@@ -181,6 +181,40 @@ public sealed class RepositorioGestionManualPagosEfCoreTests
     }
 
     [Fact]
+    public async Task ObtenerAnticiposEntidad_DebeFiltrarYOrdenarFifo()
+    {
+        await using var contexto = CrearContexto();
+        var factura = CrearFactura();
+        var antiguo = CrearPagoConAnticipo(
+            factura,
+            "REC-ANTIGUO",
+            new DateOnly(2026, 8, 8),
+            300m);
+        var reciente = CrearPagoConAnticipo(
+            factura,
+            "REC-RECIENTE",
+            new DateOnly(2026, 8, 9),
+            200m);
+        await contexto.AddRangeAsync(factura, reciente, antiguo);
+        await contexto.GuardarCambiosAsync();
+        contexto.ChangeTracker.Clear();
+        var repositorio = new RepositorioGestionManualPagosEfCore(contexto);
+
+        var pagos = await repositorio
+            .ObtenerAnticiposEntidadParaGestionAsync(1);
+
+        Assert.Equal(2, pagos.Count);
+        Assert.Equal("REC-ANTIGUO", pagos[0].Recibo);
+        Assert.Equal("REC-RECIENTE", pagos[1].Recibo);
+        Assert.All(pagos, pago => Assert.True(pago.TotalAnticipo > 0m));
+        Assert.All(
+            pagos,
+            pago => Assert.Equal(
+                EntityState.Unchanged,
+                contexto.Entry(pago).State));
+    }
+
+    [Fact]
     public async Task EliminarAplicacion_DebePersistirEliminacion()
     {
         await using var contexto = CrearContexto();
@@ -228,6 +262,14 @@ public sealed class RepositorioGestionManualPagosEfCoreTests
         Assert.Equal(
             typeof(RepositorioGestionManualPagosEfCore),
             descriptor.ImplementationType);
+
+        var transaccion = servicios.Single(
+            elemento => elemento.ServiceType ==
+                typeof(IEjecutorTransaccionSerializable));
+        Assert.Equal(ServiceLifetime.Scoped, transaccion.Lifetime);
+        Assert.Equal(
+            typeof(EjecutorTransaccionSerializableEfCore),
+            transaccion.ImplementationType);
     }
 
     private static SeguimientoDbContext CrearContexto()
@@ -337,6 +379,31 @@ public sealed class RepositorioGestionManualPagosEfCoreTests
             FechaAuditoria,
             usuario);
 
+        return pago;
+    }
+
+    private static Pago CrearPagoConAnticipo(
+        Factura factura,
+        string recibo,
+        DateOnly fecha,
+        decimal valor)
+    {
+        var pago = new Pago(
+            factura.AseguradoraId,
+            fecha,
+            recibo,
+            valor,
+            decimal.Zero,
+            decimal.Zero);
+        var aplicacion = new AplicacionPago(
+            pago.Id,
+            factura.Id,
+            valor,
+            decimal.Zero,
+            valor);
+        pago.AgregarAplicacion(aplicacion);
+        pago.RegistrarCreacion(FechaAuditoria, "usuario-pruebas");
+        aplicacion.RegistrarCreacion(FechaAuditoria, "usuario-pruebas");
         return pago;
     }
 }

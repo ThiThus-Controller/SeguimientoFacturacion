@@ -15,4 +15,16 @@ public interface IServicioConsultaPagos
     Task<PagoDetalleDto?> ObtenerDetalleAsync(
         Guid pagoId,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AnticipoEntidadResumenDto>>
+        ListarAnticiposPorEntidadAsync(
+            CancellationToken cancellationToken = default);
+
+    Task<ResultadoPaginado<AnticipoFacturaResumenDto>>
+        BuscarFacturasAnticipoAsync(
+            int aseguradoraId,
+            string? textoBusqueda,
+            int pagina,
+            int tamanoPagina,
+            CancellationToken cancellationToken = default);
 }

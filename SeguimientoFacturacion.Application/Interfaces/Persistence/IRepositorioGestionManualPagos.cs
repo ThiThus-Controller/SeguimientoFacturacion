@@ -27,6 +27,11 @@ public interface IRepositorioGestionManualPagos
         Guid pagoId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Pago>>
+        ObtenerAnticiposEntidadParaGestionAsync(
+            int aseguradoraId,
+            CancellationToken cancellationToken = default);
+
     void EliminarAplicacion(AplicacionPago aplicacion);
 
     Task AgregarAsync(

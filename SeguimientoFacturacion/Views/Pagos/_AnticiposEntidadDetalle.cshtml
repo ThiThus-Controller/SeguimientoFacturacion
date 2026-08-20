@@ -1,0 +1,198 @@
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using SeguimientoFacturacion.Configurations
+@model AnticiposEntidadDetalleViewModel
+@inject IAuthorizationService ServicioAutorizacion
+
+@{
+    var puedeAplicar = (await ServicioAutorizacion.AuthorizeAsync(
+        User,
+        PoliticasAutorizacion.PagosAplicarAnticipo)).Succeeded;
+    var indiceFactura = 0;
+}
+
+<div class="modal-header">
+    <div>
+        <button type="button" class="btn btn-sm btn-link px-0 js-volver-anticipos">
+            <i class="bi bi-arrow-left me-1"></i>Entidades
+        </button>
+        <h2 class="modal-title h5 mb-1 fw-bold" style="color: var(--azul-rey);">
+            @Model.Entidad.Aseguradora
+        </h2>
+        <div class="small text-secondary">
+            Anticipo disponible:
+            <strong class="text-primary">$@Model.Entidad.AnticipoDisponible.ToString("N2")</strong>
+            · @Model.Entidad.CantidadRecibos recibos
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+</div>
+
+<div class="modal-body">
+    @if (!string.IsNullOrWhiteSpace(Model.MensajeExito))
+    {
+        <div class="alert alert-success">@Model.MensajeExito</div>
+    }
+
+    <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+    <form method="get"
+          action="@Url.Action("DetalleAnticiposEntidad", "Pagos", new { aseguradoraId = Model.Entidad.AseguradoraId })"
+          class="row g-2 mb-3 js-buscar-facturas-anticipo">
+        <div class="col">
+            <label for="buscarFacturaAnticipo" class="visually-hidden">Buscar factura</label>
+            <input id="buscarFacturaAnticipo"
+                   name="textoBusqueda"
+                   value="@Model.TextoBusqueda"
+                   maxlength="100"
+                   class="form-control"
+                   placeholder="Factura, paciente o documento" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search me-1"></i>Buscar
+            </button>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Factura</th>
+                    <th class="text-end">Valor factura</th>
+                    <th class="text-end">Saldo</th>
+                    <th class="text-end">Anticipo</th>
+                    <th class="text-end">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Facturas.Count == 0)
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-secondary py-4">
+                            No se encontraron facturas para la entidad.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var factura in Model.Facturas)
+                    {
+                        var formularioId = $"aplicarAnticipoEntidad{indiceFactura++}";
+                        var valorSugerido = Math.Min(
+                            Math.Max(decimal.Zero, factura.SaldoCartera),
+                            Model.Entidad.AnticipoDisponible);
+
+                        <tr>
+                            <td class="fw-semibold">@factura.FacturaId</td>
+                            <td class="text-end">$@factura.ValorFactura.ToString("N2")</td>
+                            <td class="text-end">
+                                <span class="badge rounded-pill @(factura.SaldoCartera > 0 ? "text-bg-danger" : "text-bg-success")">
+                                    $@factura.SaldoCartera.ToString("N2")
+                                </span>
+                            </td>
+                            <td class="text-end text-primary fw-semibold">
+                                $@factura.AnticipoDisponible.ToString("N2")
+                            </td>
+                            <td class="text-end">
+                                @if (puedeAplicar &&
+                                     factura.SaldoCartera > decimal.Zero &&
+                                     !CodigosEstadoFactura.EsAnulada(factura.EstadoId) &&
+                                     Model.Entidad.AnticipoDisponible > decimal.Zero)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-success"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#@formularioId"
+                                            aria-expanded="false">
+                                        Aplicar anticipo
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="text-secondary">—</span>
+                                }
+                            </td>
+                        </tr>
+
+                        @if (puedeAplicar &&
+                             valorSugerido > decimal.Zero &&
+                             !CodigosEstadoFactura.EsAnulada(factura.EstadoId))
+                        {
+                            <tr class="collapse" id="@formularioId">
+                                <td colspan="5" class="bg-light">
+                                    <form asp-controller="Pagos"
+                                          asp-action="AplicarAnticipoEntidad"
+                                          asp-route-aseguradoraId="@Model.Entidad.AseguradoraId"
+                                          method="post"
+                                          class="row g-2 align-items-end js-aplicar-anticipo-entidad">
+                                        <input type="hidden" name="FacturaDestinoId" value="@factura.FacturaId" />
+                                        <input type="hidden" name="TextoBusqueda" value="@Model.TextoBusqueda" />
+                                        <input type="hidden" name="Pagina" value="@Model.Pagina" />
+
+                                        <div class="col-12 col-md-3">
+                                            <label class="form-label">Valor a aplicar</label>
+                                            <input type="number"
+                                                   name="Valor"
+                                                   value="@valorSugerido.ToString("0.00", CultureInfo.InvariantCulture)"
+                                                   min="0.01"
+                                                   max="@valorSugerido.ToString("0.00", CultureInfo.InvariantCulture)"
+                                                   step="0.01"
+                                                   class="form-control"
+                                                   required />
+                                        </div>
+                                        <div class="col-12 col-md-7">
+                                            <label class="form-label">Motivo</label>
+                                            <input type="text"
+                                                   name="Motivo"
+                                                   maxlength="1000"
+                                                   class="form-control"
+                                                   placeholder="Motivo de la aplicación del anticipo"
+                                                   required />
+                                        </div>
+                                        <div class="col-12 col-md-2 d-grid">
+                                            <button type="submit" class="btn btn-success">
+                                                Confirmar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPaginas > 1)
+    {
+        <nav aria-label="Paginación de facturas de la entidad">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                <li class="page-item @(Model.Pagina <= 1 ? "disabled" : string.Empty)">
+                    <a class="page-link js-pagina-anticipos"
+                       href="@Url.Action("DetalleAnticiposEntidad", "Pagos", new { aseguradoraId = Model.Entidad.AseguradoraId, textoBusqueda = Model.TextoBusqueda, pagina = Model.Pagina - 1 })">
+                        Anterior
+                    </a>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">@Model.Pagina de @Model.TotalPaginas</span>
+                </li>
+                <li class="page-item @(Model.Pagina >= Model.TotalPaginas ? "disabled" : string.Empty)">
+                    <a class="page-link js-pagina-anticipos"
+                       href="@Url.Action("DetalleAnticiposEntidad", "Pagos", new { aseguradoraId = Model.Entidad.AseguradoraId, textoBusqueda = Model.TextoBusqueda, pagina = Model.Pagina + 1 })">
+                        Siguiente
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
+
+<div class="modal-footer justify-content-between">
+    <span class="small text-secondary">@Model.TotalRegistros facturas asociadas</span>
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+        Cerrar
+    </button>
+</div>

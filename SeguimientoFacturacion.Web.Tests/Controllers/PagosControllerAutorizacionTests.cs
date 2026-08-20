@@ -31,6 +31,8 @@ public sealed class PagosControllerAutorizacionTests
     [Theory]
     [InlineData(nameof(PagosController.General))]
     [InlineData(nameof(PagosController.Detalle))]
+    [InlineData(nameof(PagosController.AnticiposPorEntidad))]
+    [InlineData(nameof(PagosController.DetalleAnticiposEntidad))]
     public void Consulta_DebeExigirPoliticaEsperada(string accion)
     {
         var metodo = typeof(PagosController)
@@ -79,6 +81,8 @@ public sealed class PagosControllerAutorizacionTests
         PoliticasAutorizacion.PagosAplicarAnticipo)]
     [InlineData(nameof(PagosController.AplicarAnticipo), false,
         PoliticasAutorizacion.PagosAplicarAnticipo)]
+    [InlineData(nameof(PagosController.AplicarAnticipoEntidad), false,
+        PoliticasAutorizacion.PagosAplicarAnticipo)]
     public void GestionAplicacion_DebeExigirPoliticaEsperada(
         string accion,
         bool esGet,
@@ -94,6 +98,7 @@ public sealed class PagosControllerAutorizacionTests
     [Theory]
     [InlineData(nameof(PagosController.RevertirAplicacion))]
     [InlineData(nameof(PagosController.AplicarAnticipo))]
+    [InlineData(nameof(PagosController.AplicarAnticipoEntidad))]
     public void GestionAplicacionPost_DebeValidarAntiforgery(string accion)
     {
         var metodo = ObtenerAccion(accion, esGet: false);

@@ -59,4 +59,55 @@ public sealed class ServicioConsultaPagos : IServicioConsultaPagos
 
         return _consulta.ObtenerDetalleAsync(pagoId, cancellationToken);
     }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<AnticipoEntidadResumenDto>>
+        ListarAnticiposPorEntidadAsync(
+            CancellationToken cancellationToken = default)
+    {
+        return _consulta.ListarAnticiposPorEntidadAsync(
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<ResultadoPaginado<AnticipoFacturaResumenDto>>
+        BuscarFacturasAnticipoAsync(
+            int aseguradoraId,
+            string? textoBusqueda,
+            int pagina,
+            int tamanoPagina,
+            CancellationToken cancellationToken = default)
+    {
+        if (aseguradoraId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(aseguradoraId));
+        }
+
+        if (pagina <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(pagina));
+        }
+
+        if (tamanoPagina is < 1 or > 50)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(tamanoPagina));
+        }
+
+        if (!string.IsNullOrEmpty(textoBusqueda) &&
+            textoBusqueda.Trim().Length > 100)
+        {
+            throw new ArgumentException(
+                "La búsqueda admite máximo 100 caracteres.",
+                nameof(textoBusqueda));
+        }
+
+        return _consulta.BuscarFacturasAnticipoAsync(
+            aseguradoraId,
+            textoBusqueda?.Trim(),
+            pagina,
+            tamanoPagina,
+            cancellationToken);
+    }
 }
