@@ -78,6 +78,41 @@ public sealed class RepositorioGestionManualGlosasEfCore :
     }
 
     /// <inheritdoc />
+    public Task<bool> ExisteAsync(
+        string facturaId,
+        DateOnly fechaGlosa,
+        decimal valorGlosa,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+
+        var idNormalizado = facturaId
+            .Trim()
+            .ToUpperInvariant();
+
+        return _contexto.Glosas
+            .AsNoTracking()
+            .AnyAsync(
+                glosa =>
+                    glosa.FacturaId == idNormalizado &&
+                    glosa.FechaGlosa == fechaGlosa &&
+                    glosa.ValorGlosa == valorGlosa,
+                cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task AgregarAsync(
+        Glosa glosa,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(glosa);
+
+        return _contexto.Glosas
+            .AddAsync(glosa, cancellationToken)
+            .AsTask();
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlySet<Guid>>
         ObtenerIdsConNotasCreditoVigentesAsync(
             IReadOnlyCollection<Guid> glosaIds,

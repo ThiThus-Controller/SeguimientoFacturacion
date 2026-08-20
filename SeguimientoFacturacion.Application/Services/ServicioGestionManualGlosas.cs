@@ -5,6 +5,7 @@ using SeguimientoFacturacion.Application.Common.Exceptions;
 using SeguimientoFacturacion.Application.DTOs.Glosas;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
 using SeguimientoFacturacion.Application.Interfaces.Services;
+using SeguimientoFacturacion.Domain.Constants;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Enums;
 
@@ -16,6 +17,9 @@ namespace SeguimientoFacturacion.Application.Services;
 public sealed class ServicioGestionManualGlosas :
     IServicioGestionManualGlosas
 {
+    private const string MotivoCreacion =
+        "Creación manual de glosa.";
+
     private const string MotivoRespuesta =
         "Registro manual de respuesta de glosa.";
 
@@ -27,6 +31,8 @@ public sealed class ServicioGestionManualGlosas :
 
     private readonly IRepositorioGestionManualGlosas _repositorio;
     private readonly IUnidadTrabajo _unidadTrabajo;
+    private readonly IValidator<SolicitudCreacionGlosaManualDto>
+        _validadorCreacion;
     private readonly IValidator<SolicitudRegistroRespuestaGlosaDto>
         _validadorRespuesta;
     private readonly IValidator<SolicitudResolucionGlosaDto>
@@ -38,6 +44,8 @@ public sealed class ServicioGestionManualGlosas :
     public ServicioGestionManualGlosas(
         IRepositorioGestionManualGlosas repositorio,
         IUnidadTrabajo unidadTrabajo,
+        IValidator<SolicitudCreacionGlosaManualDto>
+            validadorCreacion,
         IValidator<SolicitudRegistroRespuestaGlosaDto>
             validadorRespuesta,
         IValidator<SolicitudResolucionGlosaDto>
@@ -48,10 +56,111 @@ public sealed class ServicioGestionManualGlosas :
     {
         _repositorio = repositorio;
         _unidadTrabajo = unidadTrabajo;
+        _validadorCreacion = validadorCreacion;
         _validadorRespuesta = validadorRespuesta;
         _validadorResolucion = validadorResolucion;
         _validadorAnulacion = validadorAnulacion;
         _timeProvider = timeProvider;
+    }
+
+    /// <inheritdoc />
+    public async Task<FacturaReferenciaGlosaDto> ObtenerFacturaAsync(
+        string facturaId,
+        CancellationToken cancellationToken = default)
+    {
+        var id = ValidarFacturaId(facturaId);
+        var factura = await ObtenerFacturaRequeridaAsync(
+            id,
+            cancellationToken);
+
+        return new FacturaReferenciaGlosaDto
+        {
+            FacturaId = factura.Id,
+            ValorFactura = factura.Valor
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<GlosaGestionManualDto> CrearAsync(
+        SolicitudCreacionGlosaManualDto solicitud,
+        string actor,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(solicitud);
+
+        await ValidarAsync(
+            _validadorCreacion,
+            solicitud,
+            cancellationToken);
+
+        var actorNormalizado = ValidarActor(actor);
+        var facturaId = ValidarFacturaId(solicitud.FacturaId);
+        var factura = await ObtenerFacturaRequeridaAsync(
+            facturaId,
+            cancellationToken);
+
+        if (CodigosEstadoFactura.EsAnulada(factura.EstadoId))
+        {
+            throw new InvalidOperationException(
+                "Una factura anulada no permite registrar glosas.");
+        }
+
+        if (solicitud.FechaGlosa < factura.FechaFactura)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(solicitud.FechaGlosa),
+                solicitud.FechaGlosa,
+                "La fecha de la glosa no puede ser anterior " +
+                "a la fecha de la factura.");
+        }
+
+        if (await _repositorio.ExisteAsync(
+                facturaId,
+                solicitud.FechaGlosa,
+                solicitud.ValorGlosa,
+                cancellationToken))
+        {
+            throw new InvalidOperationException(
+                "Ya existe una glosa con la misma factura, " +
+                "fecha y valor glosado.");
+        }
+
+        var glosa = new Glosa(
+            facturaId,
+            solicitud.FechaGlosa,
+            solicitud.ValorGlosa,
+            solicitud.Observacion);
+
+        var fecha = _timeProvider.GetUtcNow();
+        glosa.RegistrarCreacion(fecha, actorNormalizado);
+
+        await _repositorio.AgregarAsync(
+            glosa,
+            cancellationToken);
+
+        var auditoria = new RegistroAuditoria(
+            TipoOperacionAuditoria.Creacion,
+            nameof(Glosa),
+            glosa.Id.ToString(),
+            actorNormalizado,
+            fecha,
+            datosAnterioresJson: null,
+            datosNuevosJson: Serializar(glosa),
+            motivo: MotivoCreacion,
+            correlacionId: Guid.NewGuid());
+
+        await _repositorio.AgregarAuditoriaAsync(
+            auditoria,
+            cancellationToken);
+
+        await _unidadTrabajo.GuardarCambiosAsync(
+            cancellationToken);
+
+        return Mapear(
+            glosa,
+            factura,
+            tieneNotaCreditoVigente: false,
+            ObtenerFechaCorte());
     }
 
     /// <inheritdoc />
@@ -453,6 +562,8 @@ public sealed class ServicioGestionManualGlosas :
                 glosa.ValorPendiente,
                 glosa.ValorReconocido,
                 glosa.Observacion,
+                glosa.FechaCreacionUtc,
+                glosa.CreadoPor,
                 glosa.FechaModificacionUtc,
                 glosa.ModificadoPor
             });

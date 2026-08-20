@@ -27,17 +27,62 @@ public sealed class GlosasController : Controller
         "Glosas.MensajeError";
 
     private readonly IServicioGestionManualGlosas _servicio;
+    private readonly IServicioConsultaGlosas _servicioConsulta;
     private readonly IContextoUsuarioActual _contextoUsuarioActual;
 
     public GlosasController(
         IServicioGestionManualGlosas servicio,
+        IServicioConsultaGlosas servicioConsulta,
         IContextoUsuarioActual contextoUsuarioActual)
     {
         ArgumentNullException.ThrowIfNull(servicio);
+        ArgumentNullException.ThrowIfNull(servicioConsulta);
         ArgumentNullException.ThrowIfNull(contextoUsuarioActual);
 
         _servicio = servicio;
+        _servicioConsulta = servicioConsulta;
         _contextoUsuarioActual = contextoUsuarioActual;
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.GlosasConsultar)]
+    [HttpGet("")]
+    public async Task<IActionResult> General(
+        [FromQuery] GlosasListadoViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            var resultado = await _servicioConsulta.BuscarAsync(
+                new FiltroGlosasDto
+                {
+                    TextoBusqueda = model.TextoBusqueda,
+                    Estado = model.Estado,
+                    FechaDesde = model.FechaDesde,
+                    FechaHasta = model.FechaHasta,
+                    Pagina = model.Pagina,
+                    TamanoPagina = model.TamanoPagina
+                },
+                cancellationToken);
+
+            model.Glosas = resultado.Elementos.ToArray();
+            model.TotalRegistros = resultado.TotalRegistros;
+            model.TotalPaginas = resultado.TotalPaginas;
+            model.Pagina = resultado.Pagina;
+            model.TamanoPagina = resultado.TamanoPagina;
+        }
+        catch (ExcepcionValidacionAplicacion excepcion)
+        {
+            AgregarErroresValidacion(excepcion);
+        }
+
+        return View(model);
     }
 
     [Authorize(Policy = PoliticasAutorizacion.GlosasConsultar)]
@@ -73,6 +118,105 @@ public sealed class GlosasController : Controller
         {
             return NotFound();
         }
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.GlosasCrear)]
+    [HttpGet("factura/{facturaId}/crear")]
+    public async Task<IActionResult> Crear(
+        string facturaId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(facturaId))
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            var factura = await _servicio.ObtenerFacturaAsync(
+                facturaId,
+                cancellationToken);
+
+            return View(
+                new GlosaCreacionViewModel
+                {
+                    FacturaId = factura.FacturaId,
+                    ValorFactura = factura.ValorFactura,
+                    FechaGlosa = DateOnly.FromDateTime(DateTime.Today)
+                });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [Authorize(Policy = PoliticasAutorizacion.GlosasCrear)]
+    [HttpPost("factura/{facturaId}/crear")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Crear(
+        string facturaId,
+        GlosaCreacionViewModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (string.IsNullOrWhiteSpace(facturaId))
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            var factura = await _servicio.ObtenerFacturaAsync(
+                facturaId,
+                cancellationToken);
+
+            model.FacturaId = factura.FacturaId;
+            model.ValorFactura = factura.ValorFactura;
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+
+        ModelState.Remove(nameof(model.FacturaId));
+        ModelState.Remove(nameof(model.ValorFactura));
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            var identidad = _contextoUsuarioActual.ObtenerRequerido();
+            var resultado = await _servicio.CrearAsync(
+                new SolicitudCreacionGlosaManualDto
+                {
+                    FacturaId = model.FacturaId,
+                    FechaGlosa = model.FechaGlosa,
+                    ValorGlosa = model.ValorGlosa,
+                    Observacion = model.Observacion
+                },
+                identidad.NombreUsuario,
+                cancellationToken);
+
+            TempData[MensajeExito] =
+                "La glosa fue creada correctamente.";
+
+            return RedirigirAListado(resultado.FacturaId);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception excepcion) when (
+            ManejarExcepcionOperacion(excepcion))
+        {
+        }
+
+        return View(model);
     }
 
     [Authorize(Policy = PoliticasAutorizacion.GlosasResponder)]

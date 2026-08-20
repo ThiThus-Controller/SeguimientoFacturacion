@@ -10,6 +10,10 @@
         User,
         PoliticasAutorizacion.GlosasResponder)).Succeeded;
 
+    var puedeCrear = (await ServicioAutorizacion.AuthorizeAsync(
+        User,
+        PoliticasAutorizacion.GlosasCrear)).Succeeded;
+
     var puedeResolver = (await ServicioAutorizacion.AuthorizeAsync(
         User,
         PoliticasAutorizacion.GlosasEditar)).Succeeded;
@@ -81,12 +85,26 @@
                 </p>
             </div>
 
-            <a asp-controller="Facturas"
-               asp-action="Index"
-               asp-route-textoBusqueda="@Model.FacturaId"
-               class="btn btn-outline-secondary px-4">
-                <i class="bi bi-arrow-left me-1"></i> Volver a facturas
-            </a>
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-action="General"
+                   class="btn btn-outline-primary px-4">
+                    <i class="bi bi-list-ul me-1"></i> Consulta general
+                </a>
+                @if (puedeCrear)
+                {
+                    <a asp-action="Crear"
+                       asp-route-facturaId="@Model.FacturaId"
+                       class="btn btn-primary px-4">
+                        <i class="bi bi-plus-circle me-1"></i> Nueva glosa
+                    </a>
+                }
+                <a asp-controller="Facturas"
+                   asp-action="Index"
+                   asp-route-textoBusqueda="@Model.FacturaId"
+                   class="btn btn-outline-secondary px-4">
+                    <i class="bi bi-arrow-left me-1"></i> Volver a facturas
+                </a>
+            </div>
         </div>
 
         <!-- ALERTAS DE ESTADO -->

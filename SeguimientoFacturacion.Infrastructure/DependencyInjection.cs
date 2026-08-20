@@ -93,6 +93,22 @@ public static class DependencyInjection
             RepositorioGestionManualGlosasEfCore>();
 
         services.AddScoped<
+            IRepositorioGestionManualNotasFactura,
+            RepositorioGestionManualNotasFacturaEfCore>();
+
+        services.AddScoped<
+            IRepositorioGestionManualPagos,
+            RepositorioGestionManualPagosEfCore>();
+
+        services.AddScoped<
+            IConsultaGlosas,
+            ConsultaGlosasEfCore>();
+
+        services.AddScoped<
+            IConsultaNotasFactura,
+            ConsultaNotasFacturaEfCore>();
+
+        services.AddScoped<
             IRepositorioImportaciones,
             RepositorioImportacionesEfCore>();
 

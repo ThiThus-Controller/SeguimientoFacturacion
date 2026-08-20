@@ -108,6 +108,9 @@ public static class PoliticasAutorizacion
     public const string GlosasConsultar =
         PrefijoPermiso + PermisosSistema.Glosas.Ver;
 
+    public const string GlosasCrear =
+        PrefijoPermiso + PermisosSistema.Glosas.Crear;
+
     public const string GlosasEditar =
         PrefijoPermiso + PermisosSistema.Glosas.Editar;
 
@@ -119,6 +122,24 @@ public static class PoliticasAutorizacion
 
     public const string GlosasAnular =
         PrefijoPermiso + PermisosSistema.Glosas.Anular;
+
+    public const string NotasConsultar =
+        "Notas.Consultar";
+
+    public const string NotasCreditoCrear =
+        PrefijoPermiso + PermisosSistema.NotasCredito.Crear;
+
+    public const string NotasDebitoCrear =
+        PrefijoPermiso + PermisosSistema.NotasDebito.Crear;
+
+    public const string NotasCreditoAnular =
+        PrefijoPermiso + PermisosSistema.NotasCredito.Anular;
+
+    public const string NotasDebitoAnular =
+        PrefijoPermiso + PermisosSistema.NotasDebito.Anular;
+
+    public const string PagosCrearManual =
+        "Pagos.CrearManual";
 
     private static readonly string[] PermisosCreacionUsuarios =
     [
@@ -174,6 +195,18 @@ public static class PoliticasAutorizacion
     [
         PermisosSistema.NotasCredito.Procesar,
         PermisosSistema.NotasDebito.Procesar
+    ];
+
+    private static readonly string[] PermisosConsultaNotas =
+    [
+        PermisosSistema.NotasCredito.Ver,
+        PermisosSistema.NotasDebito.Ver
+    ];
+
+    private static readonly string[] PermisosCreacionManualPagos =
+    [
+        PermisosSistema.Pagos.Crear,
+        PermisosSistema.AplicacionesPago.Crear
     ];
 
     /// <summary>
@@ -267,6 +300,18 @@ public static class PoliticasAutorizacion
             ProcesarNotasFactura,
             RequisitoPermisos.ExigirTodos(
                 PermisosProcesamientoNotas));
+
+        AgregarPolitica(
+            options,
+            NotasConsultar,
+            RequisitoPermisos.ExigirTodos(
+                PermisosConsultaNotas));
+
+        AgregarPolitica(
+            options,
+            PagosCrearManual,
+            RequisitoPermisos.ExigirTodos(
+                PermisosCreacionManualPagos));
 
         AgregarPolitica(
             options,

@@ -1,0 +1,242 @@
+@model NotasFacturaListadoGeneralViewModel
+
+@{
+    ViewData["Title"] = "Consulta general de notas";
+}
+
+<style>
+    .card-corporativa {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+
+    .card-corporativa .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid var(--azul-rey);
+        padding: 1rem 1.25rem;
+    }
+
+    .tabla-notas th,
+    .tabla-notas td {
+        padding: 0.65rem 0.5rem !important;
+        font-size: 0.875rem;
+    }
+</style>
+
+<div class="row py-3">
+    <div class="col-12">
+        <div class="mb-4 border-bottom pb-3">
+            <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                <i class="bi bi-journal-text me-2 text-secondary"></i>Consulta general de notas
+            </h1>
+            <p class="text-secondary mb-0">
+                Busque, filtre y navegue las notas crédito y débito registradas.
+            </p>
+        </div>
+
+        <div class="card card-corporativa mb-4">
+            <div class="card-header">
+                <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-funnel me-2 text-secondary"></i>Filtros de búsqueda
+                </h2>
+            </div>
+
+            <form method="get" class="card-body p-4">
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger"
+                     role="alert"></div>
+
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-xl-4">
+                        <label asp-for="TextoBusqueda"
+                               class="form-label fw-semibold"></label>
+                        <input asp-for="TextoBusqueda"
+                               class="form-control"
+                               placeholder="Factura, nota, paciente, documento o motivo" />
+                    </div>
+                    <div class="col-6 col-md-3 col-xl-2">
+                        <label asp-for="Tipo" class="form-label fw-semibold"></label>
+                        <select asp-for="Tipo" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="@((int)TipoNotaFactura.Credito)">Crédito</option>
+                            <option value="@((int)TipoNotaFactura.Debito)">Débito</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3 col-xl-2">
+                        <label asp-for="Anulada" class="form-label fw-semibold"></label>
+                        <select asp-for="Anulada" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="false">Vigente</option>
+                            <option value="true">Anulada</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3 col-xl-2">
+                        <label asp-for="FechaDesde" class="form-label fw-semibold"></label>
+                        <input asp-for="FechaDesde" class="form-control" />
+                    </div>
+                    <div class="col-6 col-md-3 col-xl-2">
+                        <label asp-for="FechaHasta" class="form-label fw-semibold"></label>
+                        <input asp-for="FechaHasta" class="form-control" />
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2">
+                        <a asp-action="General" class="btn btn-outline-secondary">
+                            Limpiar
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            Buscar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card card-corporativa shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="h6 mb-0 fw-bold" style="color: var(--azul-rey);">
+                    <i class="bi bi-list-check me-2 text-secondary"></i>Notas encontradas
+                </h2>
+                <span class="badge rounded-pill px-3 py-2 text-primary"
+                      style="background-color: rgba(11, 59, 134, 0.1);">
+                    @Model.TotalRegistros registros
+                </span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle tabla-notas mb-0">
+                    <thead style="background-color: #f1f5f9;">
+                        <tr>
+                            <th class="ps-3">Factura</th>
+                            <th>Paciente</th>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Número</th>
+                            <th class="text-end">Valor</th>
+                            <th class="text-end">Impacto</th>
+                            <th>Glosa</th>
+                            <th>Estado</th>
+                            <th>Auditoría</th>
+                            <th class="text-center pe-3">Navegar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (Model.Notas.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="11" class="text-center py-5">
+                                <i class="bi bi-inbox text-muted"
+                                   style="font-size: 3rem; opacity: 0.5;"></i>
+                                <p class="mt-3 text-muted fw-medium fs-5">
+                                    No se encontraron notas con los filtros aplicados.
+                                </p>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var nota in Model.Notas)
+                        {
+                            <tr>
+                                <td class="ps-3 text-nowrap">
+                                    <strong style="color: var(--azul-rey);">@nota.FacturaId</strong>
+                                </td>
+                                <td>
+                                    <span class="fw-medium">@nota.NombrePaciente</span>
+                                    <div class="small text-muted">@nota.NumeroDocumento</div>
+                                </td>
+                                <td class="text-nowrap">@nota.Fecha.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <span class="badge @(nota.Tipo == TipoNotaFactura.Credito ? "bg-danger" : "bg-success")">
+                                        @(nota.Tipo == TipoNotaFactura.Credito ? "Crédito" : "Débito")
+                                    </span>
+                                </td>
+                                <td class="fw-semibold text-nowrap">@nota.Numero</td>
+                                <td class="text-end text-nowrap">$@nota.Valor.ToString("N2")</td>
+                                <td class="text-end text-nowrap @(nota.ImpactoSaldo < 0 ? "text-danger" : "text-success")">
+                                    $@nota.ImpactoSaldo.ToString("N2")
+                                </td>
+                                <td>
+                                    @(nota.GlosaId.HasValue
+                                        ? nota.GlosaId.Value.ToString()[..8]
+                                        : "—")
+                                </td>
+                                <td style="min-width: 180px;">
+                                    <span class="badge @(nota.Anulada ? "bg-secondary" : "bg-primary")">
+                                        @(nota.Anulada ? "Anulada" : "Vigente")
+                                    </span>
+                                    @if (nota.Anulada &&
+                                        !string.IsNullOrWhiteSpace(nota.MotivoAnulacion))
+                                    {
+                                        <div class="small text-muted mt-1">
+                                            @nota.MotivoAnulacion
+                                        </div>
+                                    }
+                                </td>
+                                <td style="min-width: 180px;">
+                                    <div class="small">
+                                        Creada por <strong>@nota.CreadoPor</strong>
+                                    </div>
+                                    <div class="small text-muted">
+                                        @nota.FechaCreacionUtc.ToString("yyyy-MM-dd HH:mm") UTC
+                                    </div>
+                                    @if (nota.FechaModificacionUtc.HasValue)
+                                    {
+                                        <div class="small mt-1">
+                                            Modificada por <strong>@nota.ModificadoPor</strong>
+                                        </div>
+                                        <div class="small text-muted">
+                                            @nota.FechaModificacionUtc.Value.ToString("yyyy-MM-dd HH:mm") UTC
+                                        </div>
+                                    }
+                                </td>
+                                <td class="text-center pe-3">
+                                    <a asp-action="Index"
+                                       asp-route-facturaId="@nota.FacturaId"
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Abrir notas de la factura">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPaginas > 1)
+            {
+                <div class="card-footer d-flex flex-column flex-sm-row justify-content-between align-items-center">
+                    <span class="text-muted small mb-3 mb-sm-0 fw-medium">
+                        Página <strong>@Model.Pagina</strong> de <strong>@Model.TotalPaginas</strong>
+                    </span>
+                    <div class="btn-group shadow-sm">
+                        <a asp-action="General"
+                           asp-route-textoBusqueda="@Model.TextoBusqueda"
+                           asp-route-tipo="@Model.Tipo"
+                           asp-route-anulada="@Model.Anulada"
+                           asp-route-fechaDesde="@Model.FechaDesde"
+                           asp-route-fechaHasta="@Model.FechaHasta"
+                           asp-route-pagina="@(Model.Pagina - 1)"
+                           asp-route-tamanoPagina="@Model.TamanoPagina"
+                           class="btn btn-sm btn-outline-secondary @(Model.Pagina <= 1 ? "disabled" : string.Empty)">
+                            <i class="bi bi-chevron-left me-1"></i>Anterior
+                        </a>
+                        <a asp-action="General"
+                           asp-route-textoBusqueda="@Model.TextoBusqueda"
+                           asp-route-tipo="@Model.Tipo"
+                           asp-route-anulada="@Model.Anulada"
+                           asp-route-fechaDesde="@Model.FechaDesde"
+                           asp-route-fechaHasta="@Model.FechaHasta"
+                           asp-route-pagina="@(Model.Pagina + 1)"
+                           asp-route-tamanoPagina="@Model.TamanoPagina"
+                           class="btn btn-sm btn-outline-secondary @(Model.Pagina >= Model.TotalPaginas ? "disabled" : string.Empty)">
+                            Siguiente<i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

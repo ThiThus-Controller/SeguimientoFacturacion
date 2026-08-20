@@ -23,6 +23,16 @@
         (await ServicioAutorizacion.AuthorizeAsync(
             User,
             PoliticasAutorizacion.GlosasConsultar)).Succeeded;
+
+    var puedeConsultarNotas =
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.NotasConsultar)).Succeeded;
+
+    var puedeCrearPago =
+        (await ServicioAutorizacion.AuthorizeAsync(
+            User,
+            PoliticasAutorizacion.PagosCrearManual)).Succeeded;
 }
 
 <style>
@@ -266,6 +276,28 @@
                                                    class="btn btn-outline-warning text-dark"
                                                    title="Ver glosas">
                                                     <i class="bi bi-shield-exclamation"></i>
+                                                </a>
+                                            }
+
+                                            @if (puedeConsultarNotas)
+                                            {
+                                                <a asp-controller="NotasFactura"
+                                                   asp-action="Index"
+                                                   asp-route-facturaId="@factura.Id"
+                                                   class="btn btn-outline-success"
+                                                   title="Ver notas crédito y débito">
+                                                    <i class="bi bi-journal-text"></i>
+                                                </a>
+                                            }
+
+                                            @if (puedeCrearPago)
+                                            {
+                                                <a asp-controller="Pagos"
+                                                   asp-action="Crear"
+                                                   asp-route-facturaId="@factura.Id"
+                                                   class="btn btn-outline-info"
+                                                   title="Registrar pago">
+                                                    <i class="bi bi-cash-coin"></i>
                                                 </a>
                                             }
                                         </div>

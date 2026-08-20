@@ -88,6 +88,39 @@ public sealed class RepositorioGestionManualGlosasEfCoreTests
     }
 
     [Fact]
+    public async Task AgregarYExiste_DebeUsarClaveFinancieraNormalizada()
+    {
+        await using var contexto = CrearContexto();
+        var factura = CrearFactura();
+        var glosa = CrearGlosa(
+            factura.Id,
+            new DateOnly(2026, 8, 5),
+            530700.25m);
+        var repositorio =
+            new RepositorioGestionManualGlosasEfCore(
+                contexto);
+
+        await contexto.Facturas.AddAsync(factura);
+        await repositorio.AgregarAsync(glosa);
+        await contexto.GuardarCambiosAsync();
+
+        var existe = await repositorio.ExisteAsync(
+            " fe100 ",
+            new DateOnly(2026, 8, 5),
+            530700.25m);
+        var noExiste = await repositorio.ExisteAsync(
+            "FE100",
+            new DateOnly(2026, 8, 5),
+            530700.26m);
+
+        Assert.True(existe);
+        Assert.False(noExiste);
+        Assert.Equal(
+            EntityState.Unchanged,
+            contexto.Entry(glosa).State);
+    }
+
+    [Fact]
     public async Task
         ObtenerIdsConNotasCreditoVigentes_DebeExcluirAnuladas()
     {
@@ -222,6 +255,11 @@ public sealed class RepositorioGestionManualGlosasEfCoreTests
             () => repositorio.ObtenerPorFacturaAsync(" "));
         await Assert.ThrowsAsync<ArgumentException>(
             () => repositorio.ObtenerPorIdAsync(Guid.Empty));
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => repositorio.ExisteAsync(
+                " ",
+                new DateOnly(2026, 8, 5),
+                100m));
     }
 
     private static SeguimientoDbContext CrearContexto()

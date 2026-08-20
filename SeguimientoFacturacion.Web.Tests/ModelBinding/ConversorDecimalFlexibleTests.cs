@@ -5,11 +5,15 @@ namespace SeguimientoFacturacion.Web.Tests.ModelBinding;
 public sealed class ConversorDecimalFlexibleTests
 {
     [Theory]
+    [InlineData("30000", "30000")]
+    [InlineData("30000,00", "30000.00")]
+    [InlineData("30000.00", "30000.00")]
+    [InlineData("530700,25", "530700.25")]
+    [InlineData("530700.25", "530700.25")]
     [InlineData("0.01", "0.01")]
     [InlineData("0,01", "0.01")]
-    [InlineData("530700", "530700")]
-    [InlineData("530700.25", "530700.25")]
-    [InlineData("530700,25", "530700.25")]
+    [InlineData("-30000.25", "-30000.25")]
+    [InlineData("-30000,25", "-30000.25")]
     public void IntentarConvertir_FormatoValido_DebeAceptar(
         string valorPresentado,
         string valorEsperado)

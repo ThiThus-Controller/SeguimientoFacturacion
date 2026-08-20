@@ -4,6 +4,7 @@ using SeguimientoFacturacion.Application.DTOs.Glosas;
 using SeguimientoFacturacion.Application.Interfaces.Persistence;
 using SeguimientoFacturacion.Application.Services;
 using SeguimientoFacturacion.Application.Validators.Glosas;
+using SeguimientoFacturacion.Domain.Constants;
 using SeguimientoFacturacion.Domain.Entities;
 using SeguimientoFacturacion.Domain.Enums;
 
@@ -16,6 +17,125 @@ public sealed class ServicioGestionManualGlosasTests
 
     private static readonly byte[] VersionValida =
         [1, 2, 3, 4, 5, 6, 7, 8];
+
+    [Fact]
+    public async Task Crear_DatosValidos_DebePersistirYAuditar()
+    {
+        var repositorio = CrearRepositorioConGlosa(out _);
+        repositorio.Glosas.Clear();
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        var resultado = await servicio.CrearAsync(
+            new SolicitudCreacionGlosaManualDto
+            {
+                FacturaId = " fe100 ",
+                FechaGlosa = new DateOnly(2026, 8, 5),
+                ValorGlosa = 530700.25m,
+                Observacion = " Glosa recibida manualmente. "
+            },
+            " operador-glosas ");
+
+        Assert.Equal("FE100", resultado.FacturaId);
+        Assert.Equal(EstadoGlosa.Abierta, resultado.Estado);
+        Assert.Equal(530700.25m, resultado.ValorGlosa);
+        Assert.Equal("Glosa recibida manualmente.", resultado.Observacion);
+        Assert.Equal("operador-glosas", resultado.CreadoPor);
+        Assert.Single(repositorio.Glosas);
+        Assert.Equal(1, unidadTrabajo.Guardados);
+
+        var auditoria = Assert.Single(repositorio.Auditorias);
+        Assert.Equal(
+            TipoOperacionAuditoria.Creacion,
+            auditoria.TipoOperacion);
+        Assert.Null(auditoria.DatosAnterioresJson);
+        Assert.NotNull(auditoria.DatosNuevosJson);
+        Assert.Equal(
+            "Creación manual de glosa.",
+            auditoria.Motivo);
+    }
+
+    [Fact]
+    public async Task ObtenerFactura_DebeRetornarIdNormalizadoYValor()
+    {
+        var repositorio = CrearRepositorioConGlosa(out _);
+        var servicio = CrearServicio(repositorio);
+
+        var resultado = await servicio.ObtenerFacturaAsync(" fe100 ");
+
+        Assert.Equal("FE100", resultado.FacturaId);
+        Assert.Equal(10000m, resultado.ValorFactura);
+    }
+
+    [Fact]
+    public async Task Crear_FacturaAnulada_DebeBloquear()
+    {
+        var repositorio = CrearRepositorioConGlosa(out _);
+        repositorio.Glosas.Clear();
+        repositorio.Facturas[0].CambiarEstado(
+            CodigosEstadoFactura.Anulada);
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        var excepcion = await Assert.ThrowsAsync<
+            InvalidOperationException>(
+                () => servicio.CrearAsync(
+                    CrearSolicitudCreacion(),
+                    "operador-glosas"));
+
+        Assert.Contains(
+            "factura anulada",
+            excepcion.Message,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(repositorio.Glosas);
+        Assert.Empty(repositorio.Auditorias);
+        Assert.Equal(0, unidadTrabajo.Guardados);
+    }
+
+    [Fact]
+    public async Task Crear_FechaAnteriorFactura_DebeBloquear()
+    {
+        var repositorio = CrearRepositorioConGlosa(out _);
+        repositorio.Glosas.Clear();
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        var solicitud = CrearSolicitudCreacion() with
+        {
+            FechaGlosa = new DateOnly(2026, 7, 31)
+        };
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => servicio.CrearAsync(
+                solicitud,
+                "operador-glosas"));
+
+        Assert.Empty(repositorio.Glosas);
+        Assert.Empty(repositorio.Auditorias);
+        Assert.Equal(0, unidadTrabajo.Guardados);
+    }
+
+    [Fact]
+    public async Task Crear_MismaFacturaFechaYValor_DebeBloquearDuplicado()
+    {
+        var repositorio = CrearRepositorioConGlosa(out _);
+        var unidadTrabajo = new UnidadTrabajoFalsa();
+        var servicio = CrearServicio(repositorio, unidadTrabajo);
+
+        var excepcion = await Assert.ThrowsAsync<
+            InvalidOperationException>(
+                () => servicio.CrearAsync(
+                    CrearSolicitudCreacion(),
+                    "operador-glosas"));
+
+        Assert.Contains(
+            "misma factura",
+            excepcion.Message,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Single(repositorio.Glosas);
+        Assert.Empty(repositorio.Auditorias);
+        Assert.Equal(0, unidadTrabajo.Guardados);
+    }
 
     [Fact]
     public async Task Consultar_DebeCalcularIndicadoresYNotaVigente()
@@ -195,6 +315,18 @@ public sealed class ServicioGestionManualGlosasTests
         };
     }
 
+    private static SolicitudCreacionGlosaManualDto
+        CrearSolicitudCreacion()
+    {
+        return new SolicitudCreacionGlosaManualDto
+        {
+            FacturaId = "FE100",
+            FechaGlosa = new DateOnly(2026, 8, 5),
+            ValorGlosa = 1000m,
+            Observacion = "Registro manual de prueba."
+        };
+    }
+
     private static RepositorioFalso CrearRepositorioConGlosa(
         out Glosa glosa)
     {
@@ -244,6 +376,7 @@ public sealed class ServicioGestionManualGlosasTests
         return new ServicioGestionManualGlosas(
             repositorio,
             unidadTrabajo ?? new UnidadTrabajoFalsa(),
+            new SolicitudCreacionGlosaManualDtoValidator(),
             new SolicitudRegistroRespuestaGlosaDtoValidator(),
             new SolicitudResolucionGlosaDtoValidator(),
             new SolicitudAnulacionGlosaDtoValidator(),
@@ -302,6 +435,31 @@ public sealed class ServicioGestionManualGlosasTests
         {
             return Task.FromResult(
                 Glosas.SingleOrDefault(glosa => glosa.Id == glosaId));
+        }
+
+        public Task<bool> ExisteAsync(
+            string facturaId,
+            DateOnly fechaGlosa,
+            decimal valorGlosa,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(
+                Glosas.Any(
+                    glosa =>
+                        string.Equals(
+                            glosa.FacturaId,
+                            facturaId,
+                            StringComparison.OrdinalIgnoreCase) &&
+                        glosa.FechaGlosa == fechaGlosa &&
+                        glosa.ValorGlosa == valorGlosa));
+        }
+
+        public Task AgregarAsync(
+            Glosa glosa,
+            CancellationToken cancellationToken = default)
+        {
+            Glosas.Add(glosa);
+            return Task.CompletedTask;
         }
 
         public Task<IReadOnlySet<Guid>>

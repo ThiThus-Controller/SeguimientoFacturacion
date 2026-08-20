@@ -23,6 +23,9 @@ public sealed class GlosasControllerAutorizacionTests
         Assert.Contains(
             typeof(IServicioGestionManualGlosas),
             tipos);
+        Assert.Contains(
+            typeof(IServicioConsultaGlosas),
+            tipos);
         Assert.Contains(typeof(IContextoUsuarioActual), tipos);
     }
 
@@ -31,6 +34,18 @@ public sealed class GlosasControllerAutorizacionTests
         nameof(GlosasController.Index),
         true,
         PoliticasAutorizacion.GlosasConsultar)]
+    [InlineData(
+        nameof(GlosasController.General),
+        true,
+        PoliticasAutorizacion.GlosasConsultar)]
+    [InlineData(
+        nameof(GlosasController.Crear),
+        true,
+        PoliticasAutorizacion.GlosasCrear)]
+    [InlineData(
+        nameof(GlosasController.Crear),
+        false,
+        PoliticasAutorizacion.GlosasCrear)]
     [InlineData(
         nameof(GlosasController.Responder),
         true,
@@ -76,6 +91,7 @@ public sealed class GlosasControllerAutorizacionTests
     }
 
     [Theory]
+    [InlineData(nameof(GlosasController.Crear))]
     [InlineData(nameof(GlosasController.Responder))]
     [InlineData(nameof(GlosasController.Resolver))]
     [InlineData(nameof(GlosasController.Conciliar))]

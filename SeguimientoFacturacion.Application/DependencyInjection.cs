@@ -46,6 +46,22 @@ public static class DependencyInjection
             ServicioGestionManualGlosas>();
 
         services.AddTransient<
+            IServicioGestionManualNotasFactura,
+            ServicioGestionManualNotasFactura>();
+
+        services.AddTransient<
+            IServicioGestionManualPagos,
+            ServicioGestionManualPagos>();
+
+        services.AddTransient<
+            IServicioConsultaGlosas,
+            ServicioConsultaGlosas>();
+
+        services.AddTransient<
+            IServicioConsultaNotasFactura,
+            ServicioConsultaNotasFactura>();
+
+        services.AddTransient<
             IServicioAnalisisImportacion,
             ServicioAnalisisImportacion>();
 

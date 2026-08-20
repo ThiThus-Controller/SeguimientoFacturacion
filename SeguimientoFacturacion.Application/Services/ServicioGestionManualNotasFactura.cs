@@ -1,0 +1,454 @@
+using System.Security.Cryptography;
+using System.Text.Json;
+using FluentValidation;
+using SeguimientoFacturacion.Application.Common.Exceptions;
+using SeguimientoFacturacion.Application.DTOs.Notas;
+using SeguimientoFacturacion.Application.Interfaces.Persistence;
+using SeguimientoFacturacion.Application.Interfaces.Services;
+using SeguimientoFacturacion.Domain.Constants;
+using SeguimientoFacturacion.Domain.Entities;
+using SeguimientoFacturacion.Domain.Enums;
+
+namespace SeguimientoFacturacion.Application.Services;
+
+/// <summary>
+/// Implementa la gestión manual auditada de notas factura.
+/// </summary>
+public sealed class ServicioGestionManualNotasFactura :
+    IServicioGestionManualNotasFactura
+{
+    private const string MotivoCreacion =
+        "Creación manual de nota factura.";
+
+    private readonly IRepositorioGestionManualNotasFactura _repositorio;
+    private readonly IUnidadTrabajo _unidadTrabajo;
+    private readonly IValidator<SolicitudCreacionNotaFacturaManualDto>
+        _validador;
+    private readonly IValidator<SolicitudAnulacionNotaFacturaDto>
+        _validadorAnulacion;
+    private readonly TimeProvider _timeProvider;
+
+    public ServicioGestionManualNotasFactura(
+        IRepositorioGestionManualNotasFactura repositorio,
+        IUnidadTrabajo unidadTrabajo,
+        IValidator<SolicitudCreacionNotaFacturaManualDto> validador,
+        IValidator<SolicitudAnulacionNotaFacturaDto>
+            validadorAnulacion,
+        TimeProvider timeProvider)
+    {
+        _repositorio = repositorio;
+        _unidadTrabajo = unidadTrabajo;
+        _validador = validador;
+        _validadorAnulacion = validadorAnulacion;
+        _timeProvider = timeProvider;
+    }
+
+    /// <inheritdoc />
+    public async Task<NotaFacturaGestionManualDto?> ObtenerPorIdAsync(
+        Guid notaId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidarNotaId(notaId);
+        var nota = await _repositorio.ObtenerPorIdAsync(
+            notaId,
+            cancellationToken);
+
+        return nota is null ? null : MapearNota(nota);
+    }
+
+    /// <inheritdoc />
+    public async Task<ConsultaNotasFacturaDto> ObtenerPorFacturaAsync(
+        string facturaId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+        var id = facturaId.Trim().ToUpperInvariant();
+
+        var factura = await _repositorio.ObtenerFacturaAsync(
+            id,
+            cancellationToken) ??
+            throw new KeyNotFoundException(
+                "No se encontró la factura indicada.");
+
+        var notas = await _repositorio.ObtenerPorFacturaAsync(
+            id,
+            cancellationToken);
+
+        var glosas = await _repositorio.ObtenerGlosasPorFacturaAsync(
+            id,
+            cancellationToken);
+
+        var totales = await _repositorio
+            .ObtenerTotalesNotasCreditoVigentesAsync(
+                glosas.Select(glosa => glosa.Id).ToArray(),
+                cancellationToken);
+
+        var notasMapeadas = notas
+            .OrderByDescending(nota => nota.Fecha)
+            .ThenBy(nota => nota.Tipo)
+            .ThenBy(nota => nota.Numero, StringComparer.Ordinal)
+            .Select(MapearNota)
+            .ToArray();
+
+        var cupos = glosas
+            .Where(glosa =>
+                glosa.Estado != EstadoGlosa.Anulada &&
+                glosa.ValorAceptado > decimal.Zero)
+            .OrderByDescending(glosa => glosa.FechaGlosa)
+            .ThenBy(glosa => glosa.Id)
+            .Select(glosa =>
+            {
+                var usado = totales.GetValueOrDefault(glosa.Id);
+
+                return new GlosaCupoNotaCreditoDto
+                {
+                    Id = glosa.Id,
+                    FechaGlosa = glosa.FechaGlosa,
+                    Estado = glosa.Estado,
+                    ValorGlosa = glosa.ValorGlosa,
+                    ValorAceptado = glosa.ValorAceptado,
+                    CupoUsado = usado,
+                    CupoDisponible = Math.Max(
+                        decimal.Zero,
+                        glosa.ValorAceptado - usado),
+                    VersionFila = glosa.VersionFila.ToArray()
+                };
+            })
+            .ToArray();
+
+        return new ConsultaNotasFacturaDto
+        {
+            FacturaId = factura.Id,
+            ValorFactura = factura.Valor,
+            TotalNotasCredito = notas
+                .Where(nota =>
+                    !nota.Anulada &&
+                    nota.Tipo == TipoNotaFactura.Credito)
+                .Sum(nota => nota.Valor),
+            TotalNotasDebito = notas
+                .Where(nota =>
+                    !nota.Anulada &&
+                    nota.Tipo == TipoNotaFactura.Debito)
+                .Sum(nota => nota.Valor),
+            Notas = notasMapeadas,
+            Glosas = cupos
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<NotaFacturaGestionManualDto> CrearAsync(
+        SolicitudCreacionNotaFacturaManualDto solicitud,
+        string actor,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(solicitud);
+
+        await ValidarAsync(solicitud, cancellationToken);
+
+        var actorNormalizado = ValidarActor(actor);
+        var facturaId = solicitud.FacturaId.Trim().ToUpperInvariant();
+        var numero = solicitud.Numero.Trim().ToUpperInvariant();
+
+        var factura = await _repositorio.ObtenerFacturaAsync(
+            facturaId,
+            cancellationToken) ??
+            throw new KeyNotFoundException(
+                "No se encontró la factura indicada.");
+
+        if (CodigosEstadoFactura.EsAnulada(factura.EstadoId))
+        {
+            throw new InvalidOperationException(
+                "Una factura anulada no permite registrar notas.");
+        }
+
+        if (solicitud.Fecha < factura.FechaFactura)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(solicitud.Fecha),
+                solicitud.Fecha,
+                "La fecha de la nota no puede ser anterior " +
+                "a la fecha de la factura.");
+        }
+
+        if (await _repositorio.ExisteAsync(
+                facturaId,
+                solicitud.Tipo,
+                numero,
+                cancellationToken))
+        {
+            throw new InvalidOperationException(
+                "Ya existe una nota del mismo tipo y número " +
+                "para la factura.");
+        }
+
+        Glosa? glosa = null;
+        decimal? valorAceptado = null;
+        decimal? totalNotasCredito = null;
+
+        if (solicitud.Tipo == TipoNotaFactura.Credito)
+        {
+            glosa = await ValidarNotaCreditoAsync(
+                solicitud,
+                facturaId,
+                cancellationToken);
+
+            valorAceptado = glosa.ValorAceptado;
+            totalNotasCredito =
+                await _repositorio
+                    .ObtenerTotalNotasCreditoVigentesAsync(
+                        glosa.Id,
+                        cancellationToken);
+
+            if (totalNotasCredito.Value + solicitud.Valor >
+                valorAceptado.Value)
+            {
+                throw new InvalidOperationException(
+                    "El valor de la nota crédito supera el cupo " +
+                    "aceptado disponible de la glosa.");
+            }
+        }
+
+        var nota = new NotaFactura(
+            facturaId,
+            solicitud.Tipo,
+            solicitud.Fecha,
+            numero,
+            solicitud.Valor,
+            glosa?.Id);
+
+        var fecha = _timeProvider.GetUtcNow();
+        nota.RegistrarCreacion(fecha, actorNormalizado);
+
+        if (glosa is not null)
+        {
+            glosa.RegistrarModificacion(fecha, actorNormalizado);
+        }
+
+        await _repositorio.AgregarAsync(nota, cancellationToken);
+
+        await _repositorio.AgregarAuditoriaAsync(
+            new RegistroAuditoria(
+                TipoOperacionAuditoria.Creacion,
+                nameof(NotaFactura),
+                nota.Id.ToString(),
+                actorNormalizado,
+                fecha,
+                datosAnterioresJson: null,
+                datosNuevosJson: Serializar(nota),
+                motivo: MotivoCreacion,
+                correlacionId: Guid.NewGuid()),
+            cancellationToken);
+
+        await _unidadTrabajo.GuardarCambiosAsync(cancellationToken);
+
+        var totalActualizado = totalNotasCredito + nota.Valor;
+
+        return new NotaFacturaGestionManualDto
+        {
+            Id = nota.Id,
+            FacturaId = nota.FacturaId,
+            Tipo = nota.Tipo,
+            Fecha = nota.Fecha,
+            Numero = nota.Numero,
+            Valor = nota.Valor,
+            ImpactoSaldo = nota.ImpactoSaldo,
+            GlosaId = nota.GlosaId,
+            Anulada = nota.Anulada,
+            ValorAceptadoGlosa = valorAceptado,
+            TotalNotasCreditoVigentesGlosa = totalActualizado,
+            CupoDisponibleGlosa = valorAceptado - totalActualizado,
+            FechaCreacionUtc = nota.FechaCreacionUtc,
+            CreadoPor = nota.CreadoPor
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<NotaFacturaGestionManualDto> AnularAsync(
+        Guid notaId,
+        SolicitudAnulacionNotaFacturaDto solicitud,
+        string actor,
+        CancellationToken cancellationToken = default)
+    {
+        ValidarNotaId(notaId);
+        ArgumentNullException.ThrowIfNull(solicitud);
+
+        var validacion = await _validadorAnulacion.ValidateAsync(
+            solicitud,
+            cancellationToken);
+
+        if (!validacion.IsValid)
+        {
+            throw new ExcepcionValidacionAplicacion(
+                validacion.Errors);
+        }
+
+        var actorNormalizado = ValidarActor(actor);
+        var nota = await _repositorio.ObtenerPorIdAsync(
+            notaId,
+            cancellationToken) ??
+            throw new KeyNotFoundException(
+                "No se encontró la nota indicada.");
+
+        var datosAnteriores = Serializar(nota);
+        nota.Anular(solicitud.Motivo);
+
+        var fecha = _timeProvider.GetUtcNow();
+        nota.RegistrarModificacion(fecha, actorNormalizado);
+
+        await _repositorio.AgregarAuditoriaAsync(
+            new RegistroAuditoria(
+                TipoOperacionAuditoria.Anulacion,
+                nameof(NotaFactura),
+                nota.Id.ToString(),
+                actorNormalizado,
+                fecha,
+                datosAnteriores,
+                Serializar(nota),
+                motivo: nota.MotivoAnulacion,
+                correlacionId: Guid.NewGuid()),
+            cancellationToken);
+
+        await _unidadTrabajo.GuardarCambiosAsync(cancellationToken);
+        return MapearNota(nota);
+    }
+
+    private async Task<Glosa> ValidarNotaCreditoAsync(
+        SolicitudCreacionNotaFacturaManualDto solicitud,
+        string facturaId,
+        CancellationToken cancellationToken)
+    {
+        var glosaId = solicitud.GlosaId!.Value;
+        var glosa = await _repositorio.ObtenerGlosaAsync(
+            glosaId,
+            cancellationToken) ??
+            throw new KeyNotFoundException(
+                "No se encontró la glosa indicada.");
+
+        if (!string.Equals(
+                glosa.FacturaId,
+                facturaId,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "La glosa no pertenece a la factura indicada.");
+        }
+
+        if (glosa.ValorAceptado <= decimal.Zero ||
+            glosa.Estado == EstadoGlosa.Anulada)
+        {
+            throw new InvalidOperationException(
+                "La glosa no tiene valor aceptado disponible " +
+                "para respaldar una nota crédito.");
+        }
+
+        if (solicitud.Fecha < glosa.FechaGlosa)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(solicitud.Fecha),
+                solicitud.Fecha,
+                "La fecha de la nota crédito no puede ser " +
+                "anterior a la fecha de la glosa.");
+        }
+
+        ValidarVersion(
+            solicitud.VersionGlosa,
+            glosa.VersionFila);
+
+        return glosa;
+    }
+
+    private async Task ValidarAsync(
+        SolicitudCreacionNotaFacturaManualDto solicitud,
+        CancellationToken cancellationToken)
+    {
+        var resultado = await _validador.ValidateAsync(
+            solicitud,
+            cancellationToken);
+
+        if (!resultado.IsValid)
+        {
+            throw new ExcepcionValidacionAplicacion(resultado.Errors);
+        }
+    }
+
+    private static void ValidarVersion(
+        byte[] versionSolicitada,
+        byte[] versionActual)
+    {
+        if (versionSolicitada.Length != versionActual.Length ||
+            !CryptographicOperations.FixedTimeEquals(
+                versionSolicitada,
+                versionActual))
+        {
+            throw new ExcepcionConcurrenciaPersistencia(
+                [nameof(Glosa)],
+                new InvalidOperationException(
+                    "La glosa cambió antes de crear la nota."));
+        }
+    }
+
+    private static string ValidarActor(string actor)
+    {
+        if (string.IsNullOrWhiteSpace(actor))
+        {
+            throw new ArgumentException(
+                "El usuario responsable es obligatorio.",
+                nameof(actor));
+        }
+
+        return actor.Trim();
+    }
+
+    private static string Serializar(NotaFactura nota)
+    {
+        return JsonSerializer.Serialize(
+            new
+            {
+                nota.Id,
+                nota.FacturaId,
+                nota.Tipo,
+                nota.Fecha,
+                nota.Numero,
+                nota.Valor,
+                nota.GlosaId,
+                nota.Anulada,
+                nota.MotivoAnulacion,
+                nota.FechaCreacionUtc,
+                nota.CreadoPor,
+                nota.FechaModificacionUtc,
+                nota.ModificadoPor
+            });
+    }
+
+    private static NotaFacturaGestionManualDto MapearNota(
+        NotaFactura nota)
+    {
+        return new NotaFacturaGestionManualDto
+        {
+            Id = nota.Id,
+            FacturaId = nota.FacturaId,
+            Tipo = nota.Tipo,
+            Fecha = nota.Fecha,
+            Numero = nota.Numero,
+            Valor = nota.Valor,
+            ImpactoSaldo = nota.ImpactoSaldo,
+            GlosaId = nota.GlosaId,
+            Anulada = nota.Anulada,
+            MotivoAnulacion = nota.MotivoAnulacion,
+            FechaCreacionUtc = nota.FechaCreacionUtc,
+            CreadoPor = nota.CreadoPor,
+            FechaModificacionUtc = nota.FechaModificacionUtc,
+            ModificadoPor = nota.ModificadoPor
+        };
+    }
+
+    private static void ValidarNotaId(Guid notaId)
+    {
+        if (notaId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "El identificador de la nota es obligatorio.",
+                nameof(notaId));
+        }
+    }
+}
