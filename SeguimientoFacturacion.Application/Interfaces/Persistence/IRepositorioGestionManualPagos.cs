@@ -13,6 +13,11 @@ public interface IRepositorioGestionManualPagos
             IReadOnlyCollection<string> facturaIds,
             CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<PagoHistorialFacturaDto>>
+        ObtenerHistorialPorFacturaAsync(
+            string facturaId,
+            CancellationToken cancellationToken = default);
+
     Task<bool> ExisteAsync(
         int aseguradoraId,
         string recibo,

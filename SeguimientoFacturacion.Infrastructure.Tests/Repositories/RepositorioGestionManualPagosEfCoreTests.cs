@@ -87,6 +87,49 @@ public sealed class RepositorioGestionManualPagosEfCoreTests
     }
 
     [Fact]
+    public async Task Historial_DebeIncluirPagosImportadosYManuales()
+    {
+        await using var contexto = CrearContexto();
+        var factura = CrearFactura();
+        var importado = CrearPago(
+            factura,
+            "REC-EXCEL",
+            200m,
+            "importador-excel");
+        var manual = CrearPago(
+            factura,
+            "REC-MANUAL",
+            300m,
+            "administrador");
+
+        await contexto.AddRangeAsync(factura, importado, manual);
+        await contexto.GuardarCambiosAsync();
+        contexto.ChangeTracker.Clear();
+
+        var repositorio = new RepositorioGestionManualPagosEfCore(
+            contexto);
+
+        var historial = await repositorio
+            .ObtenerHistorialPorFacturaAsync(" fe100 ");
+
+        Assert.Equal(2, historial.Count);
+        Assert.Contains(
+            historial,
+            pago =>
+                pago.Recibo == "REC-EXCEL" &&
+                pago.CreadoPor == "importador-excel");
+        Assert.Contains(
+            historial,
+            pago =>
+                pago.Recibo == "REC-MANUAL" &&
+                pago.CreadoPor == "administrador");
+        Assert.All(
+            historial,
+            pago => Assert.Equal(pago.ValorRecibidoFactura,
+                pago.ValorAplicado + pago.ValorAnticipo));
+    }
+
+    [Fact]
     public async Task Agregar_DebePersistirPagoAplicacionYAuditoria()
     {
         await using var contexto = CrearContexto();
@@ -229,7 +272,8 @@ public sealed class RepositorioGestionManualPagosEfCoreTests
     private static Pago CrearPago(
         Factura factura,
         string recibo,
-        decimal valor)
+        decimal valor,
+        string usuario = "usuario-pruebas")
     {
         var pago = new Pago(
             factura.AseguradoraId,
@@ -249,10 +293,10 @@ public sealed class RepositorioGestionManualPagosEfCoreTests
         pago.AgregarAplicacion(aplicacion);
         pago.RegistrarCreacion(
             FechaAuditoria,
-            "usuario-pruebas");
+            usuario);
         aplicacion.RegistrarCreacion(
             FechaAuditoria,
-            "usuario-pruebas");
+            usuario);
 
         return pago;
     }

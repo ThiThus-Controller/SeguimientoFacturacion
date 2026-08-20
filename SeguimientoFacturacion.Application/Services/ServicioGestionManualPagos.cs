@@ -47,6 +47,35 @@ public sealed class ServicioGestionManualPagos :
     }
 
     /// <inheritdoc />
+    public async Task<FacturaReferenciaPagoManualDto?>
+        ObtenerFacturaAsync(
+            string facturaId,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+        var id = facturaId.Trim().ToUpperInvariant();
+
+        var referencias = await _repositorio.ObtenerFacturasAsync(
+            [id],
+            cancellationToken);
+
+        return referencias.SingleOrDefault();
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<PagoHistorialFacturaDto>>
+        ObtenerHistorialPorFacturaAsync(
+            string facturaId,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+
+        return _repositorio.ObtenerHistorialPorFacturaAsync(
+            facturaId.Trim().ToUpperInvariant(),
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<PagoGestionManualDto> CrearAsync(
         SolicitudCreacionPagoManualDto solicitud,
         string actor,

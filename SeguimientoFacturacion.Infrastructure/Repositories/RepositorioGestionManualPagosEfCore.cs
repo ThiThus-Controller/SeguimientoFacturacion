@@ -106,6 +106,47 @@ public sealed class RepositorioGestionManualPagosEfCore :
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<PagoHistorialFacturaDto>>
+        ObtenerHistorialPorFacturaAsync(
+            string facturaId,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(facturaId);
+        var id = facturaId.Trim().ToUpperInvariant();
+
+        return await _contexto.AplicacionesPago
+            .AsNoTracking()
+            .Where(aplicacion => aplicacion.FacturaId == id)
+            .Join(
+                _contexto.Pagos.AsNoTracking(),
+                aplicacion => aplicacion.PagoId,
+                pago => pago.Id,
+                (aplicacion, pago) =>
+                    new PagoHistorialFacturaDto
+                    {
+                        PagoId = pago.Id,
+                        AplicacionId = aplicacion.Id,
+                        FacturaId = aplicacion.FacturaId,
+                        FechaPago = pago.FechaPago,
+                        Recibo = pago.Recibo,
+                        ValorTotalRecibo = pago.ValorPagado,
+                        ValorRecibidoFactura =
+                            aplicacion.ValorRecibido,
+                        ValorAplicado = aplicacion.ValorAplicado,
+                        ValorAnticipo = aplicacion.ValorAnticipo,
+                        RetencionRecibo = pago.Retencion,
+                        ReteIcaRecibo = pago.ReteIca,
+                        Notas = pago.Notas,
+                        FechaCreacionUtc = pago.FechaCreacionUtc,
+                        CreadoPor = pago.CreadoPor
+                    })
+            .OrderByDescending(pago => pago.FechaPago)
+            .ThenByDescending(pago => pago.FechaCreacionUtc)
+            .ThenBy(pago => pago.Recibo)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task<bool> ExisteAsync(
         int aseguradoraId,
         string recibo,

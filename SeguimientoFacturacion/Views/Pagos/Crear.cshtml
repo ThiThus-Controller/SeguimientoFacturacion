@@ -1,0 +1,288 @@
+@model PagoCreacionViewModel
+
+@{
+    ViewData["Title"] = "Registrar pago";
+}
+
+<div class="row justify-content-center py-3">
+    <div class="col-12 col-xl-10">
+        <div class="mb-4 border-bottom pb-3">
+            <h1 class="h3 mb-1 fw-bold" style="color: var(--azul-rey);">
+                <i class="bi bi-cash-coin me-2 text-secondary"></i>Registrar pago
+            </h1>
+            <p class="text-secondary mb-0">
+                Registre un recibo y distribuya automáticamente su valor
+                entre cartera y anticipo para la factura @Model.FacturaId.
+            </p>
+        </div>
+
+        <div class="alert alert-info" role="alert">
+            El sistema aplicará hasta el saldo disponible. Cualquier excedente
+            quedará registrado como anticipo. Las retenciones son informativas.
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-secondary small">Factura</div>
+                        <div class="fw-bold fs-5">@Model.FacturaId</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-secondary small">Valor factura</div>
+                        <div class="fw-bold fs-5">
+                            $@Model.ValorFactura.ToString("N2")
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-body">
+                        <div class="text-secondary small">Saldo disponible</div>
+                        <div class="fw-bold fs-5 text-primary">
+                            $@Model.SaldoDisponible.ToString("N2")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form asp-action="Crear"
+              asp-route-facturaId="@Model.FacturaId"
+              method="post"
+              class="card shadow-sm">
+            <input asp-for="FacturaId" type="hidden" />
+            <input asp-for="AseguradoraId" type="hidden" />
+
+            <div class="card-body p-4">
+                <div asp-validation-summary="All"
+                     class="alert alert-danger"
+                     role="alert"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Aseguradora" class="form-label"></label>
+                        <input asp-for="Aseguradora"
+                               class="form-control"
+                               readonly />
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="FechaPago" class="form-label"></label>
+                        <input asp-for="FechaPago" class="form-control" />
+                        <span asp-validation-for="FechaPago"
+                              class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Recibo" class="form-label"></label>
+                        <input asp-for="Recibo"
+                               class="form-control"
+                               autocomplete="off" />
+                        <span asp-validation-for="Recibo"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="ValorPagado" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="ValorPagado"
+                                   type="text"
+                                   class="form-control text-end"
+                                   inputmode="decimal"
+                                   data-decimal-flexible="true"
+                                   placeholder="0,00" />
+                        </div>
+                        <span asp-validation-for="ValorPagado"
+                              class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Retencion" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="Retencion"
+                                   type="text"
+                                   class="form-control text-end"
+                                   inputmode="decimal"
+                                   data-decimal-flexible="true"
+                                   placeholder="0,00" />
+                        </div>
+                        <span asp-validation-for="Retencion"
+                              class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="ReteIca" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="ReteIca"
+                                   type="text"
+                                   class="form-control text-end"
+                                   inputmode="decimal"
+                                   data-decimal-flexible="true"
+                                   placeholder="0,00" />
+                        </div>
+                        <span asp-validation-for="ReteIca"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Notas" class="form-label"></label>
+                        <textarea asp-for="Notas"
+                                  class="form-control"
+                                  rows="3"></textarea>
+                        <span asp-validation-for="Notas"
+                              class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-3">
+                    <div class="col-md-6">
+                        <div class="rounded border bg-light p-3 h-100">
+                            <div class="text-secondary small">
+                                Aplicación estimada a cartera
+                            </div>
+                            <div id="valor-aplicado"
+                                 class="fs-5 fw-bold text-success">$0,00</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="rounded border bg-light p-3 h-100">
+                            <div class="text-secondary small">
+                                Anticipo estimado
+                            </div>
+                            <div id="valor-anticipo"
+                                 class="fs-5 fw-bold text-warning">$0,00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer d-flex justify-content-end gap-2 p-3">
+                <a asp-controller="Facturas"
+                   asp-action="Index"
+                   asp-route-textoBusqueda="@Model.FacturaId"
+                   class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-1"></i>Registrar pago
+                </button>
+            </div>
+        </form>
+
+        <div class="card shadow-sm mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="fw-bold">
+                    <i class="bi bi-clock-history me-2"></i>Histórico de pagos
+                </div>
+                <span class="badge bg-primary rounded-pill">
+                    @Model.Historial.Count registro(s)
+                </span>
+            </div>
+
+            @if (Model.Historial.Count == 0)
+            {
+                <div class="card-body text-center text-secondary py-4">
+                    La factura todavía no tiene pagos registrados.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Recibo</th>
+                                <th class="text-end">Total recibo</th>
+                                <th class="text-end">Recibido factura</th>
+                                <th class="text-end">Aplicado</th>
+                                <th class="text-end">Anticipo</th>
+                                <th class="text-end">Retenciones recibo</th>
+                                <th>Registrado por</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var pago in Model.Historial)
+                            {
+                                <tr>
+                                    <td class="text-nowrap">
+                                        @pago.FechaPago.ToString("yyyy-MM-dd")
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">@pago.Recibo</div>
+                                        @if (!string.IsNullOrWhiteSpace(pago.Notas))
+                                        {
+                                            <div class="small text-secondary">
+                                                @pago.Notas
+                                            </div>
+                                        }
+                                    </td>
+                                    <td class="text-end text-nowrap">
+                                        $@pago.ValorTotalRecibo.ToString("N2")
+                                    </td>
+                                    <td class="text-end text-nowrap">
+                                        $@pago.ValorRecibidoFactura.ToString("N2")
+                                    </td>
+                                    <td class="text-end text-nowrap text-success">
+                                        $@pago.ValorAplicado.ToString("N2")
+                                    </td>
+                                    <td class="text-end text-nowrap text-warning">
+                                        $@pago.ValorAnticipo.ToString("N2")
+                                    </td>
+                                    <td class="text-end text-nowrap">
+                                        <div>Ret. $@pago.RetencionRecibo.ToString("N2")</div>
+                                        <div>ICA $@pago.ReteIcaRecibo.ToString("N2")</div>
+                                    </td>
+                                    <td>
+                                        <div>@pago.CreadoPor</div>
+                                        <div class="small text-secondary text-nowrap">
+                                            @pago.FechaCreacionUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const entrada = document.getElementById('ValorPagado');
+            const aplicado = document.getElementById('valor-aplicado');
+            const anticipo = document.getElementById('valor-anticipo');
+            const saldo = Number('@Model.SaldoDisponible.ToString(System.Globalization.CultureInfo.InvariantCulture)');
+            const moneda = new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 2
+            });
+
+            const convertir = valor => {
+                const texto = (valor ?? '').trim().replace(/\s/g, '');
+                if (!texto) return 0;
+                const numero = Number(texto.replace(',', '.'));
+                return Number.isFinite(numero) && numero > 0 ? numero : 0;
+            };
+
+            const actualizar = () => {
+                const recibido = convertir(entrada.value);
+                const valorAplicado = Math.min(recibido, saldo);
+                aplicado.textContent = moneda.format(valorAplicado);
+                anticipo.textContent = moneda.format(
+                    Math.max(0, recibido - valorAplicado));
+            };
+
+            entrada.addEventListener('input', actualizar);
+            actualizar();
+        })();
+    </script>
+}

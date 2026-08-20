@@ -16,6 +16,53 @@ public sealed class ServicioGestionManualPagosTests
         new(2026, 8, 19, 16, 0, 0, TimeSpan.Zero);
 
     [Fact]
+    public async Task ObtenerFactura_DebeNormalizarIdentificador()
+    {
+        var repositorio = CrearRepositorio();
+        var servicio = CrearServicio(
+            repositorio,
+            new UnidadTrabajoFalsa());
+
+        var resultado = await servicio.ObtenerFacturaAsync(" fe100 ");
+
+        Assert.NotNull(resultado);
+        Assert.Equal("FE100", resultado.FacturaId);
+    }
+
+    [Fact]
+    public async Task ObtenerHistorial_DebeNormalizarIdentificador()
+    {
+        var repositorio = CrearRepositorio();
+        repositorio.Historial.Add(
+            new PagoHistorialFacturaDto
+            {
+                PagoId = Guid.NewGuid(),
+                AplicacionId = Guid.NewGuid(),
+                FacturaId = "FE100",
+                FechaPago = new DateOnly(2026, 8, 10),
+                Recibo = "REC-HISTORICO",
+                ValorTotalRecibo = 500m,
+                ValorRecibidoFactura = 500m,
+                ValorAplicado = 450m,
+                ValorAnticipo = 50m,
+                RetencionRecibo = decimal.Zero,
+                ReteIcaRecibo = decimal.Zero,
+                FechaCreacionUtc = FechaPrueba,
+                CreadoPor = "importador"
+            });
+        var servicio = CrearServicio(
+            repositorio,
+            new UnidadTrabajoFalsa());
+
+        var resultado = await servicio
+            .ObtenerHistorialPorFacturaAsync(" fe100 ");
+
+        var pago = Assert.Single(resultado);
+        Assert.Equal("REC-HISTORICO", pago.Recibo);
+        Assert.Equal("FE100", repositorio.UltimaFacturaHistorial);
+    }
+
+    [Fact]
     public async Task Crear_ConExcedente_DebeAplicarSaldoYCrearAnticipo()
     {
         var repositorio = CrearRepositorio();
@@ -229,6 +276,8 @@ public sealed class ServicioGestionManualPagosTests
 
         public List<Pago> Pagos { get; } = [];
         public List<RegistroAuditoria> Auditorias { get; } = [];
+        public List<PagoHistorialFacturaDto> Historial { get; } = [];
+        public string? UltimaFacturaHistorial { get; private set; }
 
         public Task<IReadOnlyList<FacturaReferenciaPagoManualDto>>
             ObtenerFacturasAsync(
@@ -241,6 +290,23 @@ public sealed class ServicioGestionManualPagosTests
                         facturaIds.Contains(
                             referencia.FacturaId,
                             StringComparer.OrdinalIgnoreCase))
+                    .ToArray();
+
+            return Task.FromResult(resultado);
+        }
+
+        public Task<IReadOnlyList<PagoHistorialFacturaDto>>
+            ObtenerHistorialPorFacturaAsync(
+                string facturaId,
+                CancellationToken cancellationToken = default)
+        {
+            UltimaFacturaHistorial = facturaId;
+            IReadOnlyList<PagoHistorialFacturaDto> resultado =
+                Historial
+                    .Where(pago => string.Equals(
+                        pago.FacturaId,
+                        facturaId,
+                        StringComparison.OrdinalIgnoreCase))
                     .ToArray();
 
             return Task.FromResult(resultado);

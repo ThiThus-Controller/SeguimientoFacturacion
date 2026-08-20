@@ -138,6 +138,9 @@ public static class PoliticasAutorizacion
     public const string NotasDebitoAnular =
         PrefijoPermiso + PermisosSistema.NotasDebito.Anular;
 
+    public const string PagosCrearManual =
+        "Pagos.CrearManual";
+
     private static readonly string[] PermisosCreacionUsuarios =
     [
         PermisosSistema.Usuarios.Crear,
@@ -198,6 +201,12 @@ public static class PoliticasAutorizacion
     [
         PermisosSistema.NotasCredito.Ver,
         PermisosSistema.NotasDebito.Ver
+    ];
+
+    private static readonly string[] PermisosCreacionManualPagos =
+    [
+        PermisosSistema.Pagos.Crear,
+        PermisosSistema.AplicacionesPago.Crear
     ];
 
     /// <summary>
@@ -297,6 +306,12 @@ public static class PoliticasAutorizacion
             NotasConsultar,
             RequisitoPermisos.ExigirTodos(
                 PermisosConsultaNotas));
+
+        AgregarPolitica(
+            options,
+            PagosCrearManual,
+            RequisitoPermisos.ExigirTodos(
+                PermisosCreacionManualPagos));
 
         AgregarPolitica(
             options,
